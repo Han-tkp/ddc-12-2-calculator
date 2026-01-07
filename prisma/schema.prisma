@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String         @default("USER") // USER or ADMIN
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  calculations  Calculation[]
+  profiles      LabelProfile[] @relation("UserProfiles")
+  
+  @@map("users")
+}
+
+model LabelProfile {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  C           Float    // สัดส่วนสารออกฤทธิ์
+  S           Float    // สัดส่วนตัวทำละลาย
+  RA          Float    // อัตราการพ่น
+  RA_unit     String   // "L" or "cc"
+  A0          Float    // พื้นที่มาตรฐาน (ตร.ม.)
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // ค่า default จากระบบ
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  createdBy   User?    @relation("UserProfiles", fields: [createdById], references: [id])
+  createdById String?
+  
+  calculations Calculation[]
+  
+  @@map("label_profiles")
+}
+
+model Calculation {
+  id            String        @id @default(cuid())
+  userId        String?
+  profileId     String?
+  
+  // Input values
+  C             Float
+  S             Float
+  RA            Float
+  RA_unit       String
+  A0            Float
+  A_house       Float
+  N             Int
+  
+  // Calculated results
+  V_per_house   Float
+  V_total       Float
+  V_C           Float
+  V_S           Float
+  V_C_1L        Float
+  
+  notes         String?
+  createdAt     DateTime      @default(now())
+  
+  user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile       LabelProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([profileId])
+  @@map("calculations")
+}
