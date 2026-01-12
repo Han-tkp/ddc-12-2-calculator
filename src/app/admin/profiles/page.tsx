@@ -49,6 +49,12 @@ export default async function AdminProfilesPage() {
                                     กลับ
                                 </Button>
                             </Link>
+                            <Link href="/admin/logs">
+                                <Button variant="ghost" size="sm" className="rounded-xl hover-lift">
+                                    <Shield className="h-4 w-4 mr-1" />
+                                    ดูประวัติ
+                                </Button>
+                            </Link>
                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 p-0.5 animate-pulse-glow">
                                 <div className="w-full h-full rounded-2xl bg-white/90 dark:bg-slate-900/90 flex items-center justify-center">
                                     <Settings className="h-5 w-5 text-purple-600" />

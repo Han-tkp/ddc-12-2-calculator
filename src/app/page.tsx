@@ -75,12 +75,20 @@ export default async function CalculatorPage() {
                     </span>
                   </div>
                   {session.user.role === 'ADMIN' && (
-                    <Link href="/admin/profiles">
-                      <Button variant="outline" size="sm" className="hover-lift glass">
-                        <Settings className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">จัดการสูตร</span>
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-1">
+                      <Link href="/admin/profiles">
+                        <Button variant="outline" size="sm" className="hover-lift glass">
+                          <Settings className="h-4 w-4 mr-1" />
+                          <span className="hidden sm:inline">สูตร</span>
+                        </Button>
+                      </Link>
+                      <Link href="/admin/logs">
+                        <Button variant="outline" size="sm" className="hover-lift glass text-indigo-600 border-indigo-200">
+                          <span className="mr-1">📋</span>
+                          <span className="hidden sm:inline">ประวัติ</span>
+                        </Button>
+                      </Link>
+                    </div>
                   )}
                   <form action={async () => {
                     'use server';
@@ -156,7 +164,8 @@ export default async function CalculatorPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pb-12 max-w-4xl relative z-10">
-        <CalculatorForm profiles={profiles} />
+        {/* Calculator Form */}
+        <CalculatorForm />
       </main>
 
       {/* Footer */}
