@@ -2,7 +2,8 @@
 const nextConfig = {
     reactStrictMode: true,
     experimental: {
-        serverComponentsExternalPackages: ["@libsql/client", "libsql", "@prisma/adapter-libsql"],
+        experimental: {
+        },
     },
 };
 
