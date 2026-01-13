@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { db } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,7 +40,7 @@ export default async function UsersPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map((user) => (
+                        {users.map((user: any) => (
                             <TableRow key={user.id} className="hover:bg-slate-50/50">
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3">
@@ -53,8 +54,8 @@ export default async function UsersPage() {
                                 <TableCell className="text-slate-600">{user.email}</TableCell>
                                 <TableCell>
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'ADMIN'
-                                            ? 'bg-purple-100 text-purple-800'
-                                            : 'bg-green-100 text-green-800'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : 'bg-green-100 text-green-800'
                                         }`}>
                                         {user.role}
                                     </span>

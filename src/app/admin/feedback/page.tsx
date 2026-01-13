@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { db } from '@/lib/db';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +31,7 @@ export default async function AdminFeedbackPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {feedbacks.map((item) => (
+                        {feedbacks.map((item: any) => (
                             <TableRow key={item.id} className="hover:bg-slate-50/50 align-top">
                                 <TableCell>
                                     <Badge variant={item.type === 'FORMULA_REQUEST' ? 'default' : 'secondary'} className={item.type === 'FORMULA_REQUEST' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-slate-100 text-slate-700'}>
