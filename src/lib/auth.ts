@@ -1,10 +1,9 @@
-// lib/auth.ts
-
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
 import { loginSchema } from './validations';
+import { decrypt } from './encryption';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
     providers: [
@@ -46,7 +45,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     return {
                         id: user.id,
                         email: user.email,
-                        name: user.name,
+                        name: user.name ? decrypt(user.name) : null, // Decrypt name
                         role: user.role,
                     };
                 } catch (error) {

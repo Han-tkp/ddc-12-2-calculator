@@ -72,7 +72,7 @@ export function ResultsDisplay({ result, input }: ResultsDisplayProps) {
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
                                 <Droplets className="h-8 w-8" />
-                                <span className="text-emerald-100">ยาฆ่ายุง</span>
+                                <span className="text-emerald-100">สารเคมี</span>
                             </div>
                             <p className="text-4xl font-extrabold">{formatNumber(result.V_C)} <span className="text-lg font-normal">ซีซี</span></p>
                         </div>
@@ -137,7 +137,7 @@ export function ResultsDisplay({ result, input }: ResultsDisplayProps) {
                     <ol className="space-y-2 text-sm">
                         <li className="flex items-start gap-2">
                             <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">1</span>
-                            <span>เตรียม <strong className="text-blue-600">{formatNumber(result.V_C)} ซีซี</strong> ของยาฆ่ายุง</span>
+                            <span>เตรียม <strong className="text-blue-600">{formatNumber(result.V_C)} ซีซี</strong> ของสารเคมี</span>
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0">2</span>

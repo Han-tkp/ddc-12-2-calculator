@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { registerSchema } from '@/lib/validations';
+import { encrypt } from '@/lib/encryption';
 
 export async function POST(request: NextRequest) {
     try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
         // Create user
         const user = await db.user.create({
             data: {
-                name: validated.name,
+                name: encrypt(validated.name), // Encrypt name
                 email: validated.email,
                 password: hashedPassword,
                 role: 'USER',

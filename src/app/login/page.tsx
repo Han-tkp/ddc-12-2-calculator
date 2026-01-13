@@ -157,10 +157,7 @@ export default function LoginPage() {
 
                         <div className="mt-6 text-center animate-fade-up stagger-5">
                             <p className="text-sm text-slate-500">
-                                ยังไม่มีบัญชี?{' '}
-                                <Link href="/register" className="font-bold gradient-text hover:underline">
-                                    สมัครสมาชิก
-                                </Link>
+                                ติดต่อผู้ดูแลระบบเพื่อขอรับบัญชีผู้ใช้งาน
                             </p>
                         </div>
 

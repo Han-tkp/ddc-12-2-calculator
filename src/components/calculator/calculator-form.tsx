@@ -19,6 +19,7 @@ import { Calculator, Loader2, Droplets, Beaker, Zap, Save, MapPin, FlaskConical 
 import { toast } from 'sonner';
 import { ResultsDisplay } from './results-display';
 import { CHEMICAL_PRESETS } from '@/lib/constants';
+import { LabelGuide } from './label-guide';
 
 // Extended types for form
 interface ExtendedCalculationInput extends CalculationInput {
@@ -161,10 +162,13 @@ export function CalculatorForm() {
                     {/* 1. Location & Chemical Selection */}
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="flex items-center gap-2">
-                                <FlaskConical className="h-4 w-4 text-violet-500" />
-                                เลือกสูตรสารเคมี
-                            </Label>
+                            <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-2">
+                                    <FlaskConical className="h-4 w-4 text-violet-500" />
+                                    เลือกสูตรสารเคมี
+                                </Label>
+                                <LabelGuide />
+                            </div>
                             <Select onValueChange={handlePresetChange} value={selectedPreset}>
                                 <SelectTrigger className="glass-input h-12 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-violet-500/20 hover:bg-white/80 transition-all">
                                     <SelectValue placeholder="เลือกสูตร..." />
@@ -219,7 +223,7 @@ export function CalculatorForm() {
                         <div className="bento-item bg-blue-50/50 border-blue-100">
                             <Label className="flex items-center gap-2 mb-2">
                                 <Droplets className="h-4 w-4 text-blue-500" />
-                                ปริมาณน้ำยา (C)
+                                ปริมาณสารเคมี (C)
                             </Label>
                             <Input
                                 type="number"
@@ -233,7 +237,7 @@ export function CalculatorForm() {
                         <div className="bento-item bg-sky-50/50 border-sky-100">
                             <Label className="flex items-center gap-2 mb-2">
                                 <Beaker className="h-4 w-4 text-sky-500" />
-                                ปริมาณตัวผสม (S)
+                                ปริมาณตัวผสม (น้ำมัน/น้ำ) (S)
                             </Label>
                             <Input
                                 type="number"

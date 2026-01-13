@@ -83,3 +83,18 @@ model Calculation {
   @@index([profileId])
   @@map("calculations")
 }
+
+model Feedback {
+  id           String   @id @default(cuid())
+  type         String   @default("GENERAL") // GENERAL, FORMULA_REQUEST
+  organization String   // Required
+  reason       String   // Required
+  message      String?  // Optional details
+  formulaData  String?  // JSON string for formula details
+  status       String   @default("PENDING") // PENDING, ACKNOWLEDGED
+  contact      String?  // Optional contact info
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("feedback")
+}
