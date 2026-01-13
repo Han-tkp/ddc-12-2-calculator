@@ -42,7 +42,7 @@ export function DashboardCharts({ dailyStats, chemicalStats }: DashboardChartsPr
                     {/* <Button variant="ghost" size="icon" onClick={handleExport}><Download className="h-4 w-4" /></Button> */}
                 </CardHeader>
                 <CardContent>
-                    <div className="h-[300px] w-full">
+                    <div className="h-75 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={dailyStats} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                 <defs>
@@ -83,7 +83,7 @@ export function DashboardCharts({ dailyStats, chemicalStats }: DashboardChartsPr
                     <CardTitle className="text-lg font-semibold text-slate-700">สัดส่วนสารเคมีที่ใช้</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-[300px] w-full flex items-center justify-center">
+                    <div className="h-75 w-full flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie

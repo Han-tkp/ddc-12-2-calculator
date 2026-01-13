@@ -31,7 +31,7 @@ export function ResultsDisplay({ result, input }: ResultsDisplayProps) {
     return (
         <div className="glass-card rounded-3xl overflow-hidden animate-bounce-in print:shadow-none">
             {/* Success Header */}
-            <div className="relative bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 p-6">
+            <div className="relative bg-linear-to-r from-emerald-400 via-green-500 to-teal-500 p-6">
                 <div className="absolute inset-0 bg-black/10" />
                 <div className="relative flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -63,7 +63,7 @@ export function ResultsDisplay({ result, input }: ResultsDisplayProps) {
             {/* Main Results - Bento Grid */}
             <div className="p-6">
                 {/* Big Summary Card */}
-                <div className="bento-item bento-item-large bg-gradient-to-br from-emerald-500 to-teal-600 text-white mb-4 hover-lift animate-pulse-glow">
+                <div className="bento-item bento-item-large bg-linear-to-br from-emerald-500 to-teal-600 text-white mb-4 hover-lift animate-pulse-glow">
                     <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                         <FlaskConical className="h-5 w-5" />
                         📋 สรุปสิ่งที่ต้องเตรียม
@@ -181,7 +181,7 @@ function BentoResultCard({
     return (
         <div className="bento-item glass-card border border-white/50 hover-lift group">
             <div className="flex items-center gap-2 mb-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
                     <span className="text-white">{icon}</span>
                 </div>
                 <span className="text-2xl">{emoji}</span>

@@ -24,10 +24,10 @@ export default async function AdminFeedbackPage() {
                 <Table>
                     <TableHeader className="bg-slate-50">
                         <TableRow>
-                            <TableHead className="w-[100px] font-semibold text-slate-700">ประเภท</TableHead>
+                            <TableHead className="w-25 font-semibold text-slate-700">ประเภท</TableHead>
                             <TableHead className="font-semibold text-slate-700">หน่วยงาน/ผู้ติดต่อ</TableHead>
                             <TableHead className="font-semibold text-slate-700">รายละเอียด</TableHead>
-                            <TableHead className="w-[150px] font-semibold text-slate-700">วันที่</TableHead>
+                            <TableHead className="w-37.5 font-semibold text-slate-700">วันที่</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -65,7 +65,7 @@ export default function LoginPage() {
             <div className="w-full max-w-md relative z-10">
                 {/* Logo */}
                 <div className="text-center mb-8 animate-fade-up">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 mb-4 animate-pulse-glow p-0.5">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 mb-4 animate-pulse-glow p-0.5">
                         <div className="w-full h-full rounded-3xl bg-white/90 flex items-center justify-center">
                             <span className="text-4xl">🧪</span>
                         </div>
@@ -82,7 +82,7 @@ export default function LoginPage() {
                 {/* Login Card */}
                 <div className="glass-card rounded-3xl overflow-hidden hover-lift animate-fade-up stagger-1">
                     {/* Header */}
-                    <div className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6">
+                    <div className="relative bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 p-6">
                         <div className="absolute inset-0 bg-black/10" />
                         <div className="relative flex items-center gap-3">
                             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center animate-float">
@@ -138,7 +138,7 @@ export default function LoginPage() {
 
                             <Button
                                 type="submit"
-                                className="w-full h-14 text-lg font-bold rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30 hover-lift animate-fade-up stagger-4"
+                                className="w-full h-14 text-lg font-bold rounded-2xl bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30 hover-lift animate-fade-up stagger-4"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (

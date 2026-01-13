@@ -12,8 +12,8 @@ export default async function Home() {
   const session = await auth();
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 relative flex flex-col">
-      <div className="absolute inset-0 bg-grid-slate-200/50 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-800/50 pointer-events-none" />
+    <main className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 relative flex flex-col">
+      <div className="absolute inset-0 bg-grid-slate-200/50 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-800/50 pointer-events-none" />
 
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 bg-white/60 backdrop-blur-xl">
@@ -45,7 +45,7 @@ export default async function Home() {
               <FeedbackDialog />
               {session?.user ? (
                 <>
-                  <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-200/50">
+                  <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-linear-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-200/50">
                     <User className="h-4 w-4 text-indigo-600" />
                     <span className="text-sm font-medium text-slate-700">
                       {session.user.name}
@@ -95,7 +95,7 @@ export default async function Home() {
 
             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
               ระบบคำนวณสารเคมี
-              <span className="block mt-2 pb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 leading-normal">
+              <span className="block mt-2 pb-2 text-transparent bg-clip-text bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 leading-normal">
                 เพื่อการควบคุมโรค
               </span>
             </h2>

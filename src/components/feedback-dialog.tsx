@@ -119,7 +119,7 @@ export function FeedbackDialog() {
                     <span className="hidden sm:inline">แจ้งเพิ่มสูตร / แนะนำ</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-indigo-600">
                         <MessageSquarePlus className="h-5 w-5" />

@@ -149,7 +149,7 @@ export function CalculatorForm() {
                         <Calculator className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-600">
+                        <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-violet-600 to-fuchsia-600">
                             เครื่องคำนวณผสมสารเคมี
                         </h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -200,7 +200,7 @@ export function CalculatorForm() {
                         </div>
                     </div>
 
-                    <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-6" />
+                    <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent my-6" />
 
                     {/* 2. Parameters Input (Bento Grid) */}
                     <div className="bento-grid">
@@ -304,7 +304,7 @@ export function CalculatorForm() {
                                 type="submit"
                                 disabled={isSaving}
                                 size="lg"
-                                className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20 rounded-xl transition-all hover:scale-105"
+                                className="bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20 rounded-xl transition-all hover:scale-105"
                             >
                                 {isSaving ? (
                                     <>

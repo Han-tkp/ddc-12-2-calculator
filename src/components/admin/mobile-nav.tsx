@@ -41,7 +41,7 @@ export function MobileNav() {
                         <Menu className="h-6 w-6" />
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="w-[85vw] h-full h-screen max-w-none rounded-none border-r-0 border-y-0 p-0 sm:max-w-xs absolute right-0 top-0 translate-x-0 translate-y-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right duration-200">
+                <DialogContent className="w-[85vw] h-screen max-w-none rounded-none border-r-0 border-y-0 p-0 sm:max-w-xs absolute right-0 top-0 translate-x-0 translate-y-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right duration-200">
                     {/* Custom content for sidebar-like feel since we don't have Sheet */}
                     <div className="flex flex-col h-full bg-white">
                         <div className="p-4 border-b border-slate-100 flex items-center justify-between">

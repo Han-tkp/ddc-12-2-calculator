@@ -34,7 +34,7 @@ export function DateRangeFilter() {
 
     return (
         <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-100 mb-6">
-            <div className="grid gap-1.5 flex-1 min-w-[150px]">
+            <div className="grid gap-1.5 flex-1 min-w-37.5">
                 <label className="text-xs font-medium text-slate-500 ml-1">ตั้งแต่วันที่</label>
                 <div className="relative">
                     <Calendar className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
@@ -46,7 +46,7 @@ export function DateRangeFilter() {
                     />
                 </div>
             </div>
-            <div className="grid gap-1.5 flex-1 min-w-[150px]">
+            <div className="grid gap-1.5 flex-1 min-w-37.5">
                 <label className="text-xs font-medium text-slate-500 ml-1">ถึงวันที่</label>
                 <div className="relative">
                     <Calendar className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
