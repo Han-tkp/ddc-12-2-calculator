@@ -95,7 +95,7 @@ export default async function Home() {
 
             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
               ระบบคำนวณสารเคมี
-              <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+              <span className="block mt-2 pb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 leading-normal">
                 เพื่อการควบคุมโรค
               </span>
             </h2>
