@@ -47,6 +47,8 @@ CREATE TABLE "calculations" (
     "V_S" REAL NOT NULL,
     "V_C_1L" REAL NOT NULL,
     "notes" TEXT,
+    "location" TEXT,
+    "chemical" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "calculations_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "calculations_profileId_fkey" FOREIGN KEY ("profileId") REFERENCES "label_profiles" ("id") ON DELETE SET NULL ON UPDATE CASCADE
