@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import {
     LayoutDashboard,
     Users,
@@ -6,16 +7,24 @@ import {
     FileText,
     LogOut,
     Home,
-    MessageSquare
+    MessageSquare,
+    Microscope
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileNav } from '@/components/admin/mobile-nav';
+import { auth } from '@/lib/auth';
 
-export default function AdminLayout({
+export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    // Auth Guard: Only ADMIN role can access
+    const session = await auth();
+    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+        redirect('/login');
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
             {/* Mobile Nav */}
@@ -54,6 +63,12 @@ export default function AdminLayout({
                         <Button variant="ghost" className="w-full justify-start gap-3 hover:bg-slate-50">
                             <MessageSquare className="h-4 w-4 text-slate-500" />
                             กล่องข้อความ
+                        </Button>
+                    </Link>
+                    <Link href="/admin/droplet-analysis">
+                        <Button variant="ghost" className="w-full justify-start gap-3 hover:bg-slate-50">
+                            <Microscope className="h-4 w-4 text-slate-500" />
+                            ผลวิเคราะห์ AI
                         </Button>
                     </Link>
                     <Link href="/admin/logs">

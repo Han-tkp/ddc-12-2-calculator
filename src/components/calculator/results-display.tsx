@@ -2,7 +2,7 @@
 
 import { formatNumber } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
-import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle } from 'lucide-react';
+import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle, MapPin } from 'lucide-react';
 
 interface ResultsDisplayProps {
     result: {
@@ -21,9 +21,11 @@ interface ResultsDisplayProps {
         A_house: number;
         N: number;
     };
+    location?: string;
+    coords?: { lat: number; lng: number } | null;
 }
 
-export function ResultsDisplay({ result, input }: ResultsDisplayProps) {
+export function ResultsDisplay({ result, input, location, coords }: ResultsDisplayProps) {
     const handlePrint = () => {
         window.print();
     };
@@ -156,6 +158,24 @@ export function ResultsDisplay({ result, input }: ResultsDisplayProps) {
                         สูตร: {input.C}:{input.S} | พื้นที่หลังละ {input.A_house} ตร.ม. | จำนวน {input.N} หลัง
                     </p>
                 </div>
+
+                {/* Location Info */}
+                {(location || coords) && (
+                    <div className="mt-4 p-4 glass-card rounded-2xl border border-violet-100/50 bg-violet-50/30">
+                        <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="h-4 w-4 text-violet-500" />
+                            <h4 className="font-semibold text-sm text-slate-700">สถานที่ปฏิบัติงาน</h4>
+                        </div>
+                        {location && (
+                            <p className="text-sm font-medium text-slate-800 mb-1">📍 {location}</p>
+                        )}
+                        {coords && (
+                            <p className="text-xs text-slate-400">
+                                พิกัด: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

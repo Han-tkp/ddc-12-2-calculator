@@ -19,10 +19,60 @@
     background: white !important;
     color: black !important;
     font-size: 14px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   @page {
-    margin: 1cm;
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  /* Hide non-essential elements */
+  header,
+  footer,
+  nav,
+  aside,
+  form,
+  .leaflet-container,
+  [class*="location-picker"],
+  .glass-input,
+  button:not(.print-visible) {
+    display: none !important;
+  }
+
+  /* Show results cleanly */
+  .glass-card {
+    background: white !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+  }
+
+  .bento-item {
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+  }
+
+  /* Remove animations and effects */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .hover-lift,
+  .animate-float,
+  .animate-bounce-in,
+  .animate-pulse-glow {
+    transform: none !important;
+    animation: none !important;
+  }
+
+  /* Keep gradient text readable in print */
+  .bg-clip-text {
+    -webkit-text-fill-color: #1e293b !important;
+    color: #1e293b !important;
   }
 }
 

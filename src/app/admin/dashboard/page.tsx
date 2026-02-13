@@ -1,8 +1,10 @@
 import { db } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, FlaskConical, Clock, TrendingUp, CalendarRange } from 'lucide-react';
+import { Calculator, Users, FlaskConical, Clock, TrendingUp, CalendarRange, Microscope, MapPin } from 'lucide-react';
 import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
+import { DashboardMap } from '@/components/admin/dashboard-map';
+import { LocationReport } from '@/components/admin/location-report';
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 
@@ -28,7 +30,11 @@ export default async function AdminDashboard({
         totalUsers,
         popularChemicals,
         recentCalculations,
-        calculationsInRange
+        calculationsInRange,
+        totalDropletAnalyses,
+        passedDropletAnalyses,
+        mapPoints,
+        uniqueLocations,
     ] = await Promise.all([
         db.calculation.count({ where: dateFilter }),
         db.user.count(),
@@ -48,7 +54,33 @@ export default async function AdminDashboard({
             where: dateFilter,
             select: { createdAt: true, chemical: true },
             orderBy: { createdAt: 'asc' },
-        })
+        }),
+        db.dropletAnalysis.count(),
+        db.dropletAnalysis.count({ where: { passStandard: true } }),
+        // Using `as any` because prisma generate hasn't run (lat/lng types missing)
+        (db.calculation as any).findMany({
+            where: {
+                ...dateFilter,
+                lat: { not: null },
+                lng: { not: null },
+            },
+            select: {
+                id: true,
+                lat: true,
+                lng: true,
+                chemical: true,
+                location: true,
+                V_total: true,
+                createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        }),
+        db.calculation.groupBy({
+            by: ['location'],
+            where: { ...dateFilter, location: { not: null } },
+            _count: { location: true },
+        }),
     ]);
 
     // 3. Process Data for Charts
@@ -87,6 +119,25 @@ export default async function AdminDashboard({
         userName: calc.user ? (decrypt(calc.user.name || '') || calc.user.name) : 'Guest'
     }));
 
+    // 3.3 Location Report Data
+    const locationReportData = await db.calculation.groupBy({
+        by: ['location'],
+        where: { ...dateFilter, location: { not: null } },
+        _count: { location: true },
+        _max: { createdAt: true, chemical: true },
+        orderBy: { _count: { location: 'desc' } },
+        take: 20,
+    });
+
+    const locationReport = locationReportData.map(loc => ({
+        name: loc.location || 'ไม่ระบุ',
+        count: loc._count.location,
+        chemical: loc._max.chemical || null,
+        lastUsed: loc._max.createdAt
+            ? format(loc._max.createdAt, 'd MMM yy', { locale: th })
+            : '-',
+    }));
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -106,7 +157,7 @@ export default async function AdminDashboard({
             <DateRangeFilter />
 
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="glass-card ring-1 ring-black/5 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-slate-600">คำนวณทั้งหมด (ช่วงนี้)</CardTitle>
@@ -151,6 +202,64 @@ export default async function AdminDashboard({
                             {dailyStats[dailyStats.length - 1]?.count || 0}
                         </div>
                         <p className="text-xs text-slate-500">รายการวันนี้</p>
+                    </CardContent>
+                </Card>
+                <Card className="glass-card ring-1 ring-black/5 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-600">วิเคราะห์ AI</CardTitle>
+                        <Microscope className="h-4 w-4 text-indigo-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-slate-800">{totalDropletAnalyses}</div>
+                        <p className="text-xs text-slate-500">
+                            ผ่าน {passedDropletAnalyses}/{totalDropletAnalyses} รายการ
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card className="glass-card ring-1 ring-black/5 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-600">สถานที่ปฏิบัติงาน</CardTitle>
+                        <MapPin className="h-4 w-4 text-pink-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-slate-800">{uniqueLocations.length}</div>
+                        <p className="text-xs text-slate-500">สถานที่ไม่ซ้ำกัน</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Map & Location Report side by side */}
+            <div className="grid lg:grid-cols-3 gap-6">
+                {/* Map Section - 2/3 width */}
+                <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5 lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg text-slate-700">
+                            <MapPin className="h-5 w-5 text-violet-500" />
+                            แผนที่การปฏิบัติงาน
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <DashboardMap points={(mapPoints as any[]).map((p: any) => ({
+                            id: p.id,
+                            lat: p.lat!,
+                            lng: p.lng!,
+                            chemical: p.chemical,
+                            location: p.location,
+                            V_total: p.V_total,
+                            createdAt: p.createdAt.toISOString(),
+                        }))} />
+                    </CardContent>
+                </Card>
+
+                {/* Location Report - 1/3 width */}
+                <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg text-slate-700">
+                            📊 สรุปสถานที่ปฏิบัติงาน
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <LocationReport locations={locationReport} />
                     </CardContent>
                 </Card>
             </div>

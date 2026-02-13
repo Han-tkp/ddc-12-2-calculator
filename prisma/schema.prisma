@@ -75,6 +75,8 @@ model Calculation {
   notes         String?
   location      String?   // New: Location/Village name
   chemical      String?   // New: Chemical name (e.g. "Deltacide")
+  lat           Float?    // GPS Latitude
+  lng           Float?    // GPS Longitude
   createdAt     DateTime      @default(now())
   
   user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -98,4 +100,28 @@ model Feedback {
   updatedAt    DateTime @updatedAt
 
   @@map("feedback")
+}
+
+model DropletAnalysis {
+  id              String   @id @default(cuid())
+  machineId       String?  // รหัสเครื่องพ่น
+  machineName     String?  // ชื่อเครื่องพ่น
+  organization    String?  // หน่วยงาน
+  temperature     Float?   // อุณหภูมิจุดหยดน้ำยา (°C)
+  flowRate        Float?   // อัตราการไหล (มล./นาที)
+  vmd             Float    // Volume Median Diameter (µm)
+  span            Float    // SPAN value
+  d10             Float?   // D10 percentile
+  d90             Float?   // D90 percentile
+  dropletCount    Int      // จำนวนละอองที่ตรวจพบ
+  averageDiameter Float?   // เส้นผ่าศูนย์กลางเฉลี่ย (µm)
+  magnification   String?  // กำลังขยาย (4X, 10X)
+  passStandard    Boolean  // ผ่าน/ไม่ผ่านมาตรฐาน WHO (10-30 µm)
+  chemical        String?  // สารเคมีที่ใช้
+  rawData         String?  // JSON of individual droplet data
+  notes           String?  // หมายเหตุ
+  analysisDate    DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@map("droplet_analyses")
 }

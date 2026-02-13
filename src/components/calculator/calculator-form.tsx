@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { calculationSchema } from '@/lib/validations';
@@ -15,11 +15,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Calculator, Loader2, Droplets, Beaker, Zap, Save, MapPin, FlaskConical } from 'lucide-react';
+import { Calculator, Loader2, Droplets, Beaker, Zap, MapPin, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResultsDisplay } from './results-display';
 import { CHEMICAL_PRESETS } from '@/lib/constants';
 import { LabelGuide } from './label-guide';
+import { LocationPickerWrapper } from './location-picker-wrapper';
 
 // Extended types for form
 interface ExtendedCalculationInput extends CalculationInput {
@@ -29,14 +30,20 @@ interface ExtendedCalculationInput extends CalculationInput {
 
 export function CalculatorForm() {
     const [result, setResult] = useState<CalculationResult | null>(null);
+    const [calculatedInput, setCalculatedInput] = useState<CalculationInput | null>(null);
     const [selectedPreset, setSelectedPreset] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     const {
         register,
         handleSubmit,
         setValue,
         watch,
+        getValues,
+        trigger,
         reset,
         formState: { errors },
     } = useForm<ExtendedCalculationInput>({
@@ -54,12 +61,49 @@ export function CalculatorForm() {
         },
     });
 
-    // Watch all values for real-time calculation
+    // GPS: Request current position
+    const requestGPS = useCallback(() => {
+        if (!navigator.geolocation) {
+            setGpsStatus('error');
+            return;
+        }
+        setGpsStatus('loading');
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setCoords({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                });
+                setGpsStatus('success');
+            },
+            () => {
+                setGpsStatus('error');
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }, []);
+
+    // Auto-capture GPS on mount
+    useEffect(() => {
+        requestGPS();
+    }, [requestGPS]);
+
+    // Handle location change from mini map (pin drag / click / GPS)
+    const handleLocationChange = useCallback((lat: number, lng: number, placeName: string) => {
+        setCoords({ lat, lng });
+        if (placeName) {
+            setValue('location', placeName);
+        }
+    }, [setValue]);
+
+    // Watch for preset and RA_unit select
     const watchedValues = watch();
 
     // 1. Handle Preset Selection
     const handlePresetChange = (presetId: string) => {
         setSelectedPreset(presetId);
+        setResult(null); // Clear results when changing preset
+        setCalculatedInput(null);
         const preset = CHEMICAL_PRESETS.find(p => p.id === presetId);
 
         if (preset) {
@@ -73,67 +117,63 @@ export function CalculatorForm() {
             } else {
                 setValue('chemical', 'อื่นๆ');
             }
-            // A_house usually stays consistent
             setValue('A_house', preset.A_house);
         }
     };
 
-    // 2. Real-time Calculation Effect
-    useEffect(() => {
-        // Calculate only if we have minimum valid inputs
-        if (watchedValues.N > 0 && watchedValues.C > 0 && watchedValues.S > 0) {
-            try {
-                const input: CalculationInput = {
-                    C: Number(watchedValues.C),
-                    S: Number(watchedValues.S),
-                    RA: Number(watchedValues.RA),
-                    RA_unit: watchedValues.RA_unit as 'L' | 'cc',
-                    A0: Number(watchedValues.A0),
-                    A_house: Number(watchedValues.A_house),
-                    N: Number(watchedValues.N),
-                };
-                const calculatedResult = calculate(input);
-                setResult(calculatedResult);
-            } catch (e) {
-                setResult(null);
-            }
-        } else {
-            setResult(null);
+    // 2. Calculate AND Save on button click (single action)
+    const handleCalculateAndSave = async () => {
+        const isValid = await trigger(['C', 'S', 'RA', 'RA_unit', 'A0', 'A_house', 'N']);
+        if (!isValid) {
+            toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
         }
-    }, [
-        watchedValues.C, watchedValues.S, watchedValues.RA, watchedValues.RA_unit,
-        watchedValues.A0, watchedValues.A_house, watchedValues.N
-    ]);
 
-    // 3. Save Function
-    const onSave = async (data: ExtendedCalculationInput) => {
-        if (!result) return;
-
-        setIsSaving(true);
+        const values = getValues();
+        setIsCalculating(true);
         try {
+            // Step 1: Calculate
+            const input: CalculationInput = {
+                C: Number(values.C),
+                S: Number(values.S),
+                RA: Number(values.RA),
+                RA_unit: values.RA_unit as 'L' | 'cc',
+                A0: Number(values.A0),
+                A_house: Number(values.A_house),
+                N: Number(values.N),
+            };
+            const calculatedResult = calculate(input);
+            setResult(calculatedResult);
+            setCalculatedInput(input);
+
+            // Step 2: Save to DB (auto-log with GPS)
             await fetch('/api/calculations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...data,
+                    ...values,
                     chemical: selectedPreset !== 'other'
                         ? CHEMICAL_PRESETS.find(p => p.id === selectedPreset)?.name
                         : 'อื่นๆ',
+                    lat: coords?.lat ?? null,
+                    lng: coords?.lng ?? null,
                 }),
             });
-            toast.success('บันทึกข้อมูลเรียบร้อย!');
-            // Optional: Reset form after success? Or keep it? keeping it is usually better for sequential entries.
-        } catch (error) {
-            console.error('Save failed', error);
-            toast.error('บันทึกไม่สำเร็จ');
+
+            toast.success('คำนวณและบันทึกเรียบร้อย!');
+        } catch (e) {
+            setResult(null);
+            setCalculatedInput(null);
+            toast.error('เกิดข้อผิดพลาด');
         } finally {
-            setIsSaving(false);
+            setIsCalculating(false);
         }
     };
 
     const handleReset = () => {
         reset();
         setResult(null);
+        setCalculatedInput(null);
         setSelectedPreset('');
         toast.info('ล้างข้อมูลแล้ว');
     };
@@ -153,13 +193,13 @@ export function CalculatorForm() {
                             เครื่องคำนวณผสมสารเคมี
                         </h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            เลือกสูตรและกรอกจำนวนเพื่อคำนวณอัตโนมัติ
+                            กรอกข้อมูลให้ครบ แล้วกด "คำนวณ" เพื่อดูผลลัพธ์
                         </p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit(onSave)} className="space-y-6 relative z-10">
-                    {/* 1. Location & Chemical Selection */}
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-6 relative z-10">
+                    {/* 1. Chemical Preset & Label Guide */}
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
@@ -184,15 +224,16 @@ export function CalculatorForm() {
                             </Select>
                         </div>
 
+                        {/* Location Name */}
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-pink-500" />
-                                สถานที่ปฏิบัติงาน (ระบุหมู่บ้าน/พื้นที่)
+                                สถานที่ปฏิบัติงาน
                             </Label>
                             <div className="relative">
                                 <Input
                                     {...register('location')}
-                                    placeholder="เช่น ม.5 บ้านหนองหอย"
+                                    placeholder="ชื่อสถานที่จะแสดงอัตโนมัติจากแผนที่"
                                     className="glass-input h-12 pl-10 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-pink-500/20 hover:bg-white/80 transition-all"
                                 />
                                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
@@ -200,9 +241,18 @@ export function CalculatorForm() {
                         </div>
                     </div>
 
-                    <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent my-6" />
+                    {/* 2. Location Map — Full Width */}
+                    <LocationPickerWrapper
+                        lat={coords?.lat ?? null}
+                        lng={coords?.lng ?? null}
+                        onLocationChange={handleLocationChange}
+                        onRequestGPS={requestGPS}
+                        gpsStatus={gpsStatus}
+                    />
 
-                    {/* 2. Parameters Input (Bento Grid) */}
+                    <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent" />
+
+                    {/* 3. Parameters Input (Bento Grid) */}
                     <div className="bento-grid">
                         {/* Number of Houses - Highlighted */}
                         <div className="bento-item bento-item-large bg-linear-to-br from-violet-500/5 to-fuchsia-500/5 border-violet-200/50">
@@ -299,32 +349,38 @@ export function CalculatorForm() {
                             ล้างค่า
                         </Button>
 
-                        {result && (
-                            <Button
-                                type="submit"
-                                disabled={isSaving}
-                                size="lg"
-                                className="bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20 rounded-xl transition-all hover:scale-105"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                        กำลังบันทึก...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="mr-2 h-5 w-5" />
-                                        บันทึกข้อมูล
-                                    </>
-                                )}
-                            </Button>
-                        )}
+                        <Button
+                            type="button"
+                            size="lg"
+                            onClick={handleCalculateAndSave}
+                            disabled={isCalculating}
+                            className="bg-linear-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white shadow-lg shadow-violet-500/20 rounded-xl transition-all hover:scale-105"
+                        >
+                            {isCalculating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    กำลังคำนวณ...
+                                </>
+                            ) : (
+                                <>
+                                    <Calculator className="mr-2 h-5 w-5" />
+                                    คำนวณ
+                                </>
+                            )}
+                        </Button>
                     </div>
                 </form>
             </div>
 
-            {/* Results Display */}
-            {result && <ResultsDisplay result={result} input={{ ...watchedValues, RA_unit: watchedValues.RA_unit || 'L' }} />}
+            {/* Results Display — only shown after clicking "คำนวณ" */}
+            {result && calculatedInput && (
+                <ResultsDisplay
+                    result={result}
+                    input={calculatedInput}
+                    location={watchedValues.location}
+                    coords={coords}
+                />
+            )}
         </div>
     );
 }

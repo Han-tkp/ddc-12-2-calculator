@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
                 // Optional Fields
                 location: body.location,
                 chemical: body.chemical,
+                lat: body.lat ?? null,
+                lng: body.lng ?? null,
                 // Results
                 V_per_house: result.V_per_house,
                 V_total: result.V_total,

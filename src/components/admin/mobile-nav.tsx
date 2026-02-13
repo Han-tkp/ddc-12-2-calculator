@@ -11,7 +11,8 @@ import {
     FileText,
     LogOut,
     Home,
-    X
+    X,
+    Microscope
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -25,6 +26,7 @@ export function MobileNav() {
         { href: '/admin/dashboard', label: 'ภาพรวม', icon: LayoutDashboard },
         { href: '/admin/users', label: 'จัดการผู้ใช้', icon: Users },
         { href: '/admin/profiles', label: 'จัดการสูตร', icon: Settings },
+        { href: '/admin/droplet-analysis', label: 'ผลวิเคราะห์ AI', icon: Microscope },
         { href: '/admin/logs', label: 'ประวัติคำนวณ', icon: FileText },
     ];
 

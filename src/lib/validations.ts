@@ -14,6 +14,8 @@ export const calculationSchema = z.object({
     N: z.number().int('จำนวนหลังบ้านต้องเป็นจำนวนเต็ม').positive('จำนวนหลังบ้านต้องมากกว่า 0'),
     location: z.string().optional(),
     chemical: z.string().optional(),
+    lat: z.number().min(-90).max(90).optional().nullable(),
+    lng: z.number().min(-180).max(180).optional().nullable(),
 });
 
 export const profileSchema = z.object({
