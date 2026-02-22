@@ -1,65 +1,43 @@
-# Setup (หลัง git clone)
+# Setup Guide
 
 ## Requirements
 
 - Node.js (แนะนำ 20+)
 - npm
 
-## ติดตั้งและรันแบบเร็ว (ครั้งเดียวจบ)
+## การติดตั้งครั้งแรก
 
+โปรเจกต์นี้ใช้ **Supabase** เป็นฐานข้อมูลหลัก ดังนั้นคุณต้องตั้งค่า Environment Variables ก่อนเริ่มใช้งาน
+
+1. คัดลอกไฟล์ตัวอย่าง:
+```bash
+cp .env.example .env
+```
+
+2. แก้ไขไฟล์ `.env` โดยใส่ค่าที่ได้จากโปรเจกต์ Supabase ของคุณ:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+API_SECRET_KEY=your-secret-token-for-desktop-app
+```
+
+3. ติดตั้ง Dependencies และรันแบบเร็ว:
 ```bash
 bash scripts/setup-dev.sh
 npm run dev
 ```
 
 เปิดเว็บ:
-
 - http://localhost:3000
 
-## Prisma Studio
+## Database / Supabase
 
-```bash
-npx prisma studio --port 5555
-```
+โปรเจกต์นี้ไม่ได้ใช้ Prisma แล้ว ตารางทั้งหมดถูกจัดการผ่านบน Supabase โดยตรง
+หากต้องการแก้ไข Schema หรือดูข้อมูล ให้เข้าไปที่ [Supabase Dashboard](https://supabase.com/dashboard) ของโปรเจกต์คุณ
 
-เปิด:
+## การเชื่อมต่อกับ Desktop App
 
-- http://localhost:5555
-
-## ตั้งค่า env (ถ้าต้องการ)
-
-โปรเจกต์นี้ ignore `.env` อยู่แล้ว ให้สร้างจากตัวอย่าง:
-
-```bash
-cp .env.example .env
-```
-
-หมายเหตุ:
-
-- `AUTH_SECRET` ใช้กับ NextAuth (ถ้าไม่ตั้ง จะใช้ค่า dev fallback)
-- `ENCRYPTION_KEY` ใช้กับการเข้ารหัสชื่อผู้ใช้ (ถ้าไม่ตั้ง จะใช้ค่า dev fallback)
-
-## Database / Migrate / Seed
-
-- ใช้ SQLite ที่ `prisma/dev.db`
-
-สั่ง migrate/seed เอง:
-
-```bash
-npx prisma migrate deploy
-npx prisma db seed
-```
-
-## Admin login (หลัง seed)
-
-- admin: `admin@gmail.com` / `admin1234`
-
-## Troubleshooting
-
-- ถ้า migrate ติดเพราะ DB เก่าค้าง: ลอง backup แล้วสร้างใหม่
-
-```bash
-mv prisma/dev.db prisma/dev.db.bak
-npx prisma migrate deploy
-npx prisma db seed
-```
+ให้ตั้งค่าตัวแปร `API_SECRET_KEY` ในไฟล์ `.env` เป็นรหัสผ่านอะไรก็ได้ 
+จากนั้นนำค่าเดียวกันนี้ไปกรอกในช่อง **API Key** ของโปรเจกต์ฝั่ง Desktop (C# Avalonia) เพื่อให้สิทธิ์ในการยิงผลวิเคราะห์เข้ามาที่ฐานข้อมูลของเว็บแอพนี้

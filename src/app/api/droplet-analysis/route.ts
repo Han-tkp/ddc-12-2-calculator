@@ -97,8 +97,8 @@ export async function GET(req: NextRequest) {
             pagination: {
                 page,
                 limit,
-                total,
-                totalPages: Math.ceil(total / limit),
+                total: total || 0,
+                totalPages: Math.ceil((total || 0) / limit),
             },
         });
 

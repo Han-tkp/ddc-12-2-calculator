@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 // DELETE profile (soft delete)
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -17,7 +17,8 @@ export async function DELETE(
             );
         }
 
-        const { id } = params;
+        const resolvedParams = await params;
+        const { id } = resolvedParams;
 
         // Check if profile exists
         const { data: profile } = await supabase

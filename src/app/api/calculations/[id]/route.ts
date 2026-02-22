@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase';
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const resolvedParams = await params;
         const session = await auth();
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,7 +16,7 @@ export async function DELETE(
         const { data, error } = await supabase
             .from('calculations')
             .delete()
-            .eq('id', params.id)
+            .eq('id', resolvedParams.id)
             .eq('userId', session.user.id)
             .select();
 
