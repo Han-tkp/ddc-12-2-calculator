@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { profileSchema } from '@/lib/validations';
 
 // GET all profiles
 export async function GET() {
     try {
-        const profiles = await db.labelProfile.findMany({
-            where: { isActive: true },
-            orderBy: { name: 'asc' },
-        });
+        const { data: profiles, error } = await supabase
+            .from('label_profiles')
+            .select('*')
+            .eq('isActive', true)
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+
         return NextResponse.json(profiles);
     } catch (error) {
         return NextResponse.json(
@@ -35,9 +39,11 @@ export async function POST(request: NextRequest) {
         const validated = profileSchema.parse(body);
 
         // Check if name already exists
-        const existing = await db.labelProfile.findUnique({
-            where: { name: validated.name },
-        });
+        const { data: existing } = await supabase
+            .from('label_profiles')
+            .select('id')
+            .eq('name', validated.name)
+            .single();
 
         if (existing) {
             return NextResponse.json(
@@ -46,12 +52,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const profile = await db.labelProfile.create({
-            data: {
+        const { data: profile, error } = await supabase
+            .from('label_profiles')
+            .insert({
                 ...validated,
                 createdById: session.user.id,
-            },
-        });
+                updatedAt: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
 
         return NextResponse.json(profile, { status: 201 });
     } catch (error) {

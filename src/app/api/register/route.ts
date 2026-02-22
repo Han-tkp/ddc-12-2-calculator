@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { registerSchema } from '@/lib/validations';
 import { encrypt } from '@/lib/encryption';
 
@@ -12,9 +12,11 @@ export async function POST(request: NextRequest) {
         const validated = registerSchema.parse(body);
 
         // Check if email already exists
-        const existingUser = await db.user.findUnique({
-            where: { email: validated.email },
-        });
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('email')
+            .eq('email', validated.email)
+            .single();
 
         if (existingUser) {
             return NextResponse.json(
@@ -27,14 +29,21 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(validated.password, 10);
 
         // Create user
-        const user = await db.user.create({
-            data: {
+        const { data: user, error: createError } = await supabase
+            .from('users')
+            .insert({
                 name: encrypt(validated.name), // Encrypt name
                 email: validated.email,
                 password: hashedPassword,
                 role: 'USER',
-            },
-        });
+                updatedAt: new Date().toISOString(), // Manual timestamp
+            })
+            .select()
+            .single();
+
+        if (createError || !user) {
+            throw createError || new Error('Failed to create user');
+        }
 
         return NextResponse.json({
             success: true,

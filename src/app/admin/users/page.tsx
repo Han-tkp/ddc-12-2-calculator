@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { decrypt } from '@/lib/encryption';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,14 @@ import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 
 export default async function UsersPage() {
-    const users = await db.user.findMany({
-        orderBy: { createdAt: 'desc' },
-    });
+    const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching users:', error);
+    }
 
     return (
         <div className="space-y-6">
@@ -40,7 +45,7 @@ export default async function UsersPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map((user: any) => (
+                        {(users || []).map((user: any) => (
                             <TableRow key={user.id} className="hover:bg-slate-50/50">
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3">
@@ -63,7 +68,7 @@ export default async function UsersPage() {
                                 <TableCell className="text-slate-500 text-sm">
                                     <div className="flex items-center gap-1">
                                         <Calendar className="h-3 w-3" />
-                                        {format(user.createdAt, 'd MMM yyyy', { locale: th })}
+                                        {format(new Date(user.createdAt), 'd MMM yyyy', { locale: th })}
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right">
@@ -73,7 +78,7 @@ export default async function UsersPage() {
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {users.length === 0 && (
+                        {(users || []).length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center py-8 text-slate-500">
                                     ไม่พบข้อมูลผู้ใช้งาน

@@ -24,6 +24,7 @@ export default function RootLayout({
       <body
         className={`${sarabun.variable} font-sans antialiased`}
         style={{ fontFamily: 'var(--font-sarabun), sans-serif' }}
+        suppressHydrationWarning
       >
         {children}
       </body>

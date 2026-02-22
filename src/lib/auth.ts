@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { db } from './db';
+import { supabase } from './supabase';
 import { loginSchema } from './validations';
 import { decrypt } from './encryption';
 
@@ -20,13 +20,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     const validated = loginSchema.parse(credentials);
                     console.log('✅ Validation passed');
 
-                    const user = await db.user.findUnique({
-                        where: { email: validated.email },
-                    });
+                    // Refactored to Supabase
+                    const { data: user, error } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('email', validated.email)
+                        .single();
+
+                    if (error || !user) {
+                        console.log('👤 User not found or error:', error?.message);
+                        return null;
+                    }
                     console.log('👤 User found:', user ? 'Yes' : 'No');
 
-                    if (!user || !user.password) {
-                        console.log('❌ No user or no password');
+                    if (!user.password) {
+                        console.log('❌ No password set for user');
                         return null;
                     }
 

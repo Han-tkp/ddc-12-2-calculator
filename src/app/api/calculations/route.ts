@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { calculationSchema } from '@/lib/validations';
 import { calculate } from '@/lib/calculations';
 
@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
         // Calculate results on server to ensure integrity
         const result = calculate(body);
 
-        const calculation = await db.calculation.create({
-            data: {
+        const { data: calculation, error } = await supabase
+            .from('calculations')
+            .insert({
                 userId: userId,
                 // Inputs
                 C: body.C,
@@ -38,8 +39,12 @@ export async function POST(req: NextRequest) {
                 V_C: result.V_C,
                 V_S: result.V_S,
                 V_C_1L: result.V_C_1L,
-            },
-        });
+                updatedAt: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
 
         return NextResponse.json(calculation);
     } catch (error) {
@@ -57,14 +62,13 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const calculations = await db.calculation.findMany({
-            where: {
-                userId: session.user.id,
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
+        const { data: calculations, error } = await supabase
+            .from('calculations')
+            .select('*')
+            .eq('userId', session.user.id)
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
 
         return NextResponse.json(calculations);
     } catch (error) {

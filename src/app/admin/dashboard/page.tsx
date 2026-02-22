@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calculator, Users, FlaskConical, Clock, TrendingUp, CalendarRange, Microscope, MapPin } from 'lucide-react';
 import { DashboardCharts } from '@/components/admin/dashboard-charts';
@@ -11,81 +11,120 @@ import { th } from 'date-fns/locale';
 export default async function AdminDashboard({
     searchParams,
 }: {
-    searchParams: { from?: string; to?: string };
+    searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-    // 1. Date Logic
-    const startDate = searchParams.from ? startOfDay(parseISO(searchParams.from)) : subDays(startOfDay(new Date()), 30);
-    const endDate = searchParams.to ? endOfDay(parseISO(searchParams.to)) : endOfDay(new Date());
+    // 1. Await searchParams
+    const { from, to } = await searchParams;
 
-    const dateFilter = {
-        createdAt: {
-            gte: startDate,
-            lte: endDate,
-        },
+    // 2. Date Logic
+    const startDate = from ? startOfDay(parseISO(from)) : subDays(startOfDay(new Date()), 30);
+    const endDate = to ? endOfDay(parseISO(to)) : endOfDay(new Date());
+
+    // 2. Fetch Data
+    // Note: Supabase doesn't support Promise.all for some chained builders easily, but we can await them.
+    // Actually we can run them in parallel.
+
+    const dateFilterStr = {
+        gte: startDate.toISOString(),
+        lte: endDate.toISOString(),
     };
 
-    // 2. Fetch Data Parallelly
+    // 2.1 Counts
+    const calcCountPromise = supabase.from('calculations')
+        .select('*', { count: 'exact', head: true })
+        .gte('createdAt', dateFilterStr.gte)
+        .lte('createdAt', dateFilterStr.lte);
+
+    const userCountPromise = supabase.from('users')
+        .select('*', { count: 'exact', head: true });
+
+    // 2.2 Aggregations (fetch data then aggregate)
+    const calcDataPromise = supabase.from('calculations')
+        .select('chemical, location, createdAt')
+        .gte('createdAt', dateFilterStr.gte)
+        .lte('createdAt', dateFilterStr.lte);
+
+    // 2.3 Recent Activity (with Join)
+    const recentCalcPromise = supabase.from('calculations')
+        .select('*, user:users(name, email)')
+        .order('createdAt', { ascending: false })
+        .limit(5);
+
+    // 2.4 Droplet Analysis
+    const dropletTotalPromise = supabase.from('droplet_analyses')
+        .select('*', { count: 'exact', head: true });
+
+    const dropletPassedPromise = supabase.from('droplet_analyses')
+        .select('*', { count: 'exact', head: true })
+        .eq('passStandard', true);
+
+    // 2.5 Map Points
+    const mapPointsPromise = supabase.from('calculations')
+        .select('id, lat, lng, chemical, location, V_total, createdAt')
+        .gte('createdAt', dateFilterStr.gte)
+        .lte('createdAt', dateFilterStr.lte)
+        .not('lat', 'is', null)
+        .not('lng', 'is', null)
+        .order('createdAt', { ascending: false })
+        .limit(200);
+
     const [
-        totalCalculations,
-        totalUsers,
-        popularChemicals,
-        recentCalculations,
-        calculationsInRange,
-        totalDropletAnalyses,
-        passedDropletAnalyses,
-        mapPoints,
-        uniqueLocations,
+        { count: totalCalculations },
+        { count: totalUsers },
+        { data: allCalcData },
+        { data: recentCalculations },
+        { count: totalDropletAnalyses },
+        { count: passedDropletAnalyses },
+        { data: mapPoints },
     ] = await Promise.all([
-        db.calculation.count({ where: dateFilter }),
-        db.user.count(),
-        db.calculation.groupBy({
-            by: ['chemical'],
-            _count: { chemical: true },
-            where: dateFilter,
-            orderBy: { _count: { chemical: 'desc' } },
-            take: 5,
-        }),
-        db.calculation.findMany({
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            include: { user: { select: { name: true, email: true } } },
-        }),
-        db.calculation.findMany({
-            where: dateFilter,
-            select: { createdAt: true, chemical: true },
-            orderBy: { createdAt: 'asc' },
-        }),
-        db.dropletAnalysis.count(),
-        db.dropletAnalysis.count({ where: { passStandard: true } }),
-        // Using `as any` because prisma generate hasn't run (lat/lng types missing)
-        (db.calculation as any).findMany({
-            where: {
-                ...dateFilter,
-                lat: { not: null },
-                lng: { not: null },
-            },
-            select: {
-                id: true,
-                lat: true,
-                lng: true,
-                chemical: true,
-                location: true,
-                V_total: true,
-                createdAt: true,
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 200,
-        }),
-        db.calculation.groupBy({
-            by: ['location'],
-            where: { ...dateFilter, location: { not: null } },
-            _count: { location: true },
-        }),
+        calcCountPromise,
+        userCountPromise,
+        calcDataPromise,
+        recentCalcPromise,
+        dropletTotalPromise,
+        dropletPassedPromise,
+        mapPointsPromise
     ]);
 
-    // 3. Process Data for Charts
+    // 3. Process Data for Charts & Stats
+    const calculationsInRange = allCalcData || [];
 
-    // 3.1 Daily Stats
+    // Popular Chemicals
+    const chemicalCounts = new Map<string, number>();
+    calculationsInRange.forEach((c: any) => {
+        const chem = c.chemical || 'อื่นๆ';
+        chemicalCounts.set(chem, (chemicalCounts.get(chem) || 0) + 1);
+    });
+
+    const popularChemicals = Array.from(chemicalCounts.entries())
+        .map(([chemical, count]) => ({ chemical, _count: { chemical: count } }))
+        .sort((a, b) => b._count.chemical - a._count.chemical)
+        .slice(0, 5);
+
+    // Location Report
+    const locationCounts = new Map<string, { count: number, chemical: string, lastUsed: Date }>();
+    calculationsInRange.forEach((c: any) => {
+        if (!c.location) return;
+        const current = locationCounts.get(c.location) || { count: 0, chemical: '', lastUsed: new Date(0) };
+        const cDate = new Date(c.createdAt);
+
+        locationCounts.set(c.location, {
+            count: current.count + 1,
+            chemical: cDate > current.lastUsed ? c.chemical : current.chemical,
+            lastUsed: cDate > current.lastUsed ? cDate : current.lastUsed
+        });
+    });
+
+    const locationReportData = Array.from(locationCounts.entries())
+        .map(([location, data]) => ({
+            location,
+            _count: { location: data.count },
+            _max: { chemical: data.chemical, createdAt: data.lastUsed }
+        }))
+        .sort((a, b) => b._count.location - a._count.location)
+        .slice(0, 20);
+
+    // Daily Stats
     const daysMap = new Map<string, number>();
     const daysInterval = eachDayOfInterval({ start: startDate, end: endDate });
 
@@ -93,8 +132,8 @@ export default async function AdminDashboard({
         daysMap.set(format(day, 'yyyy-MM-dd'), 0);
     });
 
-    calculationsInRange.forEach(calc => {
-        const dateKey = format(calc.createdAt, 'yyyy-MM-dd');
+    calculationsInRange.forEach((calc: any) => {
+        const dateKey = format(new Date(calc.createdAt), 'yyyy-MM-dd');
         if (daysMap.has(dateKey)) {
             daysMap.set(dateKey, (daysMap.get(dateKey) || 0) + 1);
         }
@@ -105,7 +144,7 @@ export default async function AdminDashboard({
         count
     }));
 
-    // 3.2 Chemical Stats for Pie Chart
+    // Chemical Stats for Pie Chart
     const chemicalStats = popularChemicals.map(item => ({
         name: item.chemical || 'อื่นๆ',
         value: item._count.chemical
@@ -114,21 +153,12 @@ export default async function AdminDashboard({
     // Decrypt names for recent activity
     const { decrypt } = await import('@/lib/encryption');
 
-    const recentWithNames = recentCalculations.map(calc => ({
+    const recentWithNames = (recentCalculations || []).map((calc: any) => ({
         ...calc,
         userName: calc.user ? (decrypt(calc.user.name || '') || calc.user.name) : 'Guest'
     }));
 
-    // 3.3 Location Report Data
-    const locationReportData = await db.calculation.groupBy({
-        by: ['location'],
-        where: { ...dateFilter, location: { not: null } },
-        _count: { location: true },
-        _max: { createdAt: true, chemical: true },
-        orderBy: { _count: { location: 'desc' } },
-        take: 20,
-    });
-
+    const uniqueLocations = Array.from(locationCounts.keys());
     const locationReport = locationReportData.map(loc => ({
         name: loc.location || 'ไม่ระบุ',
         count: loc._count.location,
@@ -246,7 +276,7 @@ export default async function AdminDashboard({
                             chemical: p.chemical,
                             location: p.location,
                             V_total: p.V_total,
-                            createdAt: p.createdAt.toISOString(),
+                            createdAt: new Date(p.createdAt).toISOString(),
                         }))} />
                     </CardContent>
                 </Card>
@@ -277,7 +307,7 @@ export default async function AdminDashboard({
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {recentWithNames.map((calc, i) => (
+                        {recentWithNames.map((calc: any, i: number) => (
                             <div key={calc.id} className="flex items-center justify-between border-b border-slate-50 pb-4 last:border-0 last:pb-0">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">
@@ -295,7 +325,7 @@ export default async function AdminDashboard({
                                 <div className="text-right">
                                     <p className="font-medium text-slate-800">{calc.V_total.toFixed(2)} cc</p>
                                     <p className="text-xs text-slate-400">
-                                        {format(calc.createdAt, 'd MMM HH:mm', { locale: th })}
+                                        {format(new Date(calc.createdAt), 'd MMM HH:mm', { locale: th })}
                                     </p>
                                 </div>
                             </div>

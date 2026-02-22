@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -7,9 +7,14 @@ import { th } from 'date-fns/locale';
 import { MessageSquare, FlaskConical } from 'lucide-react';
 
 export default async function AdminFeedbackPage() {
-    const feedbacks = await db.feedback.findMany({
-        orderBy: { createdAt: 'desc' },
-    });
+    const { data: feedbacks, error } = await supabase
+        .from('feedbacks')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching feedbacks:', error);
+    }
 
     return (
         <div className="space-y-6">
@@ -31,7 +36,7 @@ export default async function AdminFeedbackPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {feedbacks.map((item: any) => (
+                        {(feedbacks || []).map((item: any) => (
                             <TableRow key={item.id} className="hover:bg-slate-50/50 align-top">
                                 <TableCell>
                                     <Badge variant={item.type === 'FORMULA_REQUEST' ? 'default' : 'secondary'} className={item.type === 'FORMULA_REQUEST' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-slate-100 text-slate-700'}>
@@ -73,11 +78,11 @@ export default async function AdminFeedbackPage() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-slate-500 text-sm">
-                                    {format(item.createdAt, 'd MMM yyyy HH:mm', { locale: th })}
+                                    {format(new Date(item.createdAt), 'd MMM yyyy HH:mm', { locale: th })}
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {feedbacks.length === 0 && (
+                        {(feedbacks || []).length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center py-8 text-slate-500">
                                     ไม่มีข้อความ

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { ProfilesTable } from '@/components/admin/profiles-table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -8,14 +8,21 @@ import { ArrowLeft, Settings, FlaskConical, Sparkles, Shield } from 'lucide-reac
 import { Toaster } from '@/components/ui/sonner';
 
 async function getProfiles() {
-    const profiles = await db.labelProfile.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-            createdBy: {
-                select: { name: true, email: true },
-            },
-        },
-    });
+    // Join with users table for createdBy (mapped as 'users')
+    // We assume the relationship is detectable by Supabase Client or defined in Postgres
+    // "createdBy:users!createdById(name, email)" is explicit syntax if needed
+    // But let's try standard first or explicit if we know the FK name.
+    // In schema: createdBy User @relation(fields: [createdById], references: [id])
+
+    const { data: profiles, error } = await supabase
+        .from('label_profiles')
+        .select('*, createdBy:users(name, email)')
+        .order('createdAt', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching profiles:', error);
+        return [];
+    }
     return profiles;
 }
 

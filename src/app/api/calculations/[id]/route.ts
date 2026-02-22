@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 export async function DELETE(
     req: NextRequest,
@@ -12,22 +12,18 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const count = await db.calculation.count({
-            where: {
-                id: params.id,
-                userId: session.user.id,
-            },
-        });
+        const { data, error } = await supabase
+            .from('calculations')
+            .delete()
+            .eq('id', params.id)
+            .eq('userId', session.user.id)
+            .select();
 
-        if (count === 0) {
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
             return NextResponse.json({ error: 'Not found or unauthorized' }, { status: 404 });
         }
-
-        await db.calculation.delete({
-            where: {
-                id: params.id,
-            },
-        });
 
         return NextResponse.json({ success: true });
     } catch (error) {

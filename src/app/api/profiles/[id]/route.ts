@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 // DELETE profile (soft delete)
 export async function DELETE(
@@ -19,10 +19,12 @@ export async function DELETE(
 
         const { id } = params;
 
-        // Check if profile exists and is not default
-        const profile = await db.labelProfile.findUnique({
-            where: { id },
-        });
+        // Check if profile exists
+        const { data: profile } = await supabase
+            .from('label_profiles')
+            .select('*')
+            .eq('id', id)
+            .single();
 
         if (!profile) {
             return NextResponse.json(
@@ -39,10 +41,12 @@ export async function DELETE(
         }
 
         // Soft delete
-        await db.labelProfile.update({
-            where: { id },
-            data: { isActive: false },
-        });
+        const { error } = await supabase
+            .from('label_profiles')
+            .update({ isActive: false })
+            .eq('id', id);
+
+        if (error) throw error;
 
         return NextResponse.json({ success: true });
     } catch (error) {

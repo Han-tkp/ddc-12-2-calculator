@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 // POST /api/seed — Insert sample data for Songkhla & Hat Yai
 // Delete this file after seeding!
@@ -90,9 +90,11 @@ export async function POST() {
             }
         }
 
-        // Insert all records
-        for (const record of records) {
-            await (db.calculation as any).create({ data: record });
+        // Insert all records (Batch insert)
+        const { error } = await supabase.from('calculations').insert(records);
+
+        if (error) {
+            throw error;
         }
 
         return NextResponse.json({

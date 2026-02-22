@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Microscope, CheckCircle2, XCircle, Activity, Building2, Droplets, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
@@ -13,17 +13,33 @@ export default async function DropletAnalysisPage({
     const limit = 15;
     const skip = (page - 1) * limit;
 
-    const [analyses, total, passCount, failCount, avgVmd] = await Promise.all([
-        db.dropletAnalysis.findMany({
-            orderBy: { createdAt: 'desc' },
-            skip,
-            take: limit,
-        }),
-        db.dropletAnalysis.count(),
-        db.dropletAnalysis.count({ where: { passStandard: true } }),
-        db.dropletAnalysis.count({ where: { passStandard: false } }),
-        db.dropletAnalysis.aggregate({ _avg: { vmd: true } }),
+    const [
+        { data: analysesData, count: totalCount },
+        { count: passCount },
+        { count: failCount },
+        { data: vmdData }
+    ] = await Promise.all([
+        supabase.from('droplet_analyses')
+            .select('*', { count: 'exact' })
+            .order('createdAt', { ascending: false })
+            .range(skip, skip + limit - 1),
+        supabase.from('droplet_analyses')
+            .select('*', { count: 'exact', head: true })
+            .eq('passStandard', true),
+        supabase.from('droplet_analyses')
+            .select('*', { count: 'exact', head: true })
+            .eq('passStandard', false),
+        supabase.from('droplet_analyses')
+            .select('vmd')
     ]);
+
+    const analyses = analysesData || [];
+    const total = totalCount || 0;
+
+    // Calculate average VMD manually
+    const totalVmd = (vmdData || []).reduce((acc: number, curr: any) => acc + (curr.vmd || 0), 0);
+    const avgVmdVal = (vmdData || []).length > 0 ? totalVmd / (vmdData || []).length : 0;
+    const avgVmd = { _avg: { vmd: avgVmdVal } };
 
     const totalPages = Math.ceil(total / limit);
 
@@ -59,9 +75,9 @@ export default async function DropletAnalysisPage({
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-emerald-600">{passCount}</div>
+                        <div className="text-2xl font-bold text-emerald-600">{passCount || 0}</div>
                         <p className="text-xs text-slate-500">
-                            {total > 0 ? `${((passCount / total) * 100).toFixed(1)}% ของทั้งหมด` : '-'}
+                            {total > 0 ? `${(((passCount || 0) / total) * 100).toFixed(1)}% ของทั้งหมด` : '-'}
                         </p>
                     </CardContent>
                 </Card>
@@ -72,9 +88,9 @@ export default async function DropletAnalysisPage({
                         <XCircle className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{failCount}</div>
+                        <div className="text-2xl font-bold text-red-600">{failCount || 0}</div>
                         <p className="text-xs text-slate-500">
-                            {total > 0 ? `${((failCount / total) * 100).toFixed(1)}% ของทั้งหมด` : '-'}
+                            {total > 0 ? `${(((failCount || 0) / total) * 100).toFixed(1)}% ของทั้งหมด` : '-'}
                         </p>
                     </CardContent>
                 </Card>
@@ -118,11 +134,11 @@ export default async function DropletAnalysisPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {analyses.map((a, i) => (
+                                {analyses.map((a: any, i: number) => (
                                     <tr key={a.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                         <td className="py-3 px-2 text-slate-400">{skip + i + 1}</td>
                                         <td className="py-3 px-2 text-slate-700">
-                                            {format(a.createdAt, 'd MMM yy HH:mm', { locale: th })}
+                                            {format(new Date(a.createdAt), 'd MMM yy HH:mm', { locale: th })}
                                         </td>
                                         <td className="py-3 px-2">
                                             <div className="text-slate-800 font-medium">{a.machineName || '-'}</div>

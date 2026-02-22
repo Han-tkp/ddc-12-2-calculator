@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Shield, User, Calendar, Droplets, FlaskConical } from 'lucide-react';
@@ -10,15 +10,16 @@ import { th } from 'date-fns/locale';
 import { formatNumber } from '@/lib/calculations';
 
 async function getLogs() {
-    const logs = await db.calculation.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-            user: {
-                select: { email: true, name: true },
-            },
-        },
-        take: 100, // Limit to last 100 for now
-    });
+    const { data: logs, error } = await supabase
+        .from('calculations')
+        .select('*, user:users(name, email)')
+        .order('createdAt', { ascending: false })
+        .limit(100);
+
+    if (error) {
+        console.error('Error fetching logs:', error);
+        return [];
+    }
     return logs;
 }
 
@@ -111,7 +112,7 @@ export default async function AdminLogsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {logs.map((log) => (
+                                {(logs || []).map((log: any) => (
                                     <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="p-4 text-sm text-slate-600 dark:text-slate-400">
                                             <div className="flex items-center gap-2">
@@ -158,7 +159,7 @@ export default async function AdminLogsPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {logs.length === 0 && (
+                                {(logs || []).length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="p-8 text-center text-slate-500">
                                             ยังไม่มีประวัติการคำนวณ

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 
 const feedbackSchema = z.object({
@@ -16,16 +16,21 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const validated = feedbackSchema.parse(body);
 
-        const feedback = await db.feedback.create({
-            data: {
+        const { data: feedback, error } = await supabase
+            .from('feedbacks')
+            .insert({
                 type: validated.type,
                 organization: validated.organization,
                 reason: validated.reason,
                 message: validated.message || null,
                 contact: validated.contact || null,
                 formulaData: validated.formulaData || null,
-            },
-        });
+                updatedAt: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
 
         return NextResponse.json({ success: true, id: feedback.id });
     } catch (error) {

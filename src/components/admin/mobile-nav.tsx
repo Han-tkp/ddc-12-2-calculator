@@ -17,18 +17,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { adminNavItems } from '@/config/admin-nav';
 
 export function MobileNav() {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
 
-    const links = [
-        { href: '/admin/dashboard', label: 'ภาพรวม', icon: LayoutDashboard },
-        { href: '/admin/users', label: 'จัดการผู้ใช้', icon: Users },
-        { href: '/admin/profiles', label: 'จัดการสูตร', icon: Settings },
-        { href: '/admin/droplet-analysis', label: 'ผลวิเคราะห์ AI', icon: Microscope },
-        { href: '/admin/logs', label: 'ประวัติคำนวณ', icon: FileText },
-    ];
+    const links = adminNavItems;
 
     return (
         <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200">

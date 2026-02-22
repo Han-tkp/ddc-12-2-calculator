@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { auth } from '@/lib/auth';
 
 // POST - รับข้อมูลจาก Desktop App
@@ -26,8 +26,9 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const analysis = await db.dropletAnalysis.create({
-            data: {
+        const { data: analysis, error } = await supabase
+            .from('droplet_analyses')
+            .insert({
                 machineId: body.machineId || null,
                 machineName: body.machineName || null,
                 organization: body.organization || null,
@@ -44,9 +45,13 @@ export async function POST(req: NextRequest) {
                 chemical: body.chemical || null,
                 rawData: body.rawData ? (typeof body.rawData === 'string' ? body.rawData : JSON.stringify(body.rawData)) : null,
                 notes: body.notes || null,
-                analysisDate: body.analysisDate ? new Date(body.analysisDate) : new Date(),
-            },
-        });
+                analysisDate: body.analysisDate ? new Date(body.analysisDate).toISOString() : new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
 
         return NextResponse.json({
             success: true,
@@ -76,14 +81,16 @@ export async function GET(req: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '20');
         const skip = (page - 1) * limit;
 
-        const [analyses, total] = await Promise.all([
-            db.dropletAnalysis.findMany({
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            db.dropletAnalysis.count(),
-        ]);
+        const { data: analyses, count: total, error } = await supabase
+            .from('droplet_analyses')
+            .select('*', { count: 'exact' })
+            .order('createdAt', { ascending: false })
+            .range(skip, skip + limit - 1);
+
+        if (error) throw error;
+
+        // Use total (count) from Supabase response
+        // analyses is already the paginated data
 
         return NextResponse.json({
             data: analyses,
