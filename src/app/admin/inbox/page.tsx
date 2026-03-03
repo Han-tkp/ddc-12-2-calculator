@@ -45,10 +45,10 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                     <Table className="whitespace-nowrap md:whitespace-normal">
                         <TableHeader className="bg-slate-50 sticky top-0 z-10">
                             <TableRow>
-                                <TableHead className="font-semibold text-slate-700 min-w-[150px]">วันที่ส่ง</TableHead>
+                                <TableHead className="font-semibold text-slate-700 min-w-40">วันที่ส่ง</TableHead>
                                 <TableHead className="font-semibold text-slate-700">ประเภท</TableHead>
-                                <TableHead className="font-semibold text-slate-700 min-w-[200px]">หน่วยงาน/ติดต่อ</TableHead>
-                                <TableHead className="font-semibold text-slate-700 min-w-[300px]">รายละเอียด</TableHead>
+                                <TableHead className="font-semibold text-slate-700 min-w-56">หน่วยงาน/ติดต่อ</TableHead>
+                                <TableHead className="font-semibold text-slate-700 min-w-80">รายละเอียด</TableHead>
                                 <TableHead className="font-semibold text-center text-slate-700">สถานะ</TableHead>
                             </TableRow>
                         </TableHeader>

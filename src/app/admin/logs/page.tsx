@@ -72,8 +72,8 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
             </div>
 
             <div className="glass-card rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6">
-                <div className="overflow-x-auto max-h-150 overflow-y-auto w-full relative">
-                    <table className="w-full text-left border-collapse relative">
+                <div className="overflow-x-auto max-h-[70vh] md:max-h-150 overflow-y-auto w-full relative">
+                    <table className="w-full text-left border-collapse relative whitespace-nowrap md:whitespace-normal min-w-max md:min-w-0">
                         <thead className="sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm">
                             <tr className="border-b border-slate-200/50">
                                 <th className="p-4 font-semibold text-slate-600 dark:text-slate-300">เวลา</th>
