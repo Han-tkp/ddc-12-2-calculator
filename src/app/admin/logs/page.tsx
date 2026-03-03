@@ -57,15 +57,17 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
     const { logs, count, currentPage, totalPages } = await getLogs(page, from, to);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">ประวัติการคำนวณ</h1>
-                    <p className="text-slate-500">ดูประวัติการคำนวณทั้งหมดในระบบ ({count} รายการ)</p>
+        <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">ประวัติการคำนวณ</h1>
+                    <p className="text-xs sm:text-sm text-slate-500">ดูประวัติการคำนวณทั้งหมดในระบบ ({count} รายการ)</p>
                 </div>
-                <div className="flex items-end gap-2">
-                    <DateRangeFilter />
-                    <div className="pb-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 w-full xl:w-auto">
+                    <div className="flex-1 w-full">
+                        <DateRangeFilter />
+                    </div>
+                    <div className="w-full sm:w-auto">
                         <ExportExcelButton fromDate={from} toDate={to} />
                     </div>
                 </div>

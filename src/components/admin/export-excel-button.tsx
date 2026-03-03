@@ -176,13 +176,13 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-10 shadow-sm border-emerald-500">
+                <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-9 sm:h-10 text-xs sm:text-sm shadow-sm border-emerald-500">
                     <FileSpreadsheet className="h-4 w-4" />
                     <span className="hidden sm:inline">Export Excel</span>
-                    <span className="sm:hidden">Excel</span>
+                    <span className="sm:hidden">Export</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl bg-white border-0 shadow-2xl p-0 overflow-hidden">
+            <DialogContent className="max-w-2xl w-[95vw] sm:w-[90vw] mx-auto bg-white border-0 shadow-2xl p-0 overflow-hidden rounded-2xl">
                 <div className="bg-emerald-500 p-6 text-white flex items-center justify-between relative overflow-hidden">
                     <div className="absolute -right-10 -bottom-10 opacity-20">
                         <FileSpreadsheet className="w-48 h-48" />

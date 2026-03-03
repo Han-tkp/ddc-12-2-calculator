@@ -45,14 +45,14 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
     const { profiles, count, currentPage, totalPages } = await getProfiles(page);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">จัดการสูตรสารเคมี</h1>
-                    <p className="text-slate-500">จัดการสูตรที่ผู้ใช้เลือกได้ในหน้าคำนวณ</p>
+        <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">จัดการสูตรสารเคมี</h1>
+                    <p className="text-xs sm:text-sm text-slate-500">จัดการสูตรที่ผู้ใช้เลือกได้ในหน้าคำนวณ</p>
                 </div>
-                <Link href="/admin/logs">
-                    <Button variant="outline" className="gap-2">
+                <Link href="/admin/logs" className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full sm:w-auto gap-2 h-10 bg-white shadow-sm border-slate-200">
                         <Shield className="h-4 w-4" />
                         ดูประวัติ
                     </Button>

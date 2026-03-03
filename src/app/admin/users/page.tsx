@@ -32,14 +32,14 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     const totalPages = Math.ceil((count || 0) / pageSize);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">จัดการผู้ใช้งาน</h1>
-                    <p className="text-slate-500">รายชื่อเจ้าหน้าที่ที่สามารถเข้าใช้งานระบบได้</p>
+        <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">จัดการผู้ใช้งาน</h1>
+                    <p className="text-xs sm:text-sm text-slate-500">รายชื่อเจ้าหน้าที่ที่สามารถเข้าใช้งานระบบได้</p>
                 </div>
-                <Link href="/admin/users/new">
-                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                <Link href="/admin/users/new" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white gap-2 h-10 shadow-sm">
                         <UserPlus className="h-4 w-4" />
                         เพิ่มผู้ใช้งาน
                     </Button>
