@@ -3,8 +3,7 @@ import {
     Users,
     Settings,
     FileText,
-    Microscope,
-    MessageSquare
+    Inbox
 } from 'lucide-react';
 
 export const adminNavItems = [
@@ -24,18 +23,13 @@ export const adminNavItems = [
         icon: Settings
     },
     {
-        href: '/admin/feedback',
-        label: 'กล่องข้อความ',
-        icon: MessageSquare
-    },
-    {
-        href: '/admin/droplet-analysis',
-        label: 'ผลวิเคราะห์ AI',
-        icon: Microscope
-    },
-    {
         href: '/admin/logs',
         label: 'ประวัติคำนวณ',
         icon: FileText
+    },
+    {
+        href: '/admin/inbox',
+        label: 'กล่องข้อความ',
+        icon: Inbox
     }
 ];

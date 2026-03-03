@@ -1,18 +1,40 @@
-# DropDetect Web Dashboard
+# ระบบคำนวณและประเมินสารเคมี DDC 12.2 (Chemical Calculator)
 
-This is the central web dashboard for the **DropDetect** project, a Next.js web application designed to receive, store, and display thermal fogger droplet analysis data.
+นี่คือแอปพลิเคชันหลักของ **ศูนย์ควบคุมโรคติดต่อนำโดยแมลงที่ 12.2 สงขลา** สำหรับคำนวณสัดส่วนสารเคมีและตัวทำละลาย (น้ำ/น้ำมันดีเซล) ในการพ่นเพื่อควบคุมยุงลาย รองรับทั้งสูตรเคมีแบบ หมอกควัน (Fogging) และ ULV อ้างอิงตามฉลากยายี่ห้อต่างๆ (เช่น เดลตาไซด์, ซับมาริน)
 
-## Overview
-The DropDetect ecosystem consists of two main parts:
-1. **Desktop AI Application (C# Avalonia)**: Uses USB Microscopes and YOLOv11 to analyze droplet sizes on glass slides and calculate VMD/SPAN in real-time.
-2. **Web Dashboard (This Repository)**: A centralized Next.js application that receives the analysis results from the Desktop App via API, stores them in a **Supabase (PostgreSQL)** database, and provides an admin dashboard for reporting and PDF generation.
+## 📌 สรุปความสามารถหลัก (Features)
+- **เครื่องคิดเลข (Calculator)**: ดึงข้อมูลพารามิเตอร์ของสารเคมีแต่ละชนิดมาคำนวณโดยอัตโนมัติ ตามขนาดพื้นที่ หรือจำนวนหลังคาเรือนที่ปฏิบัติงาน
+- **แผนที่พิกัด (Location & GPS)**: รองรับการปักหมุดแผนที่ผ่าน Map หรือใช้ระบบ Location ปัจจุบันของเบราว์เซอร์
+- **ประวัติการทำงาน (History Log)**: มีการเก็บประวัติการคำนวณผ่านฐานข้อมูล Supabase อย่างเป็นระบบ
+- **แผงควบคุมแอดมิน (Admin Panel - New!)**:
+  - ระบบ **3-in-1 Dashboard** ระบบแท็บสำหรับดูข้อมูลเชิง (ปฏิบัติการ, วิเคราะห์เชิงลึก, กลยุทธ์) ช่วยสรุปข้อมูลจากหลังบ้านเป็นแผนภูมิที่เข้าใจง่าย รวมข้อมูลปริมาณการใช้สารเคมี (Volume Total)
+  - การจัดการ **สูตรสารเคมี (Profiles)** รองรับการทำงานแบบ สร้าง แก้ไข ลบ ในรูปแบบ Clean UI
+  - ตัวกรองประวัติผู้ใช้แบบปฏิทิน และตารางแบบมินิมอล พร้อมทำงานร่วมกับ Pagination (หน้าละ 100 รายการ)
+- **ส่งออกข้อมูล (Excel Export - New!)**: ดึงรายงานเป็นไฟล์ .xlsx ได้ถึง 5 โหมดจากหน้า Logs
+  1. แบบสรุปรายการประจำวัน (Daily Summary Log) 
+  2. แบบใบสั่งเตรียมสารเคมี (Chemical Preparation Ticket) 
+  3. แบบแยกตามพื้นที่หมู่บ้าน (Area-Based Allocation) 
+  4. แบบวิเคราะห์ต้นทุนคลังยา (Inventory & Cost Analysis) 
+  5. แบบฟอร์มกรมควบคุมโรค (DDC Standard Report)
 
-## Features
-- Secure API endpoint to receive data from the Desktop Application.
-- Admin dashboard for monitoring all misting machine assessments.
-- Detailed statistics (VMD, SPAN, Droplet Count, Pass/Fail status).
-- Location and machinery registry.
+## 🚀 เอกสารการประเมินและการพัฒนา (Artifacts / Documentations)
+- ข้อกำหนดและการจำลองผลลัพธ์ผ่าน AI สำหรับ Skill รูปแบบต่างๆ อยู่ในโฟลเดอร์ `เอกสาร/webresult/` หรือโฟลเดอร์ `.agent/skills/my-skills/`
+- ข้อมูลสูตรคำนวณดั้งเดิมอ้างอิงจาก `เอกสาร/คำนวณสารเคมี.txt` และ `เอกสาร/คำนวณสารเคมีซับมาริน.txt` 
 
-## Getting Started
+## ⚙️ โครงสร้างเทคโนโลยี
+- **Framework:** Next.js 16 (Turbopack)
+- **UI & Styling:** Tailwind CSS 4, Radix UI, Lucide React, Shadcn
+- **Database:** Supabase (PostgreSQL) ผ่าน Direct API 
+- **Authentication:** Next-Auth v5
+- **Data Extractor:** SheetJS (`xlsx`) สำหรับทำ Excel Export และ `recharts` สำหรับทำ Dashboard
+- **Map:** Leaflet.js
 
-Please refer to `SETUP.md` for instructions on how to set up the environment variables and run this project locally.
+## 💻 การติดตั้ง (Getting Started)
+
+กรุณาศึกษา `SETUP.md` หากคุณต้องการติดตั้งโปรเจกต์นี้แบบ Local บนเครื่องของคุณ และตั้งค่า Environment Variables ต่างๆ (เช่น SUPABASE_URL, NEXTAUTH_SECRET, ENCRYPTION_KEY) ในไฟล์ `.env.local`
+
+```bash
+# พิมพ์คำสั่งเพื่อรันเซิร์ฟเวอร์แบบ Local
+npm install
+npm run dev
+```

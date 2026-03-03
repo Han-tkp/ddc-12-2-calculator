@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import "./globals.css";
+import { FeedbackDialog } from '@/components/feedback-dialog';
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -27,6 +28,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <FeedbackDialog />
       </body>
     </html>
   );

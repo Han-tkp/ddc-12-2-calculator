@@ -3,7 +3,6 @@ import { auth, signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { CalculatorForm } from '@/components/calculator/calculator-form';
-import { FeedbackDialog } from '@/components/feedback-dialog';
 import { Footer } from '@/components/footer';
 import { Calculator, LogIn, LayoutDashboard, LogOut, User } from 'lucide-react';
 import Image from 'next/image';
@@ -42,7 +41,6 @@ export default async function Home() {
           <div className="flex items-center gap-3">
             {/* Auth Buttons */}
             <div className="flex items-center gap-2">
-              <FeedbackDialog />
               {session?.user ? (
                 <>
                   <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-linear-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-200/50">

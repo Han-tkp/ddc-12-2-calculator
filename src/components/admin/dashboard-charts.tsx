@@ -21,11 +21,12 @@ import { Button } from '@/components/ui/button';
 interface DashboardChartsProps {
     dailyStats: { date: string; count: number }[];
     chemicalStats: { name: string; value: number }[];
+    volumeStats: { name: string; value: number }[];
 }
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
-export function DashboardCharts({ dailyStats, chemicalStats }: DashboardChartsProps) {
+export function DashboardCharts({ dailyStats, chemicalStats, volumeStats }: DashboardChartsProps) {
 
     // Handlers for export (mock functionality or could implementation CSV export)
     const handleExport = () => {
@@ -105,6 +106,35 @@ export function DashboardCharts({ dailyStats, chemicalStats }: DashboardChartsPr
                                 <Tooltip />
                                 <Legend iconType="circle" />
                             </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </CardContent>
+            </Card>
+            {/* Chemical Volume Chart */}
+            <Card className="glass-card border-0 shadow-lg ring-1 ring-black/5 lg:col-span-2 mt-4">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg font-semibold text-slate-700">ปริมาณการใช้สารเคมีรวม (cc / ลิตร)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-75 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={volumeStats} layout="vertical" margin={{ top: 10, right: 30, left: 40, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorVol" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#34d399" stopOpacity={0.4} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                                <XAxis type="number" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis dataKey="name" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value: any) => [`${Number(value || 0).toLocaleString()} หน่วย`, 'ปริมาณรวม']}
+                                />
+                                <Bar dataKey="value" fill="url(#colorVol)" radius={[0, 4, 4, 0]} name="ปริมาณรวม" />
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </CardContent>

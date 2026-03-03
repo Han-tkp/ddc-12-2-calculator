@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -48,8 +48,11 @@ interface ProfilesTableProps {
 export function ProfilesTable({ profiles }: ProfilesTableProps) {
     const router = useRouter();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({
+    const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+
+    const initialFormData = {
         name: '',
         description: '',
         C: 1,
@@ -57,7 +60,24 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         RA: 1,
         RA_unit: 'L',
         A0: 1000,
-    });
+    };
+
+    const [formData, setFormData] = useState(initialFormData);
+    const [editData, setEditData] = useState(initialFormData);
+
+    const openEditDialog = (profile: Profile) => {
+        setEditingProfileId(profile.id);
+        setEditData({
+            name: profile.name,
+            description: profile.description || '',
+            C: profile.C,
+            S: profile.S,
+            RA: profile.RA,
+            RA_unit: profile.RA_unit,
+            A0: profile.A0
+        });
+        setIsEditDialogOpen(true);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,20 +97,40 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
             toast.success('เพิ่มสูตรสำเร็จ');
             setIsAddDialogOpen(false);
-            setFormData({
-                name: '',
-                description: '',
-                C: 1,
-                S: 79,
-                RA: 1,
-                RA_unit: 'L',
-                A0: 1000,
-            });
+            setFormData(initialFormData);
             router.refresh();
         } catch (error) {
             if (error instanceof Error) {
                 toast.error(error.message);
             }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProfileId) return;
+        setIsLoading(true);
+
+        try {
+            const response = await fetch(`/api/profiles/${editingProfileId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editData),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'เกิดข้อผิดพลาดในการแก้ไข');
+            }
+
+            toast.success('อัปเดตสูตรสำเร็จ');
+            setIsEditDialogOpen(false);
+            setEditingProfileId(null);
+            router.refresh();
+        } catch (error: any) {
+            toast.error(error.message);
         } finally {
             setIsLoading(false);
         }
@@ -121,7 +161,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             <div className="flex justify-end">
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-green-600 to-emerald-600">
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
                             <Plus className="h-4 w-4 mr-2" />
                             เพิ่มสูตรใหม่
                         </Button>
@@ -135,9 +175,9 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">ชื่อสูตร</Label>
+                                <Label htmlFor="add-name">ชื่อสูตร</Label>
                                 <Input
-                                    id="name"
+                                    id="add-name"
                                     placeholder="เช่น หมอกควัน 1:79"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -146,9 +186,9 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="description">คำอธิบาย (ถ้ามี)</Label>
+                                <Label htmlFor="add-description">คำอธิบาย (ถ้ามี)</Label>
                                 <Input
-                                    id="description"
+                                    id="add-description"
                                     placeholder="เช่น สำหรับเครื่องพ่นหมอกควัน"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -225,7 +265,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                                     ยกเลิก
                                 </Button>
-                                <Button type="submit" disabled={isLoading}>
+                                <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -239,78 +279,207 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                {/* Edit Dialog - Kept hidden but conditionally opens */}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>แก้ไขสูตรสารเคมี</DialogTitle>
+                            <DialogDescription>
+                                ปรับปรุงข้อมูลของสารเคมี
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleEditSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">ชื่อสูตร</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={editData.name}
+                                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-description">คำอธิบาย</Label>
+                                <Input
+                                    id="edit-description"
+                                    value={editData.description}
+                                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-C">ยาฆ่ายุง (C)</Label>
+                                    <Input
+                                        id="edit-C"
+                                        type="number"
+                                        step="any"
+                                        value={editData.C}
+                                        onChange={(e) => setEditData({ ...editData, C: parseFloat(e.target.value) || 0 })}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-S">น้ำมัน/น้ำ (S)</Label>
+                                    <Input
+                                        id="edit-S"
+                                        type="number"
+                                        step="any"
+                                        value={editData.S}
+                                        onChange={(e) => setEditData({ ...editData, S: parseFloat(e.target.value) || 0 })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-RA">ปริมาณพ่น</Label>
+                                    <Input
+                                        id="edit-RA"
+                                        type="number"
+                                        step="any"
+                                        value={editData.RA}
+                                        onChange={(e) => setEditData({ ...editData, RA: parseFloat(e.target.value) || 0 })}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-RA_unit">หน่วย</Label>
+                                    <Select
+                                        value={editData.RA_unit}
+                                        onValueChange={(value) => setEditData({ ...editData, RA_unit: value })}
+                                    >
+                                        <SelectTrigger id="edit-RA_unit">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร</SelectItem>
+                                            <SelectItem value="cc">ซีซี</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-A0">พื้นที่มาตรฐาน (ตร.ม.)</Label>
+                                <Input
+                                    id="edit-A0"
+                                    type="number"
+                                    step="1"
+                                    value={editData.A0}
+                                    onChange={(e) => setEditData({ ...editData, A0: parseFloat(e.target.value) || 0 })}
+                                    required
+                                />
+                            </div>
+
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                    ยกเลิก
+                                </Button>
+                                <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            กำลังอัปเดต...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="mr-2 h-4 w-4" />
+                                            บันทึก
+                                        </>
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* Table */}
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>ชื่อสูตร</TableHead>
-                            <TableHead className="text-center">อัตราส่วน</TableHead>
-                            <TableHead className="text-center">ปริมาณพ่น</TableHead>
-                            <TableHead className="text-center">พื้นที่ (ตร.ม.)</TableHead>
-                            <TableHead className="text-center">สถานะ</TableHead>
-                            <TableHead className="text-right">จัดการ</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {profiles.length === 0 ? (
+            <div className="rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6 w-full">
+                <div className="overflow-x-auto max-h-[70vh] md:max-h-150 overflow-y-auto w-full relative">
+                    <Table className="whitespace-nowrap md:whitespace-normal text-sm md:text-base">
+                        <TableHeader className="sticky top-0 z-10 bg-slate-50 border-b">
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                    ยังไม่มีสูตรสารเคมี
-                                </TableCell>
+                                <TableHead className="font-semibold text-slate-700 min-w-48">ชื่อสูตร</TableHead>
+                                <TableHead className="font-semibold text-slate-700 text-center min-w-24">อัตราส่วน</TableHead>
+                                <TableHead className="font-semibold text-slate-700 text-center min-w-28">ปริมาณพ่น</TableHead>
+                                <TableHead className="font-semibold text-slate-700 text-center min-w-32">พื้นที่ (ตร.ม.)</TableHead>
+                                <TableHead className="font-semibold text-slate-700 text-center min-w-24">สถานะ</TableHead>
+                                <TableHead className="font-semibold text-slate-700 text-right min-w-24">จัดการ</TableHead>
                             </TableRow>
-                        ) : (
-                            profiles.map((profile) => (
-                                <TableRow key={profile.id}>
-                                    <TableCell>
-                                        <div>
-                                            <p className="font-medium">{profile.name}</p>
-                                            {profile.description && (
-                                                <p className="text-sm text-muted-foreground">{profile.description}</p>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center font-mono">
-                                        {profile.C}:{profile.S}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {profile.RA} {profile.RA_unit === 'L' ? 'ลิตร' : 'ซีซี'}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {profile.A0.toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {profile.isDefault ? (
-                                            <Badge variant="secondary">ค่าเริ่มต้น</Badge>
-                                        ) : profile.isActive ? (
-                                            <Badge className="bg-green-100 text-green-700">ใช้งาน</Badge>
-                                        ) : (
-                                            <Badge variant="destructive">ปิดใช้งาน</Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="sm" disabled={profile.isDefault}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600 hover:text-red-700"
-                                                onClick={() => handleDelete(profile.id, profile.name)}
-                                                disabled={profile.isDefault}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                        </TableHeader>
+                        <TableBody>
+                            {profiles.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                                        ยังไม่มีสูตรสารเคมี
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                            ) : (
+                                profiles.map((profile) => (
+                                    <TableRow key={profile.id} className="hover:bg-slate-50/50">
+                                        <TableCell>
+                                            <div>
+                                                <p className="font-medium text-slate-800">{profile.name}</p>
+                                                {profile.description && (
+                                                    <p className="text-sm text-slate-500">{profile.description}</p>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center font-mono py-4">
+                                            {profile.C}:{profile.S}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="inline-flex items-center px-2 py-1 bg-slate-100 rounded-md text-slate-700 font-medium text-sm">
+                                                {profile.RA} {profile.RA_unit === 'L' ? 'ลิตร' : 'ซีซี'}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {profile.A0.toLocaleString()}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {profile.isDefault ? (
+                                                <Badge variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200 pointer-events-none">ค่าเริ่มต้น</Badge>
+                                            ) : profile.isActive ? (
+                                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">ใช้งาน</Badge>
+                                            ) : (
+                                                <Badge variant="destructive" className="bg-rose-100 text-rose-700 border-none hover:bg-rose-100">ปิดใช้งาน</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 hover:text-indigo-600 hover:bg-indigo-50"
+                                                    disabled={profile.isDefault}
+                                                    onClick={() => openEditDialog(profile)}
+                                                    title="แก้ไขสูตร"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                                                    onClick={() => handleDelete(profile.id, profile.name)}
+                                                    disabled={profile.isDefault}
+                                                    title="ลบสูตร"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </div>
     );

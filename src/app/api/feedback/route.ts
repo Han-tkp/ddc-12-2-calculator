@@ -1,40 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { z } from 'zod';
 
-const feedbackSchema = z.object({
-    type: z.string(),
-    organization: z.string(),
-    reason: z.string(),
-    message: z.string().optional().nullable(),
-    contact: z.string().optional().nullable(),
-    formulaData: z.string().optional().nullable(),
-});
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
     try {
-        const body = await req.json();
-        const validated = feedbackSchema.parse(body);
+        const body = await request.json();
 
-        const { data: feedback, error } = await supabase
+        // Ensure table exists or create it directly in Supabase.
+        // For this project, we assume there's a 'feedbacks' table.
+        // Fields: id, type, organization, message, reason, contact, formulaData, status, createdAt
+
+        const { data, error } = await supabase
             .from('feedbacks')
             .insert({
-                type: validated.type,
-                organization: validated.organization,
-                reason: validated.reason,
-                message: validated.message || null,
-                contact: validated.contact || null,
-                formulaData: validated.formulaData || null,
-                updatedAt: new Date().toISOString(),
-            })
-            .select()
-            .single();
+                type: body.type,
+                organization: body.organization,
+                reason: body.reason,
+                message: body.message,
+                contact: body.contact,
+                formulaData: body.formulaData ? JSON.parse(body.formulaData) : null,
+                status: 'NEW',
+                createdAt: new Date().toISOString()
+            });
 
-        if (error) throw error;
+        // if table doesn't exist, this might throw an error. 
+        // We will catch it and return gracefully, logging it.
+        if (error) {
+            console.error('Supabase error inserting feedback:', error);
+            // In case the table is missing entirely from initial setup:
+            if (error.code === '42P01') {
+                return NextResponse.json(
+                    { error: 'ตารางรับข้อความยังไม่ได้ถูกสร้างในฐานข้อมูล ติดต่อผู้ดูแลระบบ' },
+                    { status: 500 }
+                );
+            }
+            throw error;
+        }
 
-        return NextResponse.json({ success: true, id: feedback.id });
+        return NextResponse.json({ success: true, message: 'ส่งข้อความเรียบร้อย' }, { status: 201 });
     } catch (error) {
-        console.error('Feedback error:', error);
-        return NextResponse.json({ error: 'Failed to submit feedback' }, { status: 500 });
+        console.error('Feedback API error:', error);
+        return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการประมวลผล' }, { status: 500 });
     }
 }

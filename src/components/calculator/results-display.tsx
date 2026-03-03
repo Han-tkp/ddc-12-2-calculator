@@ -2,7 +2,16 @@
 
 import { formatNumber } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
-import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle, MapPin } from 'lucide-react';
+import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle, MapPin, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ResultsDisplayProps {
     result: {
@@ -20,6 +29,7 @@ interface ResultsDisplayProps {
         A0: number;
         A_house: number;
         N: number;
+        chemical?: string;
     };
     location?: string;
     coords?: { lat: number; lng: number } | null;
@@ -28,6 +38,69 @@ interface ResultsDisplayProps {
 export function ResultsDisplay({ result, input, location, coords }: ResultsDisplayProps) {
     const handlePrint = () => {
         window.print();
+    };
+
+    const handleExport = (mode: number) => {
+        const wb = XLSX.utils.book_new();
+        let wsData: any[] = [];
+        const dateStr = new Date().toLocaleString('th-TH');
+        const chemName = input.chemical || 'ไม่ระบุสารเคมี';
+        const locName = location || 'ไม่ระบุสถานที่';
+
+        if (mode === 1) {
+            // โหมด 1: แบบสรุปรายการประจำวัน (Daily Summary Log)
+            wsData = [
+                ['วันที่-เวลา', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'อัตราการไหล(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(cc)', 'น้ำมัน/น้ำเตรียม(cc)', 'ยอดรวม(cc)', 'สถานที่/พิกัด'],
+                [dateStr, chemName, `1:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
+            ];
+        } else if (mode === 2) {
+            // โหมด 2: แบบใบสั่งเตรียมสารเคมี (Chemical Preparation Ticket)
+            wsData = [
+                ['ใบสั่งเตรียมสารเคมี (Chemical Ticket)'],
+                ['วันที่อนุมัติ:', dateStr],
+                ['สถานที่นำไปใช้:', locName],
+                [],
+                ['กรุณาเตรียมสารเคมีตามอัตราส่วนดังนี้:'],
+                ['ชื่อสารเคมีหลัก:', chemName],
+                ['ใช้สารเคมี (cc):', result.V_C],
+                ['ใช้น้ำมันดีเซล/น้ำ (cc):', result.V_S],
+                ['รวมเป็นปริมาณทั้งสิ้น (cc):', result.V_total, `(${formatNumber(result.V_total / 1000, 2)} ลิตร)`],
+                [],
+                ['ผู้เบิก/ผู้สั่งเตรียม: ___________________________'],
+                ['ผู้ผสมยา: ___________________________']
+            ];
+        } else if (mode === 3) {
+            // โหมด 3: แบบแยกตามพื้นที่หมู่บ้าน (Area-Based Allocation)
+            wsData = [
+                ['ชื่อหมู่บ้าน/พื้นที่', 'จำนวนหลัง', 'พื้นที่รวม (ตร.ม.)', 'สารเคมีที่ใช้', 'ปริมาณสารเคมี(cc)', 'ปริมาณน้ำมัน(cc)', 'รวมสารผสม(cc)'],
+                [locName, input.N, (input.N * input.A_house), chemName, result.V_C, result.V_S, result.V_total]
+            ];
+        } else if (mode === 4) {
+            // โหมด 4: แบบวิเคราะห์ต้นทุน (Inventory & Cost Analysis)
+            wsData = [
+                ['วันที่', 'สถานที่', 'สารเคมี', 'จำนวนยาที่เบิก(cc)', 'ตัวทำละลาย(cc)', 'ข้อเสนอแนะต้นทุน (Cost Ref)'],
+                [dateStr, locName, chemName, result.V_C, result.V_S, '(เพิ่มตารางราคาลงในช่องถัดไปเพื่อคำนวณเงิน)']
+            ];
+        } else if (mode === 5) {
+            // โหมด 5: แบบฟอร์มรายงานกรมควบคุมโรค (DDC Standard Report)
+            wsData = [
+                ['แบบฟอร์มรายงานการปฏิบัติงานควบคุมยุงลาย ศูนย์ควบคุมโรค 12.2'],
+                ['วัน/เดือน/ปี ที่ออกปฏิบัติงาน:', dateStr],
+                ['เป้าหมายพื้นที่/หมู่บ้าน:', locName],
+                ['พิกัด GPS:', coords ? `${coords.lat}, ${coords.lng}` : 'N/A'],
+                [''],
+                ['รายละเอียดการใช้สารเคมี:'],
+                ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน 1:${input.S}`],
+                ['อัตราการไหล (RA):', `${input.RA} ${input.RA_unit}`],
+                ['จำนวนหลังคาเรือนเป้าหมาย:', input.N, 'หลัง'],
+                ['รวมปริมาณสารเคมีที่ใช้สุทธิ:', result.V_C, 'ซีซี'],
+                ['รวมน้ำมัน/น้ำที่ใช้สุทธิ:', result.V_S, 'ซีซี']
+            ];
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, `โหมด ${mode}`);
+        XLSX.writeFile(wb, `ค่าคำนวณสารเคมี_${dateStr.replace(/[:\/ ]/g, '_')}_Mode${mode}.xlsx`);
     };
 
     return (
@@ -50,15 +123,54 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                             </p>
                         </div>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handlePrint}
-                        className="text-white hover:bg-white/20 print:hidden"
-                    >
-                        <Printer className="h-4 w-4 mr-1" />
-                        พิมพ์
-                    </Button>
+                    <div className="flex gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="print:hidden bg-white/20 hover:bg-white/30 text-white border-white/20"
+                                >
+                                    <Download className="h-4 w-4 mr-1" />
+                                    ส่งออก Excel
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuLabel>เลือกโหมด Export</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleExport(1)} className="flex flex-col items-start gap-1 py-2 cursor-pointer">
+                                    <span className="font-semibold text-xs">1. สรุปรายการประจำวัน (Daily Log)</span>
+                                    <span className="text-[10px] text-muted-foreground whitespace-normal leading-tight">เก็บประวัติแบบคอลัมน์ เอาไปรวม Pivot Table ได้ง่าย</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport(2)} className="flex flex-col items-start gap-1 py-2 cursor-pointer">
+                                    <span className="font-semibold text-xs">2. ใบสั่งเตรียมสารเคมี (Ticket)</span>
+                                    <span className="text-[10px] text-muted-foreground whitespace-normal leading-tight">แบบฟอร์มให้คนผสมยา มีช่องเซ็นชื่อ ปริมาณชัดเจน</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport(3)} className="flex flex-col items-start gap-1 py-2 cursor-pointer">
+                                    <span className="font-semibold text-xs">3. แยกตามหมู่บ้าน (Area Base)</span>
+                                    <span className="text-[10px] text-muted-foreground whitespace-normal leading-tight">จัดสรรยาตามพื้นที่ เหมาะสำหรับการเบิกพร้อมกันหลายหมู่บ้าน</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport(4)} className="flex flex-col items-start gap-1 py-2 cursor-pointer">
+                                    <span className="font-semibold text-xs">4. วิเคราะห์ต้นทุน (Cost/Inventory)</span>
+                                    <span className="text-[10px] text-muted-foreground whitespace-normal leading-tight">จัดตารางสำหรับพ่วงกับราคากลาง เพื่อคำนวณงบประมาณ</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport(5)} className="flex flex-col items-start gap-1 py-2 cursor-pointer">
+                                    <span className="font-semibold text-xs">5. ฟอร์ม DDC มาตรฐาน (Official)</span>
+                                    <span className="text-[10px] text-muted-foreground whitespace-normal leading-tight">โครงสร้างตารางอิงแบบฟอร์มกรมควบคุมโรค พร้อมแนบราชการ</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handlePrint}
+                            className="text-white hover:bg-white/20 print:hidden"
+                        >
+                            <Printer className="h-4 w-4 mr-1" />
+                            พิมพ์
+                        </Button>
+                    </div>
                 </div>
             </div>
 

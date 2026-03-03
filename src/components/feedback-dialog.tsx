@@ -114,10 +114,15 @@ export function FeedbackDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 bg-white/50 backdrop-blur-sm border-indigo-200 hover:bg-white hover:text-indigo-600 transition-all">
-                    <MessageSquarePlus className="h-4 w-4" />
-                    <span className="hidden sm:inline">แจ้งเพิ่มสูตร / แนะนำ</span>
-                </Button>
+                <div className="fixed bottom-6 right-6 z-50 animate-fade-up">
+                    <Button
+                        size="lg"
+                        className="rounded-full shadow-lg h-14 w-14 p-0 bg-indigo-600 hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-all text-white border-none group"
+                        title="ส่งข้อเสนอแนะ / แจ้งเพิ่มสูตร"
+                    >
+                        <MessageSquarePlus className="h-6 w-6 group-hover:rotate-12 transition-transform" />
+                    </Button>
+                </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>

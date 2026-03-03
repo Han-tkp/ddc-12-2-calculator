@@ -32,10 +32,12 @@ export async function POST(request: NextRequest) {
         const { data: user, error: createError } = await supabase
             .from('users')
             .insert({
+                id: crypto.randomUUID(),
                 name: encrypt(validated.name), // Encrypt name
                 email: validated.email,
                 password: hashedPassword,
                 role: 'USER',
+                createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(), // Manual timestamp
             })
             .select()
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Registration error:', error);
         return NextResponse.json(
-            { error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก' },
+            { error: error instanceof Error ? error.message : JSON.stringify(error) },
             { status: 500 }
         );
     }

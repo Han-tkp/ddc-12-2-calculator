@@ -39,7 +39,10 @@ export function AdminSidebar({ isCollapsed, toggleCollapse }: AdminSidebarProps)
                     variant="ghost"
                     size="icon"
                     onClick={toggleCollapse}
-                    className={cn("text-slate-400 hover:text-slate-600", isCollapsed && "hidden group-hover:block")}
+                    className={cn(
+                        "text-slate-400 hover:text-slate-600 transition-opacity",
+                        isCollapsed ? "opacity-100 mx-auto" : "opacity-0 group-hover:opacity-100 hidden md:flex"
+                    )}
                 >
                     {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </Button>
