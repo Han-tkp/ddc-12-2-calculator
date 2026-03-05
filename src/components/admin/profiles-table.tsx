@@ -198,7 +198,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="add-C">ยาฆ่ายุง (C)</Label>
                                     <Input
@@ -223,7 +223,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="add-RA">ปริมาณพ่น</Label>
                                     <Input
@@ -328,7 +328,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-C">ยาฆ่ายุง (C)</Label>
                                     <Input
@@ -353,7 +353,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-RA">ปริมาณพ่น</Label>
                                     <Input

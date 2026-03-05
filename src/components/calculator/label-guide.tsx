@@ -33,7 +33,7 @@ export function LabelGuide() {
                 </DialogHeader>
 
                 <Tabs defaultValue="step1" className="w-full mt-2">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 mb-4 h-auto">
                         <TabsTrigger value="step1">ขั้นตอนที่ 1: อ่านฉลาก</TabsTrigger>
                         <TabsTrigger value="step2">ขั้นตอนที่ 2: แปลความหมาย</TabsTrigger>
                     </TabsList>
@@ -92,7 +92,7 @@ export function LabelGuide() {
                                 <h4 className="font-semibold text-blue-700 mb-2">2. การหาอัตราการพ่น (RA / A0)</h4>
                                 <div className="bg-white p-3 rounded-xl shadow-xs text-sm">
                                     <p className="text-slate-500 mb-1">"ฉีดพ่นในอัตรา <span className="text-blue-600 font-bold">1 ลิตร</span> ต่อพื้นที่ <span className="text-blue-600 font-bold">1,000 ตร.ม.</span>"</p>
-                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                         <div>
                                             <span className="text-xs text-slate-400">RA (อัตราไหล)</span>
                                             <p className="font-medium">1 ลิตร</p>

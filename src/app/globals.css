@@ -268,20 +268,23 @@
   box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
 }
 
-/* Bento Grid */
+/* Bento Grid Breakpoints based on user request */
+/* Mobile: < 768px (Default: 1 column) */
 .bento-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 640px) {
+/* Tablet: 768px - 1024px (2 columns) */
+@media (min-width: 768px) {
   .bento-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (min-width: 768px) {
+/* Desktop: > 1024px (3 columns) */
+@media (min-width: 1024px) {
   .bento-grid {
     grid-template-columns: repeat(3, 1fr);
   }
