@@ -292,12 +292,24 @@
 
 .bento-item {
   border-radius: 1.5rem;
-  padding: 1.5rem;
+  padding: 1rem;
   transition: all 0.3s ease;
 }
 
+@media (min-width: 768px) {
+  .bento-item {
+    padding: 1.5rem;
+  }
+}
+
 .bento-item-large {
-  grid-column: span 2;
+  grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+  .bento-item-large {
+    grid-column: span 2;
+  }
 }
 
 .bento-item-tall {
