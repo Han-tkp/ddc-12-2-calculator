@@ -9,6 +9,7 @@ export const calculationSchema = z.object({
     RA_unit: z.enum(['L', 'cc'], {
         message: 'หน่วยต้องเป็น L หรือ cc เท่านั้น',
     }),
+    mix_type: z.number().int().min(1).max(2).default(1),
     A0: z.number().positive('พื้นที่มาตรฐานต้องเป็นจำนวนบวก'),
     A_house: z.number().positive('พื้นที่ต่อหลังบ้านต้องเป็นจำนวนบวก'),
     N: z.number().int('จำนวนหลังบ้านต้องเป็นจำนวนเต็ม').positive('จำนวนหลังบ้านต้องมากกว่า 0'),
@@ -25,6 +26,7 @@ export const profileSchema = z.object({
     S: z.number().positive('สัดส่วนตัวทำละลายต้องเป็นจำนวนบวก'),
     RA: z.number().positive('อัตราการพ่นต้องเป็นจำนวนบวก'),
     RA_unit: z.enum(['L', 'cc']),
+    mix_type: z.number().int().min(1).max(2).default(1),
     A0: z.number().positive('พื้นที่มาตรฐานต้องเป็นจำนวนบวก'),
     isActive: z.boolean().default(true),
 });

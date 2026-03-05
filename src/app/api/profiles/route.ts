@@ -27,6 +27,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
+        console.log("SERVER SESSION IN /api/profiles POST: ", session);
 
         if (!session?.user || session.user.role !== 'ADMIN') {
             return NextResponse.json(
@@ -62,13 +63,16 @@ export async function POST(request: NextRequest) {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase Insert Error:', error);
+            throw error;
+        }
 
         return NextResponse.json(profile, { status: 201 });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create profile error:', error);
         return NextResponse.json(
-            { error: 'ไม่สามารถสร้างสูตรได้' },
+            { error: error?.message || 'ไม่สามารถสร้างสูตรได้' },
             { status: 500 }
         );
     }

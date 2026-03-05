@@ -56,6 +56,7 @@ export function CalculatorForm() {
             A0: 1000,
             A_house: 100,
             N: 0,
+            mix_type: 1,
             location: '',
             chemical: '',
         },
@@ -99,12 +100,47 @@ export function CalculatorForm() {
     // Watch for preset and RA_unit select
     const watchedValues = watch();
 
+    // Fetch profiles from database on mount
+    const [dbPresets, setDbPresets] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchProfiles = async () => {
+            try {
+                const res = await fetch('/api/profiles');
+                if (res.ok) {
+                    const profiles = await res.json();
+
+                    // Transform db profiles to match CHEMICAL_PRESETS shape
+                    const formattedProfiles = profiles.map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        C: p.C,
+                        S: p.S,
+                        RA: p.RA,
+                        RA_unit: p.RA_unit,
+                        mix_type: p.mix_type,
+                        A0: p.A0,
+                        A_house: 100 // Default for custom formulas
+                    }));
+
+                    // Add "Other" option at the end
+                    const otherPreset = CHEMICAL_PRESETS.find(p => p.id === 'other');
+
+                    setDbPresets([...formattedProfiles, otherPreset]);
+                }
+            } catch (error) {
+                console.error('Failed to fetch profiles:', error);
+            }
+        };
+        fetchProfiles();
+    }, []);
+
     // 1. Handle Preset Selection
     const handlePresetChange = (presetId: string) => {
         setSelectedPreset(presetId);
         setResult(null); // Clear results when changing preset
         setCalculatedInput(null);
-        const preset = CHEMICAL_PRESETS.find(p => p.id === presetId);
+        const preset = dbPresets.find(p => String(p.id) === presetId);
 
         if (preset) {
             if (preset.id !== 'other') {
@@ -113,6 +149,11 @@ export function CalculatorForm() {
                 setValue('RA', preset.RA);
                 setValue('RA_unit', preset.RA_unit);
                 setValue('A0', preset.A0);
+                if ((preset as any).mix_type) {
+                    setValue('mix_type', (preset as any).mix_type);
+                } else {
+                    setValue('mix_type', 1);
+                }
                 setValue('chemical', preset.name);
             } else {
                 setValue('chemical', 'อื่นๆ');
@@ -138,6 +179,7 @@ export function CalculatorForm() {
                 S: Number(values.S),
                 RA: Number(values.RA),
                 RA_unit: values.RA_unit as 'L' | 'cc',
+                mix_type: Number(values.mix_type) || 1,
                 A0: Number(values.A0),
                 A_house: Number(values.A_house),
                 N: Number(values.N),
@@ -153,7 +195,7 @@ export function CalculatorForm() {
                 body: JSON.stringify({
                     ...values,
                     chemical: selectedPreset !== 'other'
-                        ? CHEMICAL_PRESETS.find(p => p.id === selectedPreset)?.name
+                        ? dbPresets.find(p => String(p.id) === selectedPreset)?.name
                         : 'อื่นๆ',
                     lat: coords?.lat ?? null,
                     lng: coords?.lng ?? null,
@@ -214,10 +256,14 @@ export function CalculatorForm() {
                                     <SelectValue placeholder="เลือกสูตร..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {CHEMICAL_PRESETS.map((preset) => (
-                                        <SelectItem key={preset.id} value={preset.id}>
+                                    {dbPresets.map((preset) => (
+                                        <SelectItem key={preset.id} value={String(preset.id)}>
                                             <span className="font-medium">{preset.name}</span>
-                                            <span className="text-xs text-slate-400 ml-2">({preset.formula})</span>
+                                            {preset.id !== 'other' && (
+                                                <span className="text-xs text-slate-400 ml-2">
+                                                    ({preset.C}:{preset.S})
+                                                </span>
+                                            )}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -297,6 +343,28 @@ export function CalculatorForm() {
                             />
                         </div>
 
+                        {/* Mix Type */}
+                        <div className="bento-item bg-fuchsia-50/50 border-fuchsia-100">
+                            <Label className="flex items-center gap-2 mb-2">
+                                <FlaskConical className="h-4 w-4 text-fuchsia-500" />
+                                ประเภทการผสม
+                            </Label>
+                            <div className="flex gap-2 h-10 w-full mt-1">
+                                <Select
+                                    onValueChange={(val) => setValue('mix_type', parseInt(val))}
+                                    value={String(watchedValues.mix_type || 1)}
+                                >
+                                    <SelectTrigger className="w-full bg-white/60 glass-input font-medium text-slate-700">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">แบบผสมให้ได้ (ได้สุทธิ)</SelectItem>
+                                        <SelectItem value="2">แบบผสมกับ (นำไปทบ)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
                         {/* Spray Rate */}
                         <div className="bento-item bg-amber-50/50 border-amber-100">
                             <Label className="flex items-center gap-2 mb-2">
@@ -312,7 +380,7 @@ export function CalculatorForm() {
                                 />
                                 <Select
                                     onValueChange={(val) => setValue('RA_unit', val as 'L' | 'cc')}
-                                    defaultValue={watchedValues.RA_unit}
+                                    value={watchedValues.RA_unit}
                                 >
                                     <SelectTrigger className="w-20 bg-white/60">
                                         <SelectValue />

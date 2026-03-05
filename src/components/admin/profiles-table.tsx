@@ -35,6 +35,7 @@ interface Profile {
     S: number;
     RA: number;
     RA_unit: string;
+    mix_type: number;
     A0: number;
     isActive: boolean;
     isDefault: boolean;
@@ -59,6 +60,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         S: 79,
         RA: 1,
         RA_unit: 'L',
+        mix_type: 1,
         A0: 1000,
     };
 
@@ -74,6 +76,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             S: profile.S,
             RA: profile.RA,
             RA_unit: profile.RA_unit,
+            mix_type: profile.mix_type || 1,
             A0: profile.A0
         });
         setIsEditDialogOpen(true);
@@ -250,6 +253,22 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                             </div>
 
                             <div className="space-y-2">
+                                <Label htmlFor="add-mix_type">ประเภทการผสม</Label>
+                                <Select
+                                    value={String(formData.mix_type)}
+                                    onValueChange={(value) => setFormData({ ...formData, mix_type: parseInt(value) })}
+                                >
+                                    <SelectTrigger id="add-mix_type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">แบบผสมให้ได้ (ได้สุทธิ)</SelectItem>
+                                        <SelectItem value="2">แบบผสมกับ (นำไปทบ)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="add-A0">พื้นที่มาตรฐาน (ตร.ม.)</Label>
                                 <Input
                                     id="add-A0"
@@ -364,6 +383,22 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                             </div>
 
                             <div className="space-y-2">
+                                <Label htmlFor="edit-mix_type">ประเภทการผสม</Label>
+                                <Select
+                                    value={String(editData.mix_type)}
+                                    onValueChange={(value) => setEditData({ ...editData, mix_type: parseInt(value) })}
+                                >
+                                    <SelectTrigger id="edit-mix_type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">แบบผสมให้ได้</SelectItem>
+                                        <SelectItem value="2">แบบผสมกับ</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="edit-A0">พื้นที่มาตรฐาน (ตร.ม.)</Label>
                                 <Input
                                     id="edit-A0"
@@ -428,6 +463,9 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                 {profile.description && (
                                                     <p className="text-sm text-slate-500">{profile.description}</p>
                                                 )}
+                                                <p className="text-xs text-indigo-500 mt-1">
+                                                    {profile.mix_type === 2 ? '(แบบผสมกับ)' : '(แบบผสมให้ได้สุทธิ)'}
+                                                </p>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center font-mono py-4">
@@ -443,7 +481,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         </TableCell>
                                         <TableCell className="text-center">
                                             {profile.isDefault ? (
-                                                <Badge variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200 pointer-events-none">ค่าเริ่มต้น</Badge>
+                                                <Badge variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200">ค่าเริ่มต้น</Badge>
                                             ) : profile.isActive ? (
                                                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">ใช้งาน</Badge>
                                             ) : (
@@ -456,7 +494,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 hover:text-indigo-600 hover:bg-indigo-50"
-                                                    disabled={profile.isDefault}
                                                     onClick={() => openEditDialog(profile)}
                                                     title="แก้ไขสูตร"
                                                 >
@@ -467,7 +504,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                     size="icon"
                                                     className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
                                                     onClick={() => handleDelete(profile.id, profile.name)}
-                                                    disabled={profile.isDefault}
                                                     title="ลบสูตร"
                                                 >
                                                     <Trash2 className="h-4 w-4" />

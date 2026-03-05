@@ -30,10 +30,6 @@ export async function PUT(
             return NextResponse.json({ error: 'ไม่พบสูตรนี้' }, { status: 404 });
         }
 
-        if (currentProfile.isDefault) {
-            return NextResponse.json({ error: 'ไม่สามารถแก้ไขสูตรค่าเริ่มต้นได้' }, { status: 400 });
-        }
-
         const validated = profileSchema.parse(body);
 
         // Check if new name conflicts with other formulas
@@ -59,6 +55,7 @@ export async function PUT(
                 S: validated.S,
                 RA: validated.RA,
                 RA_unit: validated.RA_unit,
+                mix_type: validated.mix_type,
                 A0: validated.A0,
                 updatedAt: new Date().toISOString()
             })
@@ -99,10 +96,6 @@ export async function DELETE(
 
         if (!profile) {
             return NextResponse.json({ error: 'ไม่พบสูตรนี้' }, { status: 404 });
-        }
-
-        if (profile.isDefault) {
-            return NextResponse.json({ error: 'ไม่สามารถลบสูตรค่าเริ่มต้นได้' }, { status: 400 });
         }
 
         // Soft delete
