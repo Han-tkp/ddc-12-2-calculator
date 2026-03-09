@@ -54,127 +54,114 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-mesh relative overflow-hidden flex items-center justify-center p-4">
-            {/* Animated background orbs */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-400/30 rounded-full blur-3xl animate-float" />
-                <div className="absolute top-1/2 -left-40 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-float stagger-2" />
-                <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-pink-400/20 rounded-full blur-3xl animate-float stagger-4" />
-            </div>
-
-            <div className="w-full max-w-md relative z-10">
-                {/* Logo */}
-                <div className="text-center mb-8 animate-fade-up">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 mb-4 animate-pulse-glow p-0.5">
-                        <div className="w-full h-full rounded-3xl bg-white/90 flex items-center justify-center">
-                            <span className="text-4xl">🧪</span>
-                        </div>
+        <div className="min-h-screen bg-slate-50 relative overflow-hidden flex items-center justify-center p-4 font-sans">
+            {/* Minimal Background pattern */}
+            <div className="absolute inset-0 z-0 opacity-[0.03]" 
+                 style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+            
+            <div className="w-full max-w-[400px] relative z-10">
+                {/* Logo & Header */}
+                <div className="text-center mb-10 animate-fade-up">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-6 shadow-xl shadow-indigo-200">
+                        <span className="text-3xl">🧪</span>
                     </div>
-                    <h1 className="text-3xl font-extrabold gradient-text mb-2">
-                        เข้าสู่ระบบ
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                        ระบบคำนวณสารเคมี
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
-                        <Sparkles className="h-4 w-4 text-amber-500" />
-                        ระบบคำนวณสารเคมีพ่นยุง
+                    <p className="text-slate-500 mt-2 text-sm font-medium">
+                        ศูนย์ควบคุมโรคติดต่อนำโดยแมลงที่ 12.2
                     </p>
                 </div>
 
                 {/* Login Card */}
-                <div className="glass-card rounded-3xl overflow-hidden hover-lift animate-fade-up stagger-1">
-                    {/* Header */}
-                    <div className="relative bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 p-6">
-                        <div className="absolute inset-0 bg-black/10" />
-                        <div className="relative flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center animate-float">
-                                <LogIn className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-white">ยินดีต้อนรับกลับ</h2>
-                                <p className="text-white/80 text-sm">กรอกข้อมูลเพื่อเข้าสู่ระบบ</p>
-                            </div>
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden animate-fade-up stagger-1">
+                    <div className="p-8 pt-10">
+                        <div className="mb-8 text-center">
+                            <h2 className="text-xl font-bold text-slate-800">เข้าสู่ระบบ</h2>
+                            <p className="text-slate-400 text-sm mt-1">กรุณากรอกข้อมูลเพื่อเริ่มต้นใช้งาน</p>
                         </div>
-                    </div>
 
-                    {/* Form */}
-                    <div className="p-6">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                             <div className="space-y-2 animate-fade-up stagger-2">
-                                <Label htmlFor="email" className="flex items-center gap-2 font-medium">
-                                    <Mail className="h-4 w-4 text-indigo-500" />
-                                    อีเมล
+                                <Label htmlFor="email" className="text-slate-700 text-xs font-bold uppercase tracking-wider ml-1">
+                                    อีเมลเจ้าหน้าที่
                                 </Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="example@email.com"
-                                    className="h-14 text-lg rounded-2xl border-2 focus:border-indigo-500 transition-all bg-white/50"
-                                    {...register('email')}
-                                />
+                                <div className="relative group">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="user@example.com"
+                                        className="h-12 pl-12 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 bg-slate-50/50 transition-all font-medium"
+                                        {...register('email')}
+                                    />
+                                </div>
                                 {errors.email && (
-                                    <p className="text-sm text-red-500 flex items-center gap-1">
-                                        <span>⚠️</span> {errors.email.message}
+                                    <p className="text-xs text-red-500 mt-1 ml-1 flex items-center gap-1 font-medium">
+                                        <Sparkles className="h-3 w-3" /> {errors.email.message}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2 animate-fade-up stagger-3">
-                                <Label htmlFor="password" className="flex items-center gap-2 font-medium">
-                                    <KeyRound className="h-4 w-4 text-purple-500" />
+                                <Label htmlFor="password" className="text-slate-700 text-xs font-bold uppercase tracking-wider ml-1">
                                     รหัสผ่าน
                                 </Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="h-14 text-lg rounded-2xl border-2 focus:border-purple-500 transition-all bg-white/50"
-                                    {...register('password')}
-                                />
+                                <div className="relative group">
+                                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        className="h-12 pl-12 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 bg-slate-50/50 transition-all font-medium"
+                                        {...register('password')}
+                                    />
+                                </div>
                                 {errors.password && (
-                                    <p className="text-sm text-red-500 flex items-center gap-1">
-                                        <span>⚠️</span> {errors.password.message}
+                                    <p className="text-xs text-red-500 mt-1 ml-1 flex items-center gap-1 font-medium">
+                                        <Sparkles className="h-3 w-3" /> {errors.password.message}
                                     </p>
                                 )}
                             </div>
 
                             <Button
                                 type="submit"
-                                className="w-full h-14 text-lg font-bold rounded-2xl bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30 hover-lift animate-fade-up stagger-4"
+                                className="w-full h-12 text-base font-bold rounded-xl bg-indigo-600 hover:bg-slate-900 text-white shadow-lg shadow-indigo-100 transition-all duration-300 animate-fade-up stagger-4"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
                                     <>
-                                        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                                        กำลังเข้าสู่ระบบ...
+                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        กำลังตรวจสอบ...
                                     </>
                                 ) : (
                                     <>
-                                        <LogIn className="mr-2 h-6 w-6" />
                                         เข้าสู่ระบบ
+                                        <LogIn className="ml-2 h-5 w-5" />
                                     </>
                                 )}
                             </Button>
                         </form>
 
-                        <div className="mt-6 text-center animate-fade-up stagger-5">
-                            <p className="text-sm text-slate-500">
-                                ติดต่อผู้ดูแลระบบเพื่อขอรับบัญชีผู้ใช้งาน
+                        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-4 animate-fade-up stagger-5">
+                            <p className="text-xs text-slate-400 font-medium">
+                                ติดต่อแจ้งปัญหาการใช้งานที่ผู้ดูแลระบบ
                             </p>
-                        </div>
-
-                        <div className="mt-4 pt-4 border-t border-slate-200/50 animate-fade-up stagger-6">
-                            <Link href="/">
-                                <Button variant="ghost" className="w-full rounded-xl hover:bg-slate-100">
-                                    ← กลับไปหน้าคำนวณ
+                            <Link href="/" className="w-full">
+                                <Button variant="ghost" className="w-full h-11 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 font-medium text-sm">
+                                    กลับสู่หน้าหลัก
                                 </Button>
                             </Link>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <p className="text-center text-xs text-slate-400 mt-6 animate-fade-up stagger-6">
-                    Made with 💜 for public health
-                </p>
+                {/* Simple Footer */}
+                <div className="mt-10 text-center animate-fade-up stagger-6">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        Department of Disease Control • District 12.2
+                    </p>
+                </div>
             </div>
 
             <Toaster position="top-center" richColors />

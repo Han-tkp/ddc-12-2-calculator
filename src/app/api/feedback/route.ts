@@ -17,28 +17,28 @@ export async function POST(request: NextRequest) {
                 reason: body.reason,
                 message: body.message,
                 contact: body.contact,
-                formulaData: body.formulaData ? JSON.parse(body.formulaData) : null,
+                formulaData: body.formulaData ? (typeof body.formulaData === 'string' ? JSON.parse(body.formulaData) : body.formulaData) : null,
                 status: 'NEW',
-                createdAt: new Date().toISOString()
+                // Note: id and createdAt will be handled by DB defaults after running fix_id_constraint.sql
             });
 
-        // if table doesn't exist, this might throw an error. 
-        // We will catch it and return gracefully, logging it.
         if (error) {
             console.error('Supabase error inserting feedback:', error);
-            // In case the table is missing entirely from initial setup:
             if (error.code === '42P01') {
                 return NextResponse.json(
-                    { error: 'ตารางรับข้อความยังไม่ได้ถูกสร้างในฐานข้อมูล ติดต่อผู้ดูแลระบบ' },
+                    { error: 'ยังไม่มีตารางรับข้อมูลสูตรในฐานข้อมูล กรุณาแจ้งผู้ดูแลระบบให้รันไฟล์ SQL fix' },
                     { status: 500 }
                 );
             }
-            throw error;
+            return NextResponse.json(
+                { error: `ไม่สามารถส่งข้อมูลได้: ${error.message}` },
+                { status: 500 }
+            );
         }
 
-        return NextResponse.json({ success: true, message: 'ส่งข้อความเรียบร้อย' }, { status: 201 });
-    } catch (error) {
+        return NextResponse.json({ success: true, message: 'ส่งคำขอเรียบร้อยแล้ว ทีมงานจะดำเนินการตรวจสอบโดยเร็ว' }, { status: 201 });
+    } catch (error: any) {
         console.error('Feedback API error:', error);
-        return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการประมวลผล' }, { status: 500 });
+        return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง' }, { status: 500 });
     }
 }

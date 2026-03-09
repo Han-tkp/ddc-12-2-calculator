@@ -32,19 +32,21 @@ export async function POST(request: NextRequest) {
         const { data: user, error: createError } = await supabase
             .from('users')
             .insert({
-                id: crypto.randomUUID(),
+                // Note: id and timestamps will be handled by DB defaults after running fix_id_constraint.sql
                 name: encrypt(validated.name), // Encrypt name
                 email: validated.email,
                 password: hashedPassword,
                 role: 'USER',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(), // Manual timestamp
             })
             .select()
             .single();
 
         if (createError || !user) {
-            throw createError || new Error('Failed to create user');
+            console.error('Supabase Create User Error:', createError);
+            return NextResponse.json(
+                { error: `ไม่สามารถลงทะเบียนได้: ${createError?.message || 'เกิดข้อผิดพลาดภายใน'}` },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json({
@@ -55,10 +57,10 @@ export async function POST(request: NextRequest) {
                 email: user.email,
             },
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Registration error:', error);
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : JSON.stringify(error) },
+            { error: error?.message || 'เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง' },
             { status: 500 }
         );
     }

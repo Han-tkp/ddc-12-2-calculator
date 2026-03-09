@@ -27,11 +27,10 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
-        console.log("SERVER SESSION IN /api/profiles POST: ", session);
 
         if (!session?.user || session.user.role !== 'ADMIN') {
             return NextResponse.json(
-                { error: 'ไม่มีสิทธิ์เข้าถึง' },
+                { error: 'ไม่มีสิทธิ์เข้าถึง: เฉพาะผู้ดูแลระบบเท่านั้น' },
                 { status: 403 }
             );
         }
@@ -44,11 +43,12 @@ export async function POST(request: NextRequest) {
             .from('label_profiles')
             .select('id')
             .eq('name', validated.name)
+            .eq('isActive', true) // Only check active ones
             .single();
 
         if (existing) {
             return NextResponse.json(
-                { error: 'ชื่อสูตรนี้มีอยู่แล้ว' },
+                { error: 'มีชื่อสูตรนี้อยู่ในระบบแล้ว' },
                 { status: 400 }
             );
         }
@@ -58,21 +58,24 @@ export async function POST(request: NextRequest) {
             .insert({
                 ...validated,
                 createdById: session.user.id,
-                updatedAt: new Date().toISOString(),
+                // Note: id and timestamps will be handled by DB defaults after running fix_id_constraint.sql
             })
             .select()
             .single();
 
         if (error) {
             console.error('Supabase Insert Error:', error);
-            throw error;
+            return NextResponse.json(
+                { error: `ข้อผิดพลาดจากฐานข้อมูล: ${error.message}` },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json(profile, { status: 201 });
     } catch (error: any) {
         console.error('Create profile error:', error);
         return NextResponse.json(
-            { error: error?.message || 'ไม่สามารถสร้างสูตรได้' },
+            { error: error?.message || 'ไม่สามารถสร้างสูตรได้ กรุณาลองใหม่อีกครั้ง' },
             { status: 500 }
         );
     }

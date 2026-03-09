@@ -12,7 +12,7 @@ export async function PUT(
         const session = await auth();
 
         if (!session?.user || session.user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึง' }, { status: 403 });
+            return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึง: เฉพาะผู้ดูแลระบบเท่านั้น' }, { status: 403 });
         }
 
         const resolvedParams = await params;
@@ -27,7 +27,7 @@ export async function PUT(
             .single();
 
         if (!currentProfile) {
-            return NextResponse.json({ error: 'ไม่พบสูตรนี้' }, { status: 404 });
+            return NextResponse.json({ error: 'ไม่พบสูตรที่ต้องการแก้ไข' }, { status: 404 });
         }
 
         const validated = profileSchema.parse(body);
@@ -39,10 +39,11 @@ export async function PUT(
                 .select('id')
                 .eq('name', validated.name)
                 .neq('id', id)
+                .eq('isActive', true)
                 .single();
 
             if (existing) {
-                return NextResponse.json({ error: 'ชื่อสูตรนี้มีใช้งานอยู่แล้ว' }, { status: 400 });
+                return NextResponse.json({ error: 'ชื่อสูตรนี้มีใช้งานอยู่ในระบบแล้ว' }, { status: 400 });
             }
         }
 
@@ -63,12 +64,15 @@ export async function PUT(
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase Update Error:', error);
+            return NextResponse.json({ error: `ไม่สามารถบันทึกการแก้ไขได้: ${error.message}` }, { status: 500 });
+        }
 
         return NextResponse.json(updatedProfile);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Update profile error:', error);
-        return NextResponse.json({ error: 'ไม่สามารถแก้ไขได้' }, { status: 500 });
+        return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล' }, { status: 500 });
     }
 }
 
@@ -81,7 +85,7 @@ export async function DELETE(
         const session = await auth();
 
         if (!session?.user || session.user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึง' }, { status: 403 });
+            return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึง: เฉพาะผู้ดูแลระบบเท่านั้น' }, { status: 403 });
         }
 
         const resolvedParams = await params;
@@ -95,20 +99,26 @@ export async function DELETE(
             .single();
 
         if (!profile) {
-            return NextResponse.json({ error: 'ไม่พบสูตรนี้' }, { status: 404 });
+            return NextResponse.json({ error: 'ไม่พบสูตรที่ต้องการลบ' }, { status: 404 });
         }
 
         // Soft delete
         const { error } = await supabase
             .from('label_profiles')
-            .update({ isActive: false })
+            .update({
+                isActive: false,
+                updatedAt: new Date().toISOString()
+            })
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase Delete Error:', error);
+            return NextResponse.json({ error: `ไม่สามารถลบสูตรได้: ${error.message}` }, { status: 500 });
+        }
 
-        return NextResponse.json({ success: true });
-    } catch (error) {
+        return NextResponse.json({ success: true, message: 'ลบสูตรเรียบร้อยแล้ว' });
+    } catch (error: any) {
         console.error('Delete profile error:', error);
-        return NextResponse.json({ error: 'ไม่สามารถลบได้' }, { status: 500 });
+        return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการลบข้อมูล' }, { status: 500 });
     }
 }

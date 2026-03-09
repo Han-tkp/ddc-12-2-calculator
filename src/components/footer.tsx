@@ -34,7 +34,7 @@ export function Footer() {
                                 "กรมควบคุมโรคห่วงใย อยากให้คนไทยสุขภาพดี"
                             </p>
                         </div>
-                        <p className="text-xs text-slate-400">© 2024 DDC 12.2 Calculator</p>
+                        <p className="text-xs text-slate-400">© DDC 12.2 Calculator | By Github:han-tkp.</p>
                     </div>
 
                 </div>
