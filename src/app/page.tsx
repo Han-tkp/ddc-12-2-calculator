@@ -29,7 +29,7 @@ export default async function Home() {
             </div>
             <div>
               <h1 className="font-bold text-lg md:text-xl text-slate-800 tracking-tight leading-tight">
-                DDC 12.2
+                VBDC 12.2
               </h1>
               <p className="text-[10px] md:text-xs text-slate-500 font-medium hidden sm:block">
                 ศูนย์ควบคุมโรคติดต่อนำโดยแมลงที่ 12.2 สงขลา
