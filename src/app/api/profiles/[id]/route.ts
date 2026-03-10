@@ -102,13 +102,10 @@ export async function DELETE(
             return NextResponse.json({ error: 'ไม่พบสูตรที่ต้องการลบ' }, { status: 404 });
         }
 
-        // Soft delete
+        // Hard delete (ลบถาวรจากฐานข้อมูล)
         const { error } = await supabase
             .from('label_profiles')
-            .update({
-                isActive: false,
-                updatedAt: new Date().toISOString()
-            })
+            .delete()
             .eq('id', id);
 
         if (error) {
@@ -116,7 +113,7 @@ export async function DELETE(
             return NextResponse.json({ error: `ไม่สามารถลบสูตรได้: ${error.message}` }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, message: 'ลบสูตรเรียบร้อยแล้ว' });
+        return NextResponse.json({ success: true, message: 'ลบสูตรออกจากระบบอย่างถาวรเรียบร้อยแล้ว' });
     } catch (error: any) {
         console.error('Delete profile error:', error);
         return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการลบข้อมูล' }, { status: 500 });
