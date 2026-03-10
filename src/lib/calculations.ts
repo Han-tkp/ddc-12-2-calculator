@@ -16,7 +16,8 @@ export interface CalculationResult {
     V_total: number;     // ส่วนผสมรวม (cc)
     V_C: number;         // สารออกฤทธิ์รวม (cc)
     V_S: number;         // ตัวทำละลายรวม (cc)
-    V_C_1L: number;      // สารต่อ 1 ลิตรส่วนผสม (cc)
+    V_C_1L: number;      // สารเคมี (cc) - ดูตามบริบท mix_type
+    V_S_1L: number;      // ตัวทำละลาย (cc) - ดูตามบริบท mix_type
 }
 
 /**
@@ -39,32 +40,27 @@ export function calculate(input: CalculationInput): CalculationResult {
     let V_C = 0;
     let V_S = 0;
     let V_C_1L = 0;
+    let V_S_1L = 0;
 
     if (mix_type === 2) {
         // แบบ "ผสมกับ" (เติมสารเคมีลงไปทบในปริมาตรอ้างอิง)
-        // ถือเอาคู่ลอจิกคือ: RA ของเราคือปริมาตรน้ำมัน 
-        // หรือ RA รวมก่อนทบทิ้ง? ตีความตามโจทย์ "13+1000 = 1013" หมายถึง S คือ base
-        // ตามบริบทส่วนมากของโจทย์นี้ การพ่นยุง ULV มักยึด "RA = ปริมาตรรวมที่พ่นออก"
-        // แต่ถ้าเป็น mix_type=2 ผู้ใช้อาจมองว่าสูตรระบุ RA=(น้ำมัน). ต้องตีความ:
-        // ถ้าผสม 13+1000 = 1013 หมายความว่า สัดส่วนคือ C=13, S=1000
-        // ปริมาณที่ต้องปั๊มออกเครื่องคิดเป็น V_total_ref.
-        // ถือชั่วคราวว่า V_total = V_total_ref เป็นปริมาตรรวมเป้าประสงค์ 
-        // ดังนั้น fC, fS ก็ยังเทียบกับ C+S
-        // แต่เพื่อความแตกต่างจาก "ผสมให้ได้" จะใช้ V_total_ref เป็นตัวตั้งของ S (น้ำมัน) เป็นหลัก
+        V_S = V_total_ref;
+        V_C = V_S * (C / S);
+        V_total = V_S + V_C;
 
-        V_S = V_total_ref; // ถือว่าน้ำมันคือตัวหลักตามที่พ่น
-        V_C = V_S * (C / S); // สารเคมีที่ต้องเติมลงไป
-        V_total = V_S + V_C; // ปริมาตรที่จะได้จริง
-
-        // สารต่อ 1 ลิตรของตัวทำละลาย
+        // สารเคมีต่อตัวทำละลาย 1 ลิตร
+        V_S_1L = 1000;
         V_C_1L = 1000 * (C / S);
     } else {
         // แบบ 1 "ผสมให้ได้" (ปริมาตรรวมคงที่ = V_total_ref)
         V_total = V_total_ref;
         const fC = C / (C + S);
         V_C = V_total * fC;
-        V_S = V_total * (1 - fC);
+        V_S = V_total - V_C;
+
+        // แยกใน 1 ลิตรสุทธิ
         V_C_1L = 1000 * fC;
+        V_S_1L = 1000 - V_C_1L;
     }
 
     // คำนวณส่วนผสมต่อหลังบ้านจริงตาม V_total 
@@ -76,6 +72,7 @@ export function calculate(input: CalculationInput): CalculationResult {
         V_C: roundTo(V_C, 2),
         V_S: roundTo(V_S, 2),
         V_C_1L: roundTo(V_C_1L, 2),
+        V_S_1L: roundTo(V_S_1L, 2),
     };
 }
 

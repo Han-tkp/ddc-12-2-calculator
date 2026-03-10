@@ -20,6 +20,7 @@ interface ResultsDisplayProps {
         V_C: number;
         V_S: number;
         V_C_1L: number;
+        V_S_1L: number;
     };
     input: {
         C: number;
@@ -30,6 +31,7 @@ interface ResultsDisplayProps {
         A_house: number;
         N: number;
         chemical?: string;
+        mix_type?: number;
     };
     location?: string;
     coords?: { lat: number; lng: number } | null;
@@ -220,24 +222,23 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                         description="ปริมาณพ่นแต่ละบ้าน"
                         gradient="from-blue-400 to-blue-600"
                     />
-
                     <BentoResultCard
                         icon={<Droplets className="h-5 w-5" />}
                         emoji="💧"
-                        label="ยาใน 1 ลิตร"
+                        label={input.mix_type === 2 ? "ยาต่อตัวผสม 1 ลิตร" : "ยาในส่วนผสม 1 ลิตร"}
                         value={formatNumber(result.V_C_1L)}
                         unit="ซีซี"
-                        description="เมื่อผสม 1 ลิตร"
+                        description={input.mix_type === 2 ? "ปริมาณยาที่เติม" : "ปริมาณยาในส่วนผสม"}
                         gradient="from-indigo-400 to-indigo-600"
                     />
 
                     <BentoResultCard
                         icon={<Beaker className="h-5 w-5" />}
                         emoji="🫗"
-                        label="น้ำมันใน 1 ลิตร"
-                        value={formatNumber(1000 - result.V_C_1L)}
+                        label={input.mix_type === 2 ? "ตัวทำละลาย (น้ำมัน/น้ำ)" : "ตัวทำละลายใน 1 ลิตร"}
+                        value={formatNumber(result.V_S_1L)}
                         unit="ซีซี"
-                        description="เมื่อผสม 1 ลิตร"
+                        description={input.mix_type === 2 ? "ตัวตั้งต้น 1,000" : "ปริมาณตัวผสม"}
                         gradient="from-amber-400 to-orange-500"
                     />
                 </div>
