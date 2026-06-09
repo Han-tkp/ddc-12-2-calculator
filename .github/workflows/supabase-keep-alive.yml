@@ -1,0 +1,32 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # รันสัปดาห์ละ 2 วัน: ทุกวันอังคาร (2) และวันศุกร์ (5) 
+    # เวลา 00:00 UTC (ตรงกับเวลา 07:00 น. ตอนเช้าของประเทศไทย)
+    - cron: '0 0 * * 2,5'
+  workflow_dispatch: # เปิดฟีเจอร์นี้เพื่อให้เราสามารถกดสั่งรันเองแบบ Manual บนหน้าเว็บ GitHub ได้เพื่อทดสอบ
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive Ping to Supabase API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          echo "กำลังเริ่มส่ง Request ไปสะกิด Supabase..."
+          
+          # ใช้ curl ยิงไปที่ Endpoint ของระบบ Auth/Health เพื่อยืนยันว่าโปรเจกต์ยังทำงานอยู่
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/auth/v1/health")
+          
+          if [ "$STATUS_CODE" -eq 200 ]; then
+            echo "สำเร็จ! Supabase ตื่นอยู่และตอบกลับมาปกติ (Status: $STATUS_CODE)"
+          else
+            echo "เกิดข้อผิดพลาด: Supabase ตอบกลับด้วย Status Code: $STATUS_CODE"
+            exit 1
+          fi
