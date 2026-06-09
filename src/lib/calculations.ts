@@ -9,6 +9,7 @@ export interface CalculationInput {
     A0: number;          // พื้นที่มาตรฐาน (ตร.ม.)
     A_house: number;     // พื้นที่ต่อหลังบ้าน (ตร.ม.)
     N: number;           // จำนวนหลังบ้าน
+    targetVolume?: number; // ปริมาณที่ต้องการเตรียมรวม (ลิตร)
 }
 
 export interface CalculationResult {
@@ -18,6 +19,8 @@ export interface CalculationResult {
     V_S: number;         // ตัวทำละลายรวม (cc)
     V_C_1L: number;      // สารเคมี (cc) - ดูตามบริบท mix_type
     V_S_1L: number;      // ตัวทำละลาย (cc) - ดูตามบริบท mix_type
+    V_C_target: number;  // สารเคมีที่ต้องใช้ตามเป้าหมาย (cc)
+    V_S_target: number;  // ตัวทำละลายที่ต้องใช้ตามเป้าหมาย (cc)
 }
 
 /**
@@ -27,7 +30,7 @@ export function calculate(input: CalculationInput): CalculationResult {
     // Validate input
     validateCalculationInput(input);
 
-    const { C, S, RA, RA_unit, mix_type = 1, A0, A_house, N } = input;
+    const { C, S, RA, RA_unit, mix_type = 1, A0, A_house, N, targetVolume = 1 } = input;
 
     // 1. แปลง RA เป็น cc
     const RA_cc = RA_unit === 'L' ? RA * 1000 : RA;
@@ -66,6 +69,10 @@ export function calculate(input: CalculationInput): CalculationResult {
     // คำนวณส่วนผสมต่อหลังบ้านจริงตาม V_total 
     const V_per_house = V_total / N;
 
+    // คำนวณตามเป้าหมาย (targetVolume ในหน่วยลิตร)
+    const V_C_target = V_C_1L * targetVolume;
+    const V_S_target = V_S_1L * targetVolume;
+
     return {
         V_per_house: roundTo(V_per_house, 2),
         V_total: roundTo(V_total, 2),
@@ -73,6 +80,8 @@ export function calculate(input: CalculationInput): CalculationResult {
         V_S: roundTo(V_S, 2),
         V_C_1L: roundTo(V_C_1L, 2),
         V_S_1L: roundTo(V_S_1L, 2),
+        V_C_target: roundTo(V_C_target, 2),
+        V_S_target: roundTo(V_S_target, 2),
     };
 }
 
@@ -80,14 +89,14 @@ export function calculate(input: CalculationInput): CalculationResult {
  * Validate calculation input
  */
 function validateCalculationInput(input: CalculationInput): void {
-    const { C, S, RA, A0, A_house, N } = input;
+    const { C, S, RA, A0, A_house, N, targetVolume = 1 } = input;
 
-    if (C <= 0 || S <= 0 || RA <= 0 || A0 <= 0 || A_house <= 0 || N <= 0) {
+    if (C <= 0 || S <= 0 || RA <= 0 || A0 <= 0 || A_house <= 0 || N <= 0 || targetVolume <= 0) {
         throw new Error('ค่าทั้งหมดต้องเป็นจำนวนบวก');
     }
 
     if (!Number.isFinite(C) || !Number.isFinite(S) || !Number.isFinite(RA) ||
-        !Number.isFinite(A0) || !Number.isFinite(A_house)) {
+        !Number.isFinite(A0) || !Number.isFinite(A_house) || !Number.isFinite(targetVolume)) {
         throw new Error('ค่าทั้งหมดต้องเป็นตัวเลขที่ถูกต้อง');
     }
 

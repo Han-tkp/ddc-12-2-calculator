@@ -21,6 +21,8 @@ interface ResultsDisplayProps {
         V_S: number;
         V_C_1L: number;
         V_S_1L: number;
+        V_C_target?: number;
+        V_S_target?: number;
     };
     input: {
         C: number;
@@ -32,6 +34,7 @@ interface ResultsDisplayProps {
         N: number;
         chemical?: string;
         mix_type?: number;
+        targetVolume?: number;
     };
     location?: string;
     coords?: { lat: number; lng: number } | null;
@@ -52,7 +55,7 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
         if (mode === 1) {
             // โหมด 1: แบบสรุปรายการประจำวัน (Daily Summary Log)
             wsData = [
-                ['วันที่-เวลา', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'อัตราการไหล(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(cc)', 'น้ำมัน/น้ำเตรียม(cc)', 'ยอดรวม(cc)', 'สถานที่/พิกัด'],
+                ['วันที่-เวลา', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(cc)', 'น้ำมัน/น้ำเตรียม(cc)', 'ยอดรวม(cc)', 'สถานที่/พิกัด'],
                 [dateStr, chemName, `1:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
             ];
         } else if (mode === 2) {
@@ -93,7 +96,7 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                 [''],
                 ['รายละเอียดการใช้สารเคมี:'],
                 ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน 1:${input.S}`],
-                ['อัตราการไหล (RA):', `${input.RA} ${input.RA_unit}`],
+                ['ฉีดพ่นในอัตรา (RA):', `${input.RA} ${input.RA_unit}`],
                 ['จำนวนหลังคาเรือนเป้าหมาย:', input.N, 'หลัง'],
                 ['รวมปริมาณสารเคมีที่ใช้สุทธิ:', result.V_C, 'ซีซี'],
                 ['รวมน้ำมัน/น้ำที่ใช้สุทธิ:', result.V_S, 'ซีซี']
@@ -242,6 +245,52 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                         gradient="from-amber-400 to-orange-500"
                     />
                 </div>
+
+                {/* Target Volume Calculations Comparison */}
+                {input.targetVolume !== undefined && input.targetVolume > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 print:break-inside-avoid">
+                        {/* Box 1: Base ratio per 1 Liter */}
+                        <div className="glass-card p-5 rounded-2xl border border-slate-200/40 bg-slate-50/50">
+                            <h4 className="font-bold text-slate-700 mb-3 border-b border-slate-200/50 pb-2 flex items-center gap-1.5">
+                                <span className="text-lg">💡</span> สัดส่วนน้ำยาพ่นต่อ 1 ลิตร
+                            </h4>
+                            <div className="space-y-2 text-sm text-slate-600">
+                                <div className="flex justify-between">
+                                    <span>ใช้สารเคมีเข้มข้น:</span>
+                                    <span className="font-semibold text-slate-800">{formatNumber(result.V_C_1L)} cc (มล.)</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>เติมตัวทำละลาย (น้ำ/น้ำมัน):</span>
+                                    <span className="font-semibold text-slate-800">{formatNumber(result.V_S_1L)} cc (มล.)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Box 2: Total preparation target volume (Highlighted) */}
+                        <div className="glass-card p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/30 animate-pulse-glow">
+                            <h4 className="font-bold text-teal-800 mb-3 border-b border-teal-200/50 pb-2 flex justify-between items-center">
+                                <span className="flex items-center gap-1.5">🚀 ยอดรวมที่ต้องเตรียมจริง</span>
+                                <span className="bg-teal-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
+                                    รวม {input.targetVolume} ลิตร
+                                </span>
+                            </h4>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-teal-700 font-medium">ตวงสารเคมีเข้มข้น:</span>
+                                    <span className="text-xl font-extrabold text-teal-800">
+                                        {formatNumber(result.V_C_target ?? (result.V_C_1L * input.targetVolume))} cc (มล.)
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-teal-700 font-medium">เติม น้ำ หรือ น้ำมัน:</span>
+                                    <span className="text-xl font-extrabold text-teal-800">
+                                        {formatNumber((result.V_S_target ?? (result.V_S_1L * input.targetVolume)) / 1000, 2)} ลิตร
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Print Instructions */}
                 <div className="mt-6 p-5 glass-card rounded-2xl border border-slate-200/50 print:break-inside-avoid">

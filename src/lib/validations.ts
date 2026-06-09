@@ -13,6 +13,7 @@ export const calculationSchema = z.object({
     A0: z.number().positive('พื้นที่มาตรฐานต้องเป็นจำนวนบวก'),
     A_house: z.number().positive('พื้นที่ต่อหลังบ้านต้องเป็นจำนวนบวก'),
     N: z.number().int('จำนวนหลังบ้านต้องเป็นจำนวนเต็ม').positive('จำนวนหลังบ้านต้องมากกว่า 0'),
+    targetVolume: z.number().positive('ปริมาณน้ำยาพ่นต้องมากกว่า 0').optional().default(1),
     location: z.string().optional(),
     chemical: z.string().optional(),
     lat: z.number().min(-90).max(90).optional().nullable(),

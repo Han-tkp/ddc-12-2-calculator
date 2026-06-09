@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
                 chemical: body.chemical,
                 lat: body.lat ?? null,
                 lng: body.lng ?? null,
+                mix_type: body.mix_type ?? 1,
                 // Results
                 V_per_house: result.V_per_house,
                 V_total: result.V_total,

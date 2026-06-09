@@ -57,6 +57,7 @@ export function CalculatorForm() {
             A_house: 100,
             N: 0,
             mix_type: 1,
+            targetVolume: 1,
             location: '',
             chemical: '',
         },
@@ -164,7 +165,7 @@ export function CalculatorForm() {
 
     // 2. Calculate AND Save on button click (single action)
     const handleCalculateAndSave = async () => {
-        const isValid = await trigger(['C', 'S', 'RA', 'RA_unit', 'A0', 'A_house', 'N']);
+        const isValid = await trigger(['C', 'S', 'RA', 'RA_unit', 'A0', 'A_house', 'N', 'targetVolume']);
         if (!isValid) {
             toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
             return;
@@ -183,6 +184,7 @@ export function CalculatorForm() {
                 A0: Number(values.A0),
                 A_house: Number(values.A_house),
                 N: Number(values.N),
+                targetVolume: Number(values.targetVolume) || 1,
             };
             const calculatedResult = calculate(input);
             setResult(calculatedResult);
@@ -369,7 +371,7 @@ export function CalculatorForm() {
                         <div className="bento-item bg-amber-50/50 border-amber-100">
                             <Label className="flex items-center gap-2 mb-2">
                                 <Zap className="h-4 w-4 text-amber-500" />
-                                อัตราการไหล (RA)
+                                ฉีดพ่นในอัตรา (RA)
                             </Label>
                             <div className="flex gap-2">
                                 <Input
@@ -402,6 +404,21 @@ export function CalculatorForm() {
                                 type="number"
                                 {...register('A_house', { valueAsNumber: true })}
                                 className="glass-input text-lg text-center bg-white/40 text-slate-500"
+                            />
+                        </div>
+
+                        {/* Target Volume */}
+                        <div className="bento-item bg-teal-50/50 border-teal-100">
+                            <Label className="flex items-center gap-2 mb-2">
+                                <FlaskConical className="h-4 w-4 text-teal-600" />
+                                ปริมาณน้ำยาที่ต้องการผสมรวม (ลิตร)
+                            </Label>
+                            <Input
+                                type="number"
+                                step="0.1"
+                                min="0.1"
+                                {...register('targetVolume', { valueAsNumber: true })}
+                                className="glass-input text-xl text-center font-bold bg-white/60 text-teal-700"
                             />
                         </div>
                     </div>
