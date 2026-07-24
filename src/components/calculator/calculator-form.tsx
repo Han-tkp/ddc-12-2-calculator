@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Calculator, Loader2, Droplets, Beaker, Zap, MapPin, FlaskConical } from 'lucide-react';
+import { Calculator, Loader2, Droplets, Beaker, Zap, MapPin, FlaskConical, Building } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResultsDisplay } from './results-display';
 import { CHEMICAL_PRESETS } from '@/lib/constants';
@@ -25,6 +25,7 @@ import { LocationPickerWrapper } from './location-picker-wrapper';
 // Extended types for form
 interface ExtendedCalculationInput extends CalculationInput {
     location?: string;
+    agency?: string;
     chemical?: string;
 }
 
@@ -59,6 +60,7 @@ export function CalculatorForm() {
             mix_type: 1,
             targetVolume: 1,
             location: '',
+            agency: '',
             chemical: '',
         },
     });
@@ -174,8 +176,13 @@ export function CalculatorForm() {
         const values = getValues();
         setIsCalculating(true);
         try {
+            // Determine chemical name
+            const chemName = selectedPreset && selectedPreset !== 'other'
+                ? (dbPresets.find(p => String(p.id) === selectedPreset)?.name || values.chemical)
+                : (values.chemical || 'อื่นๆ');
+
             // Step 1: Calculate
-            const input: CalculationInput = {
+            const input: ExtendedCalculationInput = {
                 C: Number(values.C),
                 S: Number(values.S),
                 RA: Number(values.RA),
@@ -185,6 +192,9 @@ export function CalculatorForm() {
                 A_house: Number(values.A_house),
                 N: Number(values.N),
                 targetVolume: Number(values.targetVolume) || 1,
+                chemical: chemName,
+                agency: values.agency,
+                location: values.location,
             };
             const calculatedResult = calculate(input);
             setResult(calculatedResult);
@@ -196,9 +206,7 @@ export function CalculatorForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...values,
-                    chemical: selectedPreset !== 'other'
-                        ? dbPresets.find(p => String(p.id) === selectedPreset)?.name
-                        : 'อื่นๆ',
+                    chemical: chemName,
                     lat: coords?.lat ?? null,
                     lng: coords?.lng ?? null,
                 }),
@@ -243,26 +251,26 @@ export function CalculatorForm() {
                 </div>
 
                 <form onSubmit={(e) => e.preventDefault()} className="space-y-6 relative z-10">
-                    {/* 1. Chemical Preset & Label Guide */}
-                    <div className="grid md:grid-cols-2 gap-6">
+                    {/* 1. Chemical Preset, Agency & Location Guide */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="flex items-center gap-2">
-                                    <FlaskConical className="h-4 w-4 text-violet-500" />
+                                <Label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
+                                    <FlaskConical className="h-4 w-4 text-violet-500 shrink-0" />
                                     เลือกสูตรสารเคมี
                                 </Label>
                                 <LabelGuide />
                             </div>
                             <Select onValueChange={handlePresetChange} value={selectedPreset}>
-                                <SelectTrigger className="glass-input h-12 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-violet-500/20 hover:bg-white/80 transition-all">
+                                <SelectTrigger className="glass-input h-11 sm:h-12 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-violet-500/20 hover:bg-white/80 transition-all text-xs sm:text-sm">
                                     <SelectValue placeholder="เลือกสูตร..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {dbPresets.map((preset) => (
                                         <SelectItem key={preset.id} value={String(preset.id)}>
-                                            <span className="font-medium">{preset.name}</span>
+                                            <span className="font-medium text-xs sm:text-sm">{preset.name}</span>
                                             {preset.id !== 'other' && (
-                                                <span className="text-xs text-slate-400 ml-2">
+                                                <span className="text-[11px] text-slate-400 ml-2">
                                                     ({preset.C}:{preset.S})
                                                 </span>
                                             )}
@@ -272,19 +280,32 @@ export function CalculatorForm() {
                             </Select>
                         </div>
 
+                        {/* Agency Input (Point 15) */}
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
+                                <Building className="h-4 w-4 text-blue-500 shrink-0" />
+                                หน่วยงานผู้ใช้
+                            </Label>
+                            <Input
+                                {...register('agency')}
+                                placeholder="ระบุหน่วยงาน เช่น รพ.สต. / อบต."
+                                className="glass-input h-11 sm:h-12 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-blue-500/20 hover:bg-white/80 transition-all text-xs sm:text-sm"
+                            />
+                        </div>
+
                         {/* Location Name */}
                         <div className="space-y-2">
-                            <Label className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-pink-500" />
+                            <Label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
+                                <MapPin className="h-4 w-4 text-pink-500 shrink-0" />
                                 สถานที่ปฏิบัติงาน
                             </Label>
                             <div className="relative">
                                 <Input
                                     {...register('location')}
                                     placeholder="ชื่อสถานที่จะแสดงอัตโนมัติจากแผนที่"
-                                    className="glass-input h-12 pl-10 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-pink-500/20 hover:bg-white/80 transition-all"
+                                    className="glass-input h-11 sm:h-12 pl-10 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-pink-500/20 hover:bg-white/80 transition-all text-xs sm:text-sm"
                                 />
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-slate-400 pointer-events-none" />
                             </div>
                         </div>
                     </div>
@@ -303,60 +324,60 @@ export function CalculatorForm() {
                     {/* 3. Parameters Input (Bento Grid) */}
                     <div className="bento-grid">
                         {/* Number of Houses - Highlighted */}
-                        <div className="bento-item bento-item-large bg-linear-to-br from-violet-500/5 to-fuchsia-500/5 border-violet-200/50">
-                            <Label className="flex items-center gap-2 text-lg font-semibold text-slate-700 mb-4">
-                                <HomeIcon className="h-5 w-5 text-violet-600" />
+                        <div className="bento-item bento-item-large bg-linear-to-br from-violet-500/5 to-fuchsia-500/5 border-violet-200/50 p-4 sm:p-5">
+                            <Label className="flex items-center gap-2 text-base sm:text-lg font-semibold text-slate-700 mb-3 sm:mb-4 leading-relaxed">
+                                <HomeIcon className="h-5 w-5 text-violet-600 shrink-0" />
                                 จำนวนบ้านที่พ่น (N)
                             </Label>
                             <Input
                                 type="number"
                                 {...register('N', { valueAsNumber: true })}
-                                className="glass-input text-3xl font-bold h-16 text-center text-violet-700 bg-white/80 border-violet-200 shadow-inner"
+                                className="glass-input text-2xl sm:text-3xl font-bold h-14 sm:h-16 text-center text-violet-700 bg-white/80 border-violet-200 shadow-inner"
                                 placeholder="0"
                             />
-                            {errors.N && <p className="text-red-500 text-sm mt-1">{errors.N.message}</p>}
+                            {errors.N && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.N.message}</p>}
                         </div>
 
-                        {/* Ratio C */}
-                        <div className="bento-item bg-blue-50/50 border-blue-100">
-                            <Label className="flex items-center gap-2 mb-2">
-                                <Droplets className="h-4 w-4 text-blue-500" />
-                                ปริมาณสารเคมี (C)
+                        {/* Point 1: Ratio C */}
+                        <div className="bento-item bg-blue-50/50 border-blue-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
+                                <Droplets className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                                <span>ปริมาณสารเคมีที่ระบุข้างขวด (มิลลิลิตร)</span>
                             </Label>
                             <Input
                                 type="number"
                                 step="0.1"
                                 {...register('C', { valueAsNumber: true })}
-                                className="glass-input text-xl text-center font-semibold bg-white/60"
+                                className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
                             />
                         </div>
 
-                        {/* Ratio S */}
-                        <div className="bento-item bg-sky-50/50 border-sky-100">
-                            <Label className="flex items-center gap-2 mb-2">
-                                <Beaker className="h-4 w-4 text-sky-500" />
-                                ปริมาณตัวผสม (น้ำมัน/น้ำ) (S)
+                        {/* Point 2: Ratio S */}
+                        <div className="bento-item bg-sky-50/50 border-sky-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
+                                <Beaker className="h-4 w-4 text-sky-500 shrink-0 mt-0.5" />
+                                <span>ปริมาณตัวทำละลายที่ระบุข้างขวด (น้ำมัน/น้ำ) (ลิตร)</span>
                             </Label>
                             <Input
                                 type="number"
                                 step="0.1"
                                 {...register('S', { valueAsNumber: true })}
-                                className="glass-input text-xl text-center font-semibold bg-white/60"
+                                className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
                             />
                         </div>
 
                         {/* Mix Type */}
-                        <div className="bento-item bg-fuchsia-50/50 border-fuchsia-100">
-                            <Label className="flex items-center gap-2 mb-2">
-                                <FlaskConical className="h-4 w-4 text-fuchsia-500" />
-                                ประเภทการผสม
+                        <div className="bento-item bg-fuchsia-50/50 border-fuchsia-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
+                                <FlaskConical className="h-4 w-4 text-fuchsia-500 shrink-0 mt-0.5" />
+                                <span>ประเภทการผสม</span>
                             </Label>
-                            <div className="flex gap-2 h-10 w-full mt-1">
+                            <div className="flex gap-2 h-11 sm:h-12 w-full mt-1">
                                 <Select
                                     onValueChange={(val) => setValue('mix_type', parseInt(val))}
                                     value={String(watchedValues.mix_type || 1)}
                                 >
-                                    <SelectTrigger className="w-full bg-white/60 glass-input font-medium text-slate-700">
+                                    <SelectTrigger className="w-full bg-white/60 glass-input font-medium text-slate-700 text-xs sm:text-sm h-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -367,58 +388,58 @@ export function CalculatorForm() {
                             </div>
                         </div>
 
-                        {/* Spray Rate */}
-                        <div className="bento-item bg-amber-50/50 border-amber-100">
-                            <Label className="flex items-center gap-2 mb-2">
-                                <Zap className="h-4 w-4 text-amber-500" />
-                                ฉีดพ่นในอัตรา (RA)
+                        {/* Point 3: Spray Rate */}
+                        <div className="bento-item bg-amber-50/50 border-amber-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
+                                <Zap className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                <span>ฉีดพ่นในอัตรา</span>
                             </Label>
                             <div className="flex gap-2">
                                 <Input
                                     type="number"
                                     step="0.01"
                                     {...register('RA', { valueAsNumber: true })}
-                                    className="glass-input text-xl text-center font-semibold bg-white/60"
+                                    className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
                                 />
                                 <Select
                                     onValueChange={(val) => setValue('RA_unit', val as 'L' | 'cc')}
                                     value={watchedValues.RA_unit}
                                 >
-                                    <SelectTrigger className="w-20 bg-white/60">
+                                    <SelectTrigger className="w-20 bg-white/60 h-11 sm:h-12 text-xs sm:text-sm">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="L">ลิตร</SelectItem>
-                                        <SelectItem value="cc">cc</SelectItem>
+                                        <SelectItem value="cc">มล.</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
 
-                        {/* Area per House */}
-                        <div className="bento-item bg-slate-50/50 border-slate-100">
-                            <Label className="flex items-center gap-2 mb-2 text-slate-500">
-                                พื้นที่ต่อ 1 หลัง
+                        {/* Point 4: Area per House */}
+                        <div className="bento-item bg-slate-50/50 border-slate-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-600 leading-relaxed min-h-[2.5rem]">
+                                <span>พื้นที่ต่อ 1 หลัง (ตารางเมตร)</span>
                             </Label>
                             <Input
                                 type="number"
                                 {...register('A_house', { valueAsNumber: true })}
-                                className="glass-input text-lg text-center bg-white/40 text-slate-500"
+                                className="glass-input text-base sm:text-lg text-center bg-white/40 text-slate-500 h-11 sm:h-12"
                             />
                         </div>
 
-                        {/* Target Volume */}
-                        <div className="bento-item bg-teal-50/50 border-teal-100">
-                            <Label className="flex items-center gap-2 mb-2">
-                                <FlaskConical className="h-4 w-4 text-teal-600" />
-                                ปริมาณน้ำยาที่ต้องการผสมรวม (ลิตร)
+                        {/* Point 5: Target Volume */}
+                        <div className="bento-item bg-teal-50/50 border-teal-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
+                                <FlaskConical className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+                                <span>ปริมาณสารเคมีสำหรับพ่นที่ต้องการ (สารเคมี+น้ำมัน/น้ำ) (ลิตร)</span>
                             </Label>
                             <Input
                                 type="number"
                                 step="0.1"
                                 min="0.1"
                                 {...register('targetVolume', { valueAsNumber: true })}
-                                className="glass-input text-xl text-center font-bold bg-white/60 text-teal-700"
+                                className="glass-input text-lg sm:text-xl text-center font-bold bg-white/60 text-teal-700 h-11 sm:h-12"
                             />
                         </div>
                     </div>
@@ -462,6 +483,7 @@ export function CalculatorForm() {
                 <ResultsDisplay
                     result={result}
                     input={calculatedInput}
+                    agency={watchedValues.agency}
                     location={watchedValues.location}
                     coords={coords}
                 />

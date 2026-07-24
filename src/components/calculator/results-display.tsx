@@ -2,7 +2,7 @@
 
 import { formatNumber } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
-import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle, MapPin, Download } from 'lucide-react';
+import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle, MapPin, Download, Building } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
     DropdownMenu,
@@ -36,40 +36,48 @@ interface ResultsDisplayProps {
         mix_type?: number;
         targetVolume?: number;
     };
+    agency?: string;
     location?: string;
     coords?: { lat: number; lng: number } | null;
 }
 
-export function ResultsDisplay({ result, input, location, coords }: ResultsDisplayProps) {
+export function ResultsDisplay({ result, input, agency, location, coords }: ResultsDisplayProps) {
+    const chemicalName = input.chemical || 'ไม่ระบุสารเคมี';
+    const sprayType = input.mix_type === 2 ? 'แบบผสมกับ' : 'แบบผสมให้ได้';
+    const totalArea = input.N * input.A_house;
+    const totalLiters = result.V_total / 1000;
+
     const handlePrint = () => {
         window.print();
     };
 
     const handleExport = (mode: number) => {
         const wb = XLSX.utils.book_new();
-        let wsData: any[] = [];
+        let wsData: Array<Array<string | number | undefined>> = [];
         const dateStr = new Date().toLocaleString('th-TH');
         const chemName = input.chemical || 'ไม่ระบุสารเคมี';
         const locName = location || 'ไม่ระบุสถานที่';
+        const agencyName = agency || 'ไม่ระบุหน่วยงาน';
 
         if (mode === 1) {
             // โหมด 1: แบบสรุปรายการประจำวัน (Daily Summary Log)
             wsData = [
-                ['วันที่-เวลา', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(cc)', 'น้ำมัน/น้ำเตรียม(cc)', 'ยอดรวม(cc)', 'สถานที่/พิกัด'],
-                [dateStr, chemName, `1:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
+                ['วันที่-เวลา', 'หน่วยงาน', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(มล.)', 'น้ำมัน/น้ำเตรียม(มล.)', 'ยอดรวม(มล.)', 'สถานที่/พิกัด'],
+                [dateStr, agencyName, chemName, `1:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
             ];
         } else if (mode === 2) {
             // โหมด 2: แบบใบสั่งเตรียมสารเคมี (Chemical Preparation Ticket)
             wsData = [
                 ['ใบสั่งเตรียมสารเคมี (Chemical Ticket)'],
                 ['วันที่อนุมัติ:', dateStr],
+                ['หน่วยงาน:', agencyName],
                 ['สถานที่นำไปใช้:', locName],
                 [],
                 ['กรุณาเตรียมสารเคมีตามอัตราส่วนดังนี้:'],
                 ['ชื่อสารเคมีหลัก:', chemName],
-                ['ใช้สารเคมี (cc):', result.V_C],
-                ['ใช้น้ำมันดีเซล/น้ำ (cc):', result.V_S],
-                ['รวมเป็นปริมาณทั้งสิ้น (cc):', result.V_total, `(${formatNumber(result.V_total / 1000, 2)} ลิตร)`],
+                ['ใช้สารเคมี (มล.):', result.V_C],
+                ['ใช้น้ำมันดีเซล/น้ำ (มล.):', result.V_S],
+                ['รวมเป็นปริมาณทั้งสิ้น (มล.):', result.V_total, `(${formatNumber(result.V_total / 1000, 2)} ลิตร)`],
                 [],
                 ['ผู้เบิก/ผู้สั่งเตรียม: ___________________________'],
                 ['ผู้ผสมยา: ___________________________']
@@ -77,29 +85,30 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
         } else if (mode === 3) {
             // โหมด 3: แบบแยกตามพื้นที่หมู่บ้าน (Area-Based Allocation)
             wsData = [
-                ['ชื่อหมู่บ้าน/พื้นที่', 'จำนวนหลัง', 'พื้นที่รวม (ตร.ม.)', 'สารเคมีที่ใช้', 'ปริมาณสารเคมี(cc)', 'ปริมาณน้ำมัน(cc)', 'รวมสารผสม(cc)'],
-                [locName, input.N, (input.N * input.A_house), chemName, result.V_C, result.V_S, result.V_total]
+                ['หน่วยงาน', 'ชื่อหมู่บ้าน/พื้นที่', 'จำนวนหลัง', 'พื้นที่รวม (ตร.ม.)', 'สารเคมีที่ใช้', 'ปริมาณสารเคมี(มล.)', 'ปริมาณน้ำมัน(มล.)', 'รวมสารผสม(มล.)'],
+                [agencyName, locName, input.N, (input.N * input.A_house), chemName, result.V_C, result.V_S, result.V_total]
             ];
         } else if (mode === 4) {
             // โหมด 4: แบบวิเคราะห์ต้นทุน (Inventory & Cost Analysis)
             wsData = [
-                ['วันที่', 'สถานที่', 'สารเคมี', 'จำนวนยาที่เบิก(cc)', 'ตัวทำละลาย(cc)', 'ข้อเสนอแนะต้นทุน (Cost Ref)'],
-                [dateStr, locName, chemName, result.V_C, result.V_S, '(เพิ่มตารางราคาลงในช่องถัดไปเพื่อคำนวณเงิน)']
+                ['วันที่', 'หน่วยงาน', 'สถานที่', 'สารเคมี', 'จำนวนยาที่เบิก(มล.)', 'ตัวทำละลาย(มล.)', 'ข้อเสนอแนะต้นทุน (Cost Ref)'],
+                [dateStr, agencyName, locName, chemName, result.V_C, result.V_S, '(เพิ่มตารางราคาลงในช่องถัดไปเพื่อคำนวณเงิน)']
             ];
         } else if (mode === 5) {
             // โหมด 5: แบบฟอร์มรายงานกรมควบคุมโรค (DDC Standard Report)
             wsData = [
                 ['แบบฟอร์มรายงานการปฏิบัติงานควบคุมยุงลาย ศูนย์ควบคุมโรค 12.2'],
                 ['วัน/เดือน/ปี ที่ออกปฏิบัติงาน:', dateStr],
+                ['หน่วยงานปฏิบัติงาน:', agencyName],
                 ['เป้าหมายพื้นที่/หมู่บ้าน:', locName],
                 ['พิกัด GPS:', coords ? `${coords.lat}, ${coords.lng}` : 'N/A'],
                 [''],
                 ['รายละเอียดการใช้สารเคมี:'],
                 ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน 1:${input.S}`],
-                ['ฉีดพ่นในอัตรา (RA):', `${input.RA} ${input.RA_unit}`],
+                ['ฉีดพ่นในอัตรา (RA):', `${input.RA} ${input.RA_unit === 'L' ? 'ลิตร' : 'มล.'}`],
                 ['จำนวนหลังคาเรือนเป้าหมาย:', input.N, 'หลัง'],
-                ['รวมปริมาณสารเคมีที่ใช้สุทธิ:', result.V_C, 'ซีซี'],
-                ['รวมน้ำมัน/น้ำที่ใช้สุทธิ:', result.V_S, 'ซีซี']
+                ['รวมปริมาณสารเคมีที่ใช้สุทธิ:', result.V_C, 'มล.'],
+                ['รวมน้ำมัน/น้ำที่ใช้สุทธิ:', result.V_S, 'มล.']
             ];
         }
 
@@ -180,37 +189,64 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
             </div>
 
             {/* Main Results - Bento Grid */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 {/* Big Summary Card */}
-                <div className="bento-item bento-item-large bg-linear-to-br from-emerald-500 to-teal-600 text-white mb-4 hover-lift animate-pulse-glow">
-                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                        <FlaskConical className="h-5 w-5" />
-                        📋 สรุปสิ่งที่ต้องเตรียม
+                <div className="bento-item bento-item-large bg-linear-to-br from-emerald-500 to-teal-600 text-white mb-4 sm:mb-6 hover-lift animate-pulse-glow p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 leading-relaxed">
+                        <FlaskConical className="h-5 w-5 shrink-0" />
+                        📊 สรุปผลการคำนวณสารเคมี
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <Droplets className="h-8 w-8" />
-                                <span className="text-emerald-100">สารเคมี</span>
-                            </div>
-                            <p className="text-4xl font-extrabold">{formatNumber(result.V_C)} <span className="text-lg font-normal">ซีซี</span></p>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm text-emerald-50 mb-4">
+                        <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+                            <span className="block text-emerald-100 text-xs mb-0.5">สารเคมีที่ใช้</span>
+                            <span className="font-bold text-white text-sm sm:text-base leading-relaxed">{chemicalName}</span>
                         </div>
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <Beaker className="h-8 w-8" />
-                                <span className="text-emerald-100">น้ำมัน/น้ำ</span>
-                            </div>
-                            <p className="text-4xl font-extrabold">{formatNumber(result.V_S)} <span className="text-lg font-normal">ซีซี</span></p>
+                        <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+                            <span className="block text-emerald-100 text-xs mb-0.5">ประเภทการพ่น</span>
+                            <span className="font-bold text-white text-sm sm:text-base leading-relaxed">{sprayType}</span>
+                        </div>
+                        <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+                            <span className="block text-emerald-100 text-xs mb-0.5">จำนวนบ้านที่ต้องพ่น</span>
+                            <span className="font-bold text-white text-sm sm:text-base leading-relaxed">{input.N} หลัง (เทียบเท่าพื้นที่ {formatNumber(totalArea)} ตร.ม.)</span>
+                        </div>
+                        <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
+                            <span className="block text-emerald-100 text-xs mb-0.5">อัตราส่วนผสม</span>
+                            <span className="font-bold text-white text-sm sm:text-base leading-relaxed">1 : {input.S} ({chemicalName} : น้ำมัน/น้ำ)</span>
+                        </div>
+                        <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm lg:col-span-2">
+                            <span className="block text-emerald-100 text-xs mb-0.5">อัตราการฉีดพ่น (RA)</span>
+                            <span className="font-bold text-white text-base leading-relaxed">{formatNumber(input.RA)} {input.RA_unit === 'L' ? 'ลิตร' : 'มล.'} ต่อพื้นที่ {input.A0.toLocaleString('th-TH')} ตร.ม.</span>
                         </div>
                     </div>
-                    <div className="mt-6 pt-4 border-t border-white/30">
-                        <p className="text-emerald-100">รวมส่วนผสมทั้งหมด</p>
-                        <p className="text-5xl font-extrabold">
-                            {formatNumber(result.V_total)} <span className="text-xl font-normal">ซีซี</span>
-                            <span className="text-lg font-normal text-emerald-200 ml-2">
-                                ({formatNumber(result.V_total / 1000, 2)} ลิตร)
-                            </span>
-                        </p>
+
+                    <div className="overflow-x-auto rounded-2xl bg-white/10 backdrop-blur-sm">
+                        <table className="w-full text-left text-xs sm:text-sm whitespace-normal">
+                            <thead className="bg-white/15 text-white">
+                                <tr>
+                                    <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold">รายการ</th>
+                                    <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-right">ปริมาณ (มล.)</th>
+                                    <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold text-right">ปริมาณ (ลิตร)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-white/95 leading-relaxed">
+                                <tr className="border-t border-white/15">
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold">🧪 สารเคมีชนิดเข้มข้น</td>
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-medium">{formatNumber(result.V_C)}</td>
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-medium">{formatNumber(result.V_C / 1000, 3)}</td>
+                                </tr>
+                                <tr className="border-t border-white/15">
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold">🛢️ ตัวทำละลาย (น้ำ/น้ำมัน)</td>
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-medium">{formatNumber(result.V_S)}</td>
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-medium">{formatNumber(result.V_S / 1000, 3)}</td>
+                                </tr>
+                                <tr className="border-t border-white/15 bg-white/10">
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold leading-normal sm:leading-relaxed">✅ ปริมาณสารเคมีสำหรับพ่นตามจำนวนหลังที่ระบุ</td>
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-extrabold">{formatNumber(result.V_total)}</td>
+                                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right font-extrabold">{formatNumber(totalLiters, 3)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -221,16 +257,16 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                         emoji="🏠"
                         label="ใช้ต่อหลัง"
                         value={formatNumber(result.V_per_house)}
-                        unit="ซีซี"
+                        unit="มล."
                         description="ปริมาณพ่นแต่ละบ้าน"
                         gradient="from-blue-400 to-blue-600"
                     />
                     <BentoResultCard
                         icon={<Droplets className="h-5 w-5" />}
                         emoji="💧"
-                        label={input.mix_type === 2 ? "ยาต่อตัวผสม 1 ลิตร" : "ยาในส่วนผสม 1 ลิตร"}
+                        label="สารเคมีที่ใช้ในส่วนผสม 1 ลิตร"
                         value={formatNumber(result.V_C_1L)}
-                        unit="ซีซี"
+                        unit="มล."
                         description={input.mix_type === 2 ? "ปริมาณยาที่เติม" : "ปริมาณยาในส่วนผสม"}
                         gradient="from-indigo-400 to-indigo-600"
                     />
@@ -238,9 +274,9 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                     <BentoResultCard
                         icon={<Beaker className="h-5 w-5" />}
                         emoji="🫗"
-                        label={input.mix_type === 2 ? "ตัวทำละลาย (น้ำมัน/น้ำ)" : "ตัวทำละลายใน 1 ลิตร"}
+                        label="น้ำมัน/น้ำ ที่ใช้ในส่วนผสม 1 ลิตร"
                         value={formatNumber(result.V_S_1L)}
-                        unit="ซีซี"
+                        unit="มล."
                         description={input.mix_type === 2 ? "ตัวตั้งต้น 1,000" : "ปริมาณตัวผสม"}
                         gradient="from-amber-400 to-orange-500"
                     />
@@ -248,42 +284,42 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
 
                 {/* Target Volume Calculations Comparison */}
                 {input.targetVolume !== undefined && input.targetVolume > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 print:break-inside-avoid">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6 print:break-inside-avoid">
                         {/* Box 1: Base ratio per 1 Liter */}
-                        <div className="glass-card p-5 rounded-2xl border border-slate-200/40 bg-slate-50/50">
-                            <h4 className="font-bold text-slate-700 mb-3 border-b border-slate-200/50 pb-2 flex items-center gap-1.5">
+                        <div className="glass-card p-4 sm:p-5 rounded-2xl border border-slate-200/40 bg-slate-50/50">
+                            <h4 className="font-bold text-slate-700 mb-3 border-b border-slate-200/50 pb-2 flex items-center gap-1.5 text-sm sm:text-base leading-relaxed">
                                 <span className="text-lg">💡</span> สัดส่วนน้ำยาพ่นต่อ 1 ลิตร
                             </h4>
-                            <div className="space-y-2 text-sm text-slate-600">
-                                <div className="flex justify-between">
+                            <div className="space-y-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                                <div className="flex justify-between items-center">
                                     <span>ใช้สารเคมีเข้มข้น:</span>
-                                    <span className="font-semibold text-slate-800">{formatNumber(result.V_C_1L)} cc (มล.)</span>
+                                    <span className="font-semibold text-slate-800">{formatNumber(result.V_C_1L)} มล.</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>เติมตัวทำละลาย (น้ำ/น้ำมัน):</span>
-                                    <span className="font-semibold text-slate-800">{formatNumber(result.V_S_1L)} cc (มล.)</span>
+                                <div className="flex justify-between items-center">
+                                    <span>เติม น้ำมัน/น้ำ:</span>
+                                    <span className="font-semibold text-slate-800">{formatNumber(result.V_S_1L)} มล.</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Box 2: Total preparation target volume (Highlighted) */}
-                        <div className="glass-card p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/30 animate-pulse-glow">
-                            <h4 className="font-bold text-teal-800 mb-3 border-b border-teal-200/50 pb-2 flex justify-between items-center">
+                        <div className="glass-card p-4 sm:p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/30 animate-pulse-glow">
+                            <h4 className="font-bold text-teal-800 mb-3 border-b border-teal-200/50 pb-2 flex justify-between items-center text-sm sm:text-base leading-relaxed">
                                 <span className="flex items-center gap-1.5">🚀 ยอดรวมที่ต้องเตรียมจริง</span>
-                                <span className="bg-teal-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
+                                <span className="bg-teal-600 text-white text-[11px] sm:text-xs px-2.5 py-1 rounded-full font-semibold">
                                     รวม {input.targetVolume} ลิตร
                                 </span>
                             </h4>
-                            <div className="space-y-3 text-sm">
+                            <div className="space-y-3 text-xs sm:text-sm leading-relaxed">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-teal-700 font-medium">ตวงสารเคมีเข้มข้น:</span>
-                                    <span className="text-xl font-extrabold text-teal-800">
-                                        {formatNumber(result.V_C_target ?? (result.V_C_1L * input.targetVolume))} cc (มล.)
+                                    <span className="text-teal-700 font-medium">ใช้สารเคมีเข้มข้น:</span>
+                                    <span className="text-lg sm:text-xl font-extrabold text-teal-800">
+                                        {formatNumber(result.V_C_target ?? (result.V_C_1L * input.targetVolume))} มล.
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-teal-700 font-medium">เติม น้ำ หรือ น้ำมัน:</span>
-                                    <span className="text-xl font-extrabold text-teal-800">
+                                    <span className="text-teal-700 font-medium">เติม น้ำมัน/น้ำ:</span>
+                                    <span className="text-lg sm:text-xl font-extrabold text-teal-800">
                                         {formatNumber((result.V_S_target ?? (result.V_S_1L * input.targetVolume)) / 1000, 2)} ลิตร
                                     </span>
                                 </div>
@@ -293,46 +329,49 @@ export function ResultsDisplay({ result, input, location, coords }: ResultsDispl
                 )}
 
                 {/* Print Instructions */}
-                <div className="mt-6 p-5 glass-card rounded-2xl border border-slate-200/50 print:break-inside-avoid">
-                    <h4 className="font-bold mb-3 flex items-center gap-2 text-slate-700">
+                <div className="mt-6 p-4 sm:p-5 glass-card rounded-2xl border border-slate-200/50 print:break-inside-avoid">
+                    <h4 className="font-bold mb-3 flex items-center gap-2 text-slate-700 text-sm sm:text-base leading-relaxed">
                         <span className="text-xl">📝</span>
-                        วิธีผสม (สำหรับพิมพ์)
+                        วิธีผสมตามจำนวนหลังที่ระบุ
                     </h4>
-                    <ol className="space-y-2 text-sm">
-                        <li className="flex items-start gap-2">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">1</span>
-                            <span>เตรียม <strong className="text-blue-600">{formatNumber(result.V_C)} ซีซี</strong> ของสารเคมี</span>
+                    <ol className="space-y-2.5 text-xs sm:text-sm leading-relaxed">
+                        <li className="flex items-start gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0 text-xs mt-0.5">1</span>
+                            <span>เตรียม <strong className="text-blue-600">{formatNumber(result.V_C)} มล. ({formatNumber(result.V_C / 1000, 3)} ลิตร)</strong> ของสารเคมี</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                            <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0">2</span>
-                            <span>เตรียม <strong className="text-amber-600">{formatNumber(result.V_S)} ซีซี</strong> ของน้ำมัน/น้ำ</span>
+                        <li className="flex items-start gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0 text-xs mt-0.5">2</span>
+                            <span>เตรียม <strong className="text-amber-600">{formatNumber(result.V_S)} มล. ({formatNumber(result.V_S / 1000, 3)} ลิตร)</strong> ของน้ำมัน/น้ำ</span>
                         </li>
-                        <li className="flex items-start gap-2">
-                            <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold shrink-0">3</span>
-                            <span>ผสมเข้าด้วยกัน ได้ <strong className="text-green-600">{formatNumber(result.V_total)} ซีซี ({formatNumber(result.V_total / 1000, 2)} ลิตร)</strong></span>
+                        <li className="flex items-start gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold shrink-0 text-xs mt-0.5">3</span>
+                            <span>ผสมเข้าด้วยกัน ได้ <strong className="text-green-600">{formatNumber(result.V_total)} มล. ({formatNumber(result.V_total / 1000, 2)} ลิตร)</strong></span>
                         </li>
-                        <li className="flex items-start gap-2">
-                            <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold shrink-0">4</span>
-                            <span>พ่นบ้านละ <strong className="text-pink-600">{formatNumber(result.V_per_house)} ซีซี</strong></span>
+                        <li className="flex items-start gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold shrink-0 text-xs mt-0.5">4</span>
+                            <span>พ่นบ้านละ <strong className="text-pink-600">{formatNumber(result.V_per_house)} มล. ({formatNumber(result.V_per_house / 1000, 3)} ลิตร)</strong></span>
                         </li>
                     </ol>
-                    <p className="text-xs text-slate-400 mt-4 pt-3 border-t border-slate-200">
+                    <p className="text-xs text-slate-400 mt-4 pt-3 border-t border-slate-200 leading-relaxed">
                         สูตร: {input.C}:{input.S} | พื้นที่หลังละ {input.A_house} ตร.ม. | จำนวน {input.N} หลัง
                     </p>
                 </div>
 
-                {/* Location Info */}
-                {(location || coords) && (
+                {/* Location & Agency Info */}
+                {(agency || location || coords) && (
                     <div className="mt-4 p-4 glass-card rounded-2xl border border-violet-100/50 bg-violet-50/30">
                         <div className="flex items-center gap-2 mb-2">
-                            <MapPin className="h-4 w-4 text-violet-500" />
-                            <h4 className="font-semibold text-sm text-slate-700">สถานที่ปฏิบัติงาน</h4>
+                            <Building className="h-4 w-4 text-violet-500 shrink-0" />
+                            <h4 className="font-semibold text-xs sm:text-sm text-slate-700 leading-relaxed">ข้อมูลผู้ใช้งานและสถานที่ปฏิบัติงาน</h4>
                         </div>
+                        {agency && (
+                            <p className="text-xs sm:text-sm font-medium text-slate-800 mb-1 leading-relaxed">🏢 หน่วยงานผู้ใช้: {agency}</p>
+                        )}
                         {location && (
-                            <p className="text-sm font-medium text-slate-800 mb-1">📍 {location}</p>
+                            <p className="text-xs sm:text-sm font-medium text-slate-800 mb-1 leading-relaxed">📍 สถานที่ปฏิบัติงาน: {location}</p>
                         )}
                         {coords && (
-                            <p className="text-xs text-slate-400">
+                            <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
                                 พิกัด: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
                             </p>
                         )}
@@ -361,18 +400,22 @@ function BentoResultCard({
     gradient: string;
 }) {
     return (
-        <div className="bento-item glass-card border border-white/50 hover-lift group">
-            <div className="flex items-center gap-2 mb-3">
-                <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                    <span className="text-white">{icon}</span>
+        <div className="bento-item glass-card border border-white/50 hover-lift group p-4 sm:p-5 flex flex-col justify-between">
+            <div>
+                <div className="flex items-center gap-2 mb-2.5">
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                        <span className="text-white">{icon}</span>
+                    </div>
+                    <span className="text-xl sm:text-2xl">{emoji}</span>
                 </div>
-                <span className="text-2xl">{emoji}</span>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-normal sm:leading-relaxed min-h-[2.25rem] flex items-center">{label}</p>
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{label}</p>
-            <p className="text-3xl font-extrabold text-slate-800 dark:text-white mt-1">
-                {value} <span className="text-sm font-normal text-slate-500">{unit}</span>
-            </p>
-            <p className="text-xs text-slate-400 mt-2">{description}</p>
+            <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white mt-1.5 leading-tight">
+                    {value} <span className="text-xs sm:text-sm font-normal text-slate-500">{unit}</span>
+                </p>
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1.5 leading-relaxed">{description}</p>
+            </div>
         </div>
     );
 }

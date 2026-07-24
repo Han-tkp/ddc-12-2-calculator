@@ -246,7 +246,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="L">ลิตร</SelectItem>
-                                            <SelectItem value="cc">ซีซี</SelectItem>
+                                            <SelectItem value="cc">มล.</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -376,7 +376,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="L">ลิตร</SelectItem>
-                                            <SelectItem value="cc">ซีซี</SelectItem>
+                                            <SelectItem value="cc">มล.</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -473,7 +473,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <div className="inline-flex items-center px-2 py-1 bg-slate-100 rounded-md text-slate-700 font-medium text-sm">
-                                                {profile.RA} {profile.RA_unit === 'L' ? 'ลิตร' : 'ซีซี'}
+                                                {profile.RA} {profile.RA_unit === 'L' ? 'ลิตร' : 'มล.'}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
