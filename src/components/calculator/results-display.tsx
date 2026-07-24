@@ -2,7 +2,7 @@
 
 import { formatNumber } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
-import { Printer, FlaskConical, Droplets, Home, Beaker, Sparkles, CheckCircle, MapPin, Download, Building } from 'lucide-react';
+import { Printer, FlaskConical, Droplets, Home, Beaker, MapPin, Download, Building, CheckCircle, Sparkles } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
     DropdownMenu,
@@ -305,7 +305,7 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                         {/* Box 2: Total preparation target volume (Highlighted) */}
                         <div className="glass-card p-4 sm:p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/30 animate-pulse-glow">
                             <h4 className="font-bold text-teal-800 mb-3 border-b border-teal-200/50 pb-2 flex justify-between items-center text-sm sm:text-base leading-relaxed">
-                                <span className="flex items-center gap-1.5">🚀 ยอดรวมที่ต้องเตรียมจริง</span>
+                                <span className="flex items-center gap-1.5">🚀 ปริมาณสารเคมีสำหรับพ่นที่ต้องการ</span>
                                 <span className="bg-teal-600 text-white text-[11px] sm:text-xs px-2.5 py-1 rounded-full font-semibold">
                                     รวม {input.targetVolume} ลิตร
                                 </span>

@@ -101,6 +101,13 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Thai Typography & Line Height Optimization for Multi-line Text */
+label,
+.bento-item label,
+.bento-item p {
+  line-height: 1.7;
+}
+
 /* Gradient Text */
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B8DD6 100%);
