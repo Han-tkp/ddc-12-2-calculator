@@ -123,11 +123,11 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                             <Droplets className="h-4 w-4 text-blue-500" />
                                             <span className="font-medium">{log.C}:{log.S}</span>
                                         </div>
-                                        <div className="text-xs text-slate-400">RA: {log.RA} {log.RA_unit}</div>
+                                        <div className="text-xs text-slate-400">RA: {log.RA} {log.RA_unit === 'L' ? 'ลิตร' : 'มล.'}</div>
                                     </td>
                                     <td className="p-4 text-right">
                                         <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                            {formatNumber(log.V_total)} cc
+                                            {formatNumber(log.V_total)} มล.
                                         </span>
                                         <div className="text-xs text-slate-400">{log.N} หลัง</div>
                                     </td>

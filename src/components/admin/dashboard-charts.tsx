@@ -113,7 +113,7 @@ export function DashboardCharts({ dailyStats, chemicalStats, volumeStats }: Dash
             {/* Chemical Volume Chart */}
             <Card className="glass-card border-0 shadow-lg ring-1 ring-black/5 lg:col-span-2 mt-4">
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-slate-700">ปริมาณการใช้สารเคมีรวม (cc / ลิตร)</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-slate-700">ปริมาณการใช้สารเคมีรวม (มล. / ลิตร)</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="h-75 w-full">

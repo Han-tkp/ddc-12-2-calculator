@@ -79,13 +79,14 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
                 wsData = data.map((item) => ({
                     'วัน-เวลา': format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm', { locale: th }),
                     'สถานที่': item.location || 'ไม่ระบุ',
+                    'หน่วยงาน': item.agency || '-',
                     'สารเคมี': item.chemical,
                     'อัตราส่วน': `${item.C}:${item.S}`,
                     'ชนิดการพ่น': item.type || 'หมอกควัน/ULV',
                     'ใช้เครื่อง (Rate)': item.flow_rate || '-',
-                    'ปริมาณรวมทั้งหมด (cc)': item.V_total,
-                    'ใช้สารเคมี (cc)': item.V_chem,
-                    'ใช้ตัวผสม (cc)': item.V_solvent,
+                    'ปริมาณรวมทั้งหมด (มล.)': item.V_total,
+                    'ใช้สารเคมี (มล.)': item.V_C ?? item.V_chem ?? 0,
+                    'ใช้ตัวผสม (มล.)': item.V_S ?? item.V_solvent ?? 0,
                     'ผู้ปฏิบัติงาน': item.userName,
                 }));
             } else if (modeId === 'ticket') {
@@ -94,9 +95,10 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
                     'Ticket No.': `#${String(index + 1).padStart(4, '0')}`,
                     'เวลางาน': format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm', { locale: th }),
                     'พื้นที่': item.location || 'ไม่ระบุ',
+                    'หน่วยงาน': item.agency || '-',
                     'สารเคมีที่เบิก': item.chemical,
-                    'ปริมาณสารเคมี (cc)': item.V_chem,
-                    'ปริมาณตัวผสม (cc)': item.V_solvent,
+                    'ปริมาณสารเคมี (มล.)': item.V_C ?? item.V_chem ?? 0,
+                    'ปริมาณตัวผสม (มล.)': item.V_S ?? item.V_solvent ?? 0,
                     'ผสมลงถังขนาด (ลิตร)': item.bottle_capacity || '-',
                     'ผู้รับผิดชอบ': item.userName,
                     'ลายเซ็นผู้จ่ายยา': '...............................',
@@ -105,12 +107,12 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
             } else if (modeId === 'area') {
                 sheetName = 'Area_Allocation';
                 const grouped = data.reduce((acc: any, curr: any) => {
-                    const loc = curr.location || 'ไม่ระบะพื้นที่';
+                    const loc = curr.location || 'ไม่ระบุพื้นที่';
                     if (!acc[loc]) {
                         acc[loc] = { location: loc, chem: 0, solvent: 0, total: 0, counts: 0 };
                     }
-                    acc[loc].chem += curr.V_chem || 0;
-                    acc[loc].solvent += curr.V_solvent || 0;
+                    acc[loc].chem += (curr.V_C ?? curr.V_chem ?? 0);
+                    acc[loc].solvent += (curr.V_S ?? curr.V_solvent ?? 0);
                     acc[loc].total += curr.V_total || 0;
                     acc[loc].counts += 1;
                     return acc;
@@ -118,21 +120,22 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
                 wsData = Object.values(grouped).map((item: any) => ({
                     'สถานที่ปฏิบัติงาน / หมู่บ้าน': item.location,
                     'ความถี่การออกพ่น (ครั้ง)': item.counts,
-                    'ยอดใช้สารเคมีรวม (cc)': item.chem,
-                    'ยอดใช้น้ำ/น้ำมันรวม (cc)': item.solvent,
-                    'น้ำยาผสมเสร็จรวม (cc)': item.total,
+                    'ยอดใช้สารเคมีรวม (มล.)': item.chem,
+                    'ยอดใช้น้ำ/น้ำมันรวม (มล.)': item.solvent,
+                    'น้ำยาผสมเสร็จรวม (มล.)': item.total,
                 }));
             } else if (modeId === 'cost') {
                 sheetName = 'Inventory_Cost';
                 wsData = data.map((item) => ({
                     'วันที่เบิก': format(new Date(item.createdAt), 'dd/MM/yyyy', { locale: th }),
                     'สารเคมี': item.chemical,
-                    'ปริมาณเบิกใช้ (cc)': item.V_chem,
+                    'ปริมาณเบิกใช้ (มล.)': item.V_C ?? item.V_chem ?? 0,
                     'ราคาต่อหน่วย (บาท)': '',
                     'ต้นทุนสารเคมีรวม (บาท)': '',
                     'ต้นทุนตัวทำละลาย (บาท)': '',
                     'ต้นทุนสุทธิ (Total Cost)': '',
                     'สถานที่นำไปใช้': item.location || '-',
+                    'หน่วยงาน': item.agency || '-',
                     'ผู้เบิก': item.userName,
                 }));
             } else if (modeId === 'ddc') {
@@ -140,12 +143,13 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
                 wsData = data.map((item) => ({
                     'วัน/เดือน/ปี': format(new Date(item.createdAt), 'dd/MM/yyyy', { locale: th }),
                     'สถานที่พ่น': item.location || '-',
-                    'จำนวนหลังคาเรือน': item.params?.N || '-',
+                    'หน่วยงาน': item.agency || '-',
+                    'จำนวนหลังคาเรือน': item.N || item.params?.N || '-',
                     'ชนิดเครื่องพ่น': item.type || '-',
                     'ชนิดสารเคมี': item.chemical,
                     'อัตราส่วนผสม': `${item.C}:${item.S}`,
-                    'ปริมาณสารเคมี (cc)': item.V_chem,
-                    'ปริมาณน้ำมัน/น้ำ (cc)': item.V_solvent,
+                    'ปริมาณสารเคมี (มล.)': item.V_C ?? item.V_chem ?? 0,
+                    'ปริมาณน้ำมัน/น้ำ (มล.)': item.V_S ?? item.V_solvent ?? 0,
                     'ผู้ปฏิบัติงาน': item.userName,
                     'หมายเหตุ': '',
                 }));
