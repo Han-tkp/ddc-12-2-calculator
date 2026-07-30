@@ -10,6 +10,7 @@ import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
+import { AiMcpChatbot } from '@/components/ai/ai-mcp-chatbot';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -357,142 +358,12 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                 </Card>
             </TabsContent>
 
-            {/* TAB 3: เพิ่มสารเคมีด้วย AI (MCP) */}
+            {/* TAB 3: เพิ่มสารเคมีด้วย AI (MCP Chatbot) */}
             <TabsContent value="ai-assistant" className="space-y-6 mt-0">
-                <Card className="border-indigo-200 bg-linear-to-br from-indigo-50/40 via-white to-purple-50/40 shadow-xs overflow-hidden">
-                    <CardHeader className="bg-white/80 border-b border-indigo-100">
-                        <CardTitle className="text-base font-bold flex items-center gap-2 text-indigo-900">
-                            <Bot className="h-6 w-6 text-indigo-600" />
-                            เพิ่มและสร้างสูตรสารเคมีด้วยผู้ช่วย AI (AI / MCP Formula Generator)
-                        </CardTitle>
-                        <CardDescription className="text-xs text-slate-600">
-                            พิมพ์ชื่อยี่ห้อสารเคมีหรือศัตรูพืชเป้าหมาย ผู้ช่วย AI จะคำนวณและเตรียมสูตรพารามิเตอร์ให้คุณตรวจสอบก่อนกดยืนยันบันทึก
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="p-6 space-y-6">
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <Input
-                                placeholder="พิมพ์ชื่อสารเคมี เช่น เดลตาไซด์ ULV หรือ ซับมาริน หมอกควัน..."
-                                value={aiQuery}
-                                onChange={(e) => setAiQuery(e.target.value)}
-                                className="h-11 bg-white text-sm"
-                            />
-                            <Button
-                                type="button"
-                                onClick={handleGenerateAiFormula}
-                                disabled={isAiGenerating}
-                                className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold gap-2 shrink-0 px-6"
-                            >
-                                {isAiGenerating ? <Clock className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                สั่ง AI คำนวณและสร้างสูตร
-                            </Button>
-                        </div>
-
-                        {/* AI Formula Result Preview */}
-                        {aiName && (
-                            <div className="bg-white p-5 rounded-2xl border-2 border-indigo-200 shadow-sm space-y-4 animate-fade-up">
-                                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="h-5 w-5 text-indigo-600" />
-                                        <h3 className="font-bold text-slate-900 text-base">{aiName}</h3>
-                                    </div>
-                                    <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold">
-                                        AI Generated Schema
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="block text-slate-500 mb-0.5">ประเภทการผสม</span>
-                                        <span className="font-bold text-indigo-600">{aiMixType === 2 ? 'ผสมกับ (NET_ADDITIVE)' : 'ผสมให้ได้ (VOLUME_TO_TOTAL)'}</span>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="block text-slate-500 mb-0.5">สัดส่วน (C:S)</span>
-                                        <span className="font-bold text-slate-800">{aiC} : {aiS}</span>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="block text-slate-500 mb-0.5">อัตราการพ่น (RA)</span>
-                                        <span className="font-bold text-slate-800">{aiRA} {aiRAUnit} / 1,000 ตร.ม.</span>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="block text-slate-500 mb-0.5">ถังพ่นเคมี</span>
-                                        <span className="font-bold text-purple-600">{aiTankCap} ลิตร</span>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 pt-2">
-                                    <Label className="text-xs font-semibold text-slate-700">สถานที่ปฏิบัติงาน (Tracking Location):</Label>
-                                    <Input
-                                        placeholder="ระบุสถานที่อ้างอิง เช่น อ.เมือง สงขลา"
-                                        value={aiLocation}
-                                        onChange={(e) => setAiLocation(e.target.value)}
-                                        className="h-9 text-xs"
-                                    />
-                                </div>
-
-                                <div className="pt-2 flex justify-end">
-                                    <Button
-                                        type="button"
-                                        onClick={() => setShowAiConfirm(true)}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-2"
-                                    >
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        บันทึกสูตรจาก AI เข้าสู่ระบบ
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* AI Save Confirmation Alert Modal */}
-                <Dialog open={showAiConfirm} onOpenChange={setShowAiConfirm}>
-                    <DialogContent className="max-w-md rounded-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-indigo-600 text-lg font-bold">
-                                <AlertTriangle className="h-5 w-5 text-amber-500" /> ยืนยันการบันทึกสูตรจาก AI เข้าสู่ระบบ?
-                            </DialogTitle>
-                            <DialogDescription className="text-xs text-slate-600 pt-2 leading-relaxed">
-                                โปรดตรวจสอบค่าพารามิเตอร์ที่สร้างโดย AI ก่อนยืนยัน บันทึกนี้จะถูก Tracking พร้อมเวลาและสถานที่เข้าสู่ฐานข้อมูล
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs text-slate-700">
-                            <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                                <span className="text-slate-500">ชื่อสูตรสารเคมี:</span>
-                                <span className="font-bold text-indigo-900">{aiName}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                                <span className="text-slate-500">สัดส่วนการผสม:</span>
-                                <span className="font-bold text-slate-900">{aiC}:{aiS}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                                <span className="text-slate-500">อัตราการพ่น:</span>
-                                <span className="font-bold text-slate-900">{aiRA} {aiRAUnit} / 1,000 ตร.ม.</span>
-                            </div>
-                            <div className="flex justify-between pt-1 text-[11px] text-slate-500">
-                                <span>สถานที่ Tracking:</span>
-                                <span>{aiLocation || 'ผู้ใช้งานทั่วไป (AI Assistant)'}</span>
-                            </div>
-                        </div>
-
-                        <DialogFooter className="gap-2 pt-2">
-                            <Button type="button" variant="outline" onClick={() => setShowAiConfirm(false)} disabled={isSavingAi}>
-                                ตรวจสอบอีกครั้ง
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={handleConfirmSaveAiFormula}
-                                disabled={isSavingAi}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
-                            >
-                                {isSavingAi ? <Clock className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                                ยืนยันบันทึกสูตร AI
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <AiMcpChatbot onFormulaSaved={async () => {
+                    const res = await fetch('/api/profiles');
+                    if (res.ok) setProfiles(await res.json());
+                }} />
             </TabsContent>
         </Tabs>
     );

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bot, Terminal, Cpu, Database, Sparkles, CheckCircle2, Copy, Shield, Layers, Code, Zap } from 'lucide-react';
+import { AiMcpChatbot } from '@/components/ai/ai-mcp-chatbot';
 import Link from 'next/link';
 
 export default async function AdminMCPPage() {
@@ -49,6 +50,9 @@ export default async function AdminMCPPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* AI MCP Chatbot Component */}
+            <AiMcpChatbot />
 
             {/* Grid Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
