@@ -33,6 +33,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     }
                     console.log('👤 User found:', user ? 'Yes' : 'No');
 
+                    // Strict Security (CIA Triad): Only ADMIN role is allowed to log in
+                    if (user.role !== 'ADMIN') {
+                        console.log('⛔ Access Denied: Non-ADMIN role is not permitted to log in');
+                        return null;
+                    }
+
                     if (!user.password) {
                         console.log('❌ No password set for user');
                         return null;
@@ -49,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         return null;
                     }
 
-                    console.log('✅ Login successful for:', user.email);
+                    console.log('✅ Admin login successful for:', user.email);
                     return {
                         id: user.id,
                         email: user.email,

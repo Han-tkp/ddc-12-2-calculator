@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
                 name: encrypt(validated.name), // Encrypt name
                 email: validated.email,
                 password: hashedPassword,
-                role: 'USER',
+                role: 'ADMIN',
             })
             .select()
             .single();
