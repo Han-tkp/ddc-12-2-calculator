@@ -103,8 +103,8 @@ export function CalculatorForm() {
     // Watch for preset and RA_unit select
     const watchedValues = watch();
 
-    // Fetch profiles from database on mount
-    const [dbPresets, setDbPresets] = useState<any[]>([]);
+    // Fetch profiles from database on mount (fallback to CHEMICAL_PRESETS if DB is empty)
+    const [dbPresets, setDbPresets] = useState<any[]>(CHEMICAL_PRESETS);
 
     useEffect(() => {
         const fetchProfiles = async () => {
@@ -112,27 +112,27 @@ export function CalculatorForm() {
                 const res = await fetch('/api/profiles');
                 if (res.ok) {
                     const profiles = await res.json();
-
-                    // Transform db profiles to match CHEMICAL_PRESETS shape
-                    const formattedProfiles = profiles.map((p: any) => ({
-                        id: p.id,
-                        name: p.name,
-                        C: p.C,
-                        S: p.S,
-                        RA: p.RA,
-                        RA_unit: p.RA_unit,
-                        mix_type: p.mix_type,
-                        A0: p.A0,
-                        A_house: 100 // Default for custom formulas
-                    }));
-
-                    // Add "Other" option at the end
-                    const otherPreset = CHEMICAL_PRESETS.find(p => p.id === 'other');
-
-                    setDbPresets([...formattedProfiles, otherPreset]);
+                    if (Array.isArray(profiles) && profiles.length > 0) {
+                        const formattedProfiles = profiles.map((p: any) => ({
+                            id: p.id,
+                            name: p.name,
+                            C: p.C,
+                            S: p.S,
+                            RA: p.RA,
+                            RA_unit: p.RA_unit,
+                            mix_type: p.mix_type,
+                            A0: p.A0,
+                            A_house: 100
+                        }));
+                        const otherPreset = CHEMICAL_PRESETS.find(p => p.id === 'other');
+                        setDbPresets([...formattedProfiles, otherPreset]);
+                    } else {
+                        setDbPresets(CHEMICAL_PRESETS);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch profiles:', error);
+                setDbPresets(CHEMICAL_PRESETS);
             }
         };
         fetchProfiles();
