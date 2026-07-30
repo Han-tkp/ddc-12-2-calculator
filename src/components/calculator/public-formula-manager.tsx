@@ -169,10 +169,10 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 type="button"
                 onClick={handleOpenModal}
                 variant="outline"
-                className="w-full sm:w-auto bg-indigo-50 border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-semibold gap-2 h-10 shadow-sm"
+                className="bg-indigo-50/80 border-indigo-200/80 hover:bg-indigo-100 text-indigo-700 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-4 shadow-xs transition-all hover:scale-105"
             >
                 <Plus className="h-4 w-4" />
-                เพิ่มสูตรสารเคมีใหม่ / AI Assistant
+                <span>เพิ่มสูตรสารเคมี</span>
             </Button>
 
             {/* Main Form Modal */}

@@ -7,6 +7,8 @@ import { Footer } from '@/components/footer';
 import { Calculator, LogIn, LayoutDashboard, LogOut, User } from 'lucide-react';
 import Image from 'next/image';
 
+import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
+
 export default async function Home() {
   const session = await auth();
 
@@ -39,6 +41,9 @@ export default async function Home() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
+            {/* Public Chemical Add Button next to login */}
+            <PublicFormulaManager />
+
             {/* Auth Buttons */}
             <div className="flex items-center gap-2">
               {session?.user ? (

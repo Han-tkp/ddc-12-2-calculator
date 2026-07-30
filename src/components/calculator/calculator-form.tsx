@@ -280,12 +280,6 @@ export function CalculatorForm() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <div className="pt-1">
-                                <PublicFormulaManager onFormulaAdded={(newChemName) => {
-                                    loadProfiles();
-                                    setValue('chemical', newChemName);
-                                }} />
-                            </div>
                         </div>
 
                         {/* Agency Input (Point 15) */}
