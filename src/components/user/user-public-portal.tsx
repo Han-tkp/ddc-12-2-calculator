@@ -11,6 +11,7 @@ import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
 import { AiMcpChatbot } from '@/components/ai/ai-mcp-chatbot';
+import { FormulaPlayground } from '@/components/admin/formula-playground';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -217,6 +218,10 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                         <Bot className="h-4 w-4" />
                         3. เพิ่มสารเคมีด้วย AI (MCP)
                     </TabsTrigger>
+                    <TabsTrigger value="playground" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
+                        <FlaskConical className="h-4 w-4 text-purple-600" />
+                        4. Playground ทดสอบสูตร
+                    </TabsTrigger>
                 </TabsList>
 
                 <div className="flex items-center gap-2">
@@ -368,6 +373,11 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                     const res = await fetch('/api/profiles');
                     if (res.ok) setProfiles(await res.json());
                 }} />
+            </TabsContent>
+
+            {/* TAB 4: Playground ทดสอบสูตร */}
+            <TabsContent value="playground" className="space-y-6 mt-0">
+                <FormulaPlayground />
             </TabsContent>
         </Tabs>
     );

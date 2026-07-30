@@ -3,7 +3,8 @@ import {
     Bot,
     Settings,
     FileText,
-    Inbox
+    Inbox,
+    FlaskConical
 } from 'lucide-react';
 
 export const adminNavItems = [
@@ -16,6 +17,11 @@ export const adminNavItems = [
         href: '/admin/mcp',
         label: 'ระบบ AI / MCP',
         icon: Bot
+    },
+    {
+        href: '/admin/playground',
+        label: 'Playground ทดสอบสูตร',
+        icon: FlaskConical
     },
     {
         href: '/admin/profiles',
