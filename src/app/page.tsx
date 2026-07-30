@@ -40,7 +40,18 @@ export default async function Home() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* User Portal Link */}
+            <Link href="/user">
+              <Button
+                variant="outline"
+                className="bg-emerald-50/80 border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-4 shadow-xs transition-all hover:scale-105"
+              >
+                <LayoutDashboard className="h-4 w-4 text-emerald-600" />
+                <span>ศูนย์ผู้ใช้งาน</span>
+              </Button>
+            </Link>
+
             {/* Public Chemical Add Button next to login */}
             <PublicFormulaManager />
 
