@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -190,9 +191,11 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
 
                     {/* AI Generator Bar */}
                     <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-4 rounded-xl border border-indigo-100 space-y-2">
-                        <div className="flex items-center gap-2 font-bold text-xs text-indigo-800">
-                            <Bot className="h-4 w-4 text-indigo-600" />
-                            ผู้ช่วย AI เพิ่มสูตรอัตโนมัติ (AI Formula Assistant)
+                        <div className="flex items-center justify-between font-bold text-xs text-indigo-800">
+                            <span className="flex items-center gap-2">
+                                <Bot className="h-4 w-4 text-indigo-600" />
+                                ผู้ช่วย AI เพิ่มสูตรอัตโนมัติ (AI Formula Assistant)
+                            </span>
                         </div>
                         <div className="flex gap-2">
                             <Input
@@ -212,6 +215,17 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                 เติมสูตรด้วย AI
                             </Button>
                         </div>
+                        <Link href="/user?tab=ai-assistant" onClick={() => setIsOpen(false)} className="block pt-1">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold text-xs gap-1.5"
+                            >
+                                <Bot className="h-4 w-4 text-indigo-600" />
+                                หรือเปิดหน้าพูดคุยกับ AI Chatbot เต็มรูปแบบ 🤖
+                            </Button>
+                        </Link>
                     </div>
 
                     <form onSubmit={handlePreSubmit} className="space-y-4 text-xs">
