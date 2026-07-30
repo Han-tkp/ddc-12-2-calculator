@@ -21,6 +21,7 @@ import { ResultsDisplay } from './results-display';
 import { CHEMICAL_PRESETS } from '@/lib/constants';
 import { LabelGuide } from './label-guide';
 import { LocationPickerWrapper } from './location-picker-wrapper';
+import { PublicFormulaManager } from './public-formula-manager';
 
 // Extended types for form
 interface ExtendedCalculationInput extends CalculationInput {
@@ -106,37 +107,38 @@ export function CalculatorForm() {
     // Fetch profiles from database on mount (fallback to CHEMICAL_PRESETS if DB is empty)
     const [dbPresets, setDbPresets] = useState<any[]>(CHEMICAL_PRESETS);
 
-    useEffect(() => {
-        const fetchProfiles = async () => {
-            try {
-                const res = await fetch('/api/profiles');
-                if (res.ok) {
-                    const profiles = await res.json();
-                    if (Array.isArray(profiles) && profiles.length > 0) {
-                        const formattedProfiles = profiles.map((p: any) => ({
-                            id: p.id,
-                            name: p.name,
-                            C: p.C,
-                            S: p.S,
-                            RA: p.RA,
-                            RA_unit: p.RA_unit,
-                            mix_type: p.mix_type,
-                            A0: p.A0,
-                            A_house: 100
-                        }));
-                        const otherPreset = CHEMICAL_PRESETS.find(p => p.id === 'other');
-                        setDbPresets([...formattedProfiles, otherPreset]);
-                    } else {
-                        setDbPresets(CHEMICAL_PRESETS);
-                    }
+    const loadProfiles = useCallback(async () => {
+        try {
+            const res = await fetch('/api/profiles');
+            if (res.ok) {
+                const profiles = await res.json();
+                if (Array.isArray(profiles) && profiles.length > 0) {
+                    const formattedProfiles = profiles.map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        C: p.C,
+                        S: p.S,
+                        RA: p.RA,
+                        RA_unit: p.RA_unit,
+                        mix_type: p.mix_type,
+                        A0: p.A0,
+                        A_house: 100
+                    }));
+                    const otherPreset = CHEMICAL_PRESETS.find(p => p.id === 'other');
+                    setDbPresets([...formattedProfiles, otherPreset]);
+                } else {
+                    setDbPresets(CHEMICAL_PRESETS);
                 }
-            } catch (error) {
-                console.error('Failed to fetch profiles:', error);
-                setDbPresets(CHEMICAL_PRESETS);
             }
-        };
-        fetchProfiles();
+        } catch (error) {
+            console.error('Failed to fetch profiles:', error);
+            setDbPresets(CHEMICAL_PRESETS);
+        }
     }, []);
+
+    useEffect(() => {
+        loadProfiles();
+    }, [loadProfiles]);
 
     // 1. Handle Preset Selection
     const handlePresetChange = (presetId: string) => {
@@ -278,6 +280,12 @@ export function CalculatorForm() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <div className="pt-1">
+                                <PublicFormulaManager onFormulaAdded={(newChemName) => {
+                                    loadProfiles();
+                                    setValue('chemical', newChemName);
+                                }} />
+                            </div>
                         </div>
 
                         {/* Agency Input (Point 15) */}

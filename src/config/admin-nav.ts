@@ -1,6 +1,6 @@
 import {
     LayoutDashboard,
-    Users,
+    Bot,
     Settings,
     FileText,
     Inbox
@@ -13,9 +13,9 @@ export const adminNavItems = [
         icon: LayoutDashboard
     },
     {
-        href: '/admin/users',
-        label: 'จัดการผู้ใช้',
-        icon: Users
+        href: '/admin/mcp',
+        label: 'ระบบ AI / MCP',
+        icon: Bot
     },
     {
         href: '/admin/profiles',
