@@ -319,7 +319,7 @@ export function AiMcpChatbot({ onFormulaSaved }: { onFormulaSaved?: () => void }
                                             <h4 className="font-bold text-sm text-white">{msg.formula.name}</h4>
                                         </div>
                                         <span className="px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-[10px] font-bold border border-indigo-400/30">
-                                            {msg.formula.mix_type === 2 ? 'ผสมกับ (NET_ADDITIVE)' : 'ผสมให้ได้ (VOLUME_TO_TOTAL)'}
+                                            {msg.formula.mix_type === 2 ? 'แบบผสมกับ - เติมสารทบน้ำมัน' : 'แบบผสมให้ได้ - รวมปริมาตรคงที่'}
                                         </span>
                                     </div>
 

@@ -244,8 +244,8 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1">แบบผสมให้ได้ (VOLUME_TO_TOTAL) - รวมปริมาตรคงที่</SelectItem>
-                                        <SelectItem value="2">แบบผสมกับ (NET_ADDITIVE) - เติมสารทบน้ำมัน</SelectItem>
+                                        <SelectItem value="1">แบบผสมให้ได้ - รวมปริมาตรคงที่</SelectItem>
+                                        <SelectItem value="2">แบบผสมกับ - เติมสารทบน้ำมัน</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

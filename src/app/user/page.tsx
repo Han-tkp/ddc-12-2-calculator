@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { ArrowLeft, LayoutDashboard, Layers, Bot, Sparkles, MapPin, Calculator, CheckCircle2 } from 'lucide-react';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
 
+import { Suspense } from 'react';
+
 export const dynamic = 'force-dynamic';
 
 export default async function PublicUserPortalPage({
@@ -69,10 +71,14 @@ export default async function PublicUserPortalPage({
             </header>
 
             <main className="container mx-auto px-4 py-8 max-w-7xl">
-                <UserPublicPortal
-                    initialCalcData={calcData || []}
-                    initialProfiles={profiles || []}
-                />
+                <Suspense fallback={
+                    <div className="p-12 text-center text-slate-400">กำลังโหลดข้อมูลศูนย์ผู้ใช้งาน...</div>
+                }>
+                    <UserPublicPortal
+                        initialCalcData={calcData || []}
+                        initialProfiles={profiles || []}
+                    />
+                </Suspense>
             </main>
         </div>
     );

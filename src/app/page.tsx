@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { CalculatorForm } from '@/components/calculator/calculator-form';
 import { Footer } from '@/components/footer';
-import { Calculator, LogIn, LayoutDashboard, LogOut, User } from 'lucide-react';
+import { Calculator, LogIn, LayoutDashboard, LogOut, User, Plus } from 'lucide-react';
 import Image from 'next/image';
 
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
@@ -52,8 +52,16 @@ export default async function Home() {
               </Button>
             </Link>
 
-            {/* Public Chemical Add Button next to login */}
-            <PublicFormulaManager />
+            {/* Public Chemical Add Button -> Direct Link to Chatbot */}
+            <Link href="/user?tab=ai-assistant">
+              <Button
+                variant="outline"
+                className="bg-indigo-50/80 border-indigo-200/80 hover:bg-indigo-100 text-indigo-700 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-4 shadow-xs transition-all hover:scale-105"
+              >
+                <Plus className="h-4 w-4 text-indigo-600" />
+                <span>เพิ่มสูตรสารเคมี (AI Chatbot)</span>
+              </Button>
+            </Link>
 
             {/* Auth Buttons */}
             <div className="flex items-center gap-2">

@@ -23,9 +23,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2, Save } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Save, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { CustomChemicalModal } from '@/components/calculator/custom-chemical-modal';
 
 interface Profile {
     id: string;
@@ -158,10 +159,22 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         }
     };
 
+    const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+
     return (
         <div className="space-y-4">
-            {/* Add Button */}
-            <div className="flex justify-end">
+            {/* Add Buttons */}
+            <div className="flex items-center justify-end gap-2">
+                <Button
+                    type="button"
+                    onClick={() => setIsCustomModalOpen(true)}
+                    variant="outline"
+                    className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 font-semibold gap-2"
+                >
+                    <Upload className="h-4 w-4" />
+                    เพิ่มสูตร Custom (Drag & Drop ฉลาก)
+                </Button>
+
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                         <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -262,8 +275,8 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1">แบบผสมให้ได้ (ได้สุทธิ)</SelectItem>
-                                        <SelectItem value="2">แบบผสมกับ (นำไปทบ)</SelectItem>
+                                        <SelectItem value="1">แบบผสมให้ได้ - รวมปริมาตรคงที่</SelectItem>
+                                        <SelectItem value="2">แบบผสมกับ - เติมสารทบน้ำมัน</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -517,6 +530,12 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                     </Table>
                 </div>
             </div>
+
+            <CustomChemicalModal
+                isOpen={isCustomModalOpen}
+                onOpenChange={setIsCustomModalOpen}
+                onSuccess={() => router.refresh()}
+            />
         </div>
     );
 }

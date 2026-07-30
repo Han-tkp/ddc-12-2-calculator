@@ -32,13 +32,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useSearchParams } from 'next/navigation';
+
 interface UserPublicPortalProps {
     initialCalcData: any[];
     initialProfiles: any[];
 }
 
 export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPublicPortalProps) {
-    const [activeTab, setActiveTab] = useState('overview');
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState(tabParam || 'overview');
 
     // Formula List State
     const [profiles, setProfiles] = useState<any[]>(initialProfiles);
@@ -334,7 +338,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                             </td>
                                             <td className="p-3">
                                                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${p.mix_type === 2 ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'}`}>
-                                                    {p.mix_type === 2 ? 'ผสมกับ (NET_ADDITIVE)' : 'ผสมให้ได้ (VOLUME_TO_TOTAL)'}
+                                                    {p.mix_type === 2 ? 'แบบผสมกับ - เติมสารทบน้ำมัน' : 'แบบผสมให้ได้ - รวมปริมาตรคงที่'}
                                                 </span>
                                             </td>
                                             <td className="p-3 text-center font-mono font-bold text-slate-700">
