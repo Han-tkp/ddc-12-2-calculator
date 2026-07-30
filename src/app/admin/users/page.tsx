@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { auth } from '@/lib/auth';
 import { decrypt } from '@/lib/encryption';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,7 +19,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data: users, count, error } = await supabase
+    const { data: users, count, error } = await supabaseAdmin
         .from('users')
         .select('*', { count: 'exact' })
         .order('createdAt', { ascending: false })

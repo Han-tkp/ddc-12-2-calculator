@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { supabase } from './supabase';
+import { supabaseAdmin } from './supabase';
 import { loginSchema } from './validations';
 import { decrypt } from './encryption';
 
@@ -20,8 +20,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     const validated = loginSchema.parse(credentials);
                     console.log('✅ Validation passed');
 
-                    // Refactored to Supabase
-                    const { data: user, error } = await supabase
+                    // Query users table with admin client (bypasses RLS for authentication)
+                    const { data: user, error } = await supabaseAdmin
                         .from('users')
                         .select('*')
                         .eq('email', validated.email)

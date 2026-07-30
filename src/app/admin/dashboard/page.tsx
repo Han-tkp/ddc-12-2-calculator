@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calculator, Users, FlaskConical, Clock, TrendingUp, CalendarRange, MapPin } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,12 +31,12 @@ export default async function AdminDashboard({
     };
 
     // 2.1 Counts
-    const calcCountPromise = supabase.from('calculations')
+    const calcCountPromise = supabaseAdmin.from('calculations')
         .select('*', { count: 'exact', head: true })
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte);
 
-    const userCountPromise = supabase.from('users')
+    const userCountPromise = supabaseAdmin.from('users')
         .select('*', { count: 'exact', head: true });
 
     // 2.2 Aggregations (fetch data then aggregate)

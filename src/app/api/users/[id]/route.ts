@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function DELETE(
     request: NextRequest,
@@ -21,7 +21,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'ไม่สามารถลบบัญชีของตัวเองได้' }, { status: 400 });
         }
 
-        const { error } = await supabase.from('users').delete().eq('id', id);
+        const { error } = await supabaseAdmin.from('users').delete().eq('id', id);
 
         if (error) {
             console.error('Supabase Delete User Error:', error);
@@ -57,7 +57,7 @@ export async function PUT(
         if (body.role) updateData.role = body.role;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('users')
             .update(updateData)
             .eq('id', id);

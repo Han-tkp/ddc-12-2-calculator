@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { registerSchema } from '@/lib/validations';
 import { encrypt } from '@/lib/encryption';
 
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
         const validated = registerSchema.parse(body);
 
         // Check if email already exists
-        const { data: existingUser } = await supabase
+        const { data: existingUser } = await supabaseAdmin
             .from('users')
             .select('email')
             .eq('email', validated.email)
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(validated.password, 10);
 
         // Create user
-        const { data: user, error: createError } = await supabase
+        const { data: user, error: createError } = await supabaseAdmin
             .from('users')
             .insert({
                 // Note: id and timestamps will be handled by DB defaults after running fix_id_constraint.sql
