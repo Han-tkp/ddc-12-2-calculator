@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Sarabun } from "next/font/google";
 import "./globals.css";
 import { FeedbackDialog } from '@/components/feedback-dialog';
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -29,6 +31,8 @@ export default function RootLayout({
       >
         {children}
         <FeedbackDialog />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
