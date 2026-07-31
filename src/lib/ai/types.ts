@@ -5,7 +5,13 @@ export type AIToolParamType = 'string' | 'number' | 'integer' | 'boolean' | 'obj
 export interface AIToolParam {
     type: AIToolParamType;
     description?: string;
-    enum?: string[];
+    /** enum รับทั้ง string และ number (เช่น mix_type: 1 | 2) — providers
+     * จะแปลงเป็น JSON schema enum ให้เหมาะกับ provider นั้นๆ */
+    enum?: (string | number)[];
+    /** optional บอก LLM ว่า field นี้ไม่บังคับ (ไม่ใช่ schema requirement) */
+    optional?: boolean;
+    /** default value แนะนำให้ LLM — providers จะส่งเป็น hint ใน description */
+    default?: unknown;
 }
 
 export interface AITool {

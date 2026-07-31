@@ -1,5 +1,6 @@
 import { queryChemicalProfiles, queryCalculations } from '../ai-mcp';
 import { validateFormulaDraft, formatValidationIssues } from '../formula-validator';
+import { createChemicalProfile, updateChemicalProfile, deleteChemicalProfile } from '../ai-mcp/crud';
 import type { AITool } from './types';
 
 /* =========================================================================
@@ -39,6 +40,58 @@ export const AI_TOOLS: AITool[] = [
         },
         required: ['formula'],
     },
+    {
+        name: 'create_chemical_profile',
+        description: 'สร้างสูตรสารเคมีใหม่ — ตรวจสิทธิ์ (admin หรือ owner) ก่อน insert + audit log. คืน {ok:true, profile} หรือ {ok:false, error}',
+        parameters: {
+            name: { type: 'string', description: 'ชื่อสูตร (unique ในระบบ)' },
+            description: { type: 'string', optional: true },
+            C: { type: 'number', description: 'สัดส่วนสารออกฤทธิ์' },
+            S: { type: 'number', description: 'สัดส่วนตัวทำละลาย' },
+            RA: { type: 'number', description: 'อัตราการพ่น' },
+            RA_unit: { type: 'string', enum: ['L', 'cc'] },
+            mix_type: { type: 'number', enum: [1, 2], default: 2 },
+            A0: { type: 'number', default: 1000 },
+            tankCapacity: { type: 'number', default: 10 },
+            isActive: { type: 'boolean', default: true },
+            actorLabel: { type: 'string', optional: true },
+            location: { type: 'string', optional: true },
+            lat: { type: 'number', optional: true },
+            lng: { type: 'number', optional: true },
+        },
+        required: ['name', 'C', 'S', 'RA', 'RA_unit'],
+    },
+    {
+        name: 'update_chemical_profile',
+        description: 'แก้ไขสูตรสารเคมี — ต้องระบุ id (จาก query ก่อน). ตรวจสิทธิ์ (admin หรือ owner) + audit log. Guest ไม่สามารถเปลี่ยน isActive ได้',
+        parameters: {
+            id: { type: 'string', description: 'id ของสูตร (ได้จาก query_chemical_profiles)' },
+            name: { type: 'string', optional: true },
+            description: { type: 'string', optional: true },
+            C: { type: 'number', optional: true },
+            S: { type: 'number', optional: true },
+            RA: { type: 'number', optional: true },
+            RA_unit: { type: 'string', enum: ['L', 'cc'], optional: true },
+            mix_type: { type: 'number', enum: [1, 2], optional: true },
+            A0: { type: 'number', optional: true },
+            tankCapacity: { type: 'number', optional: true },
+            isActive: { type: 'boolean', optional: true },
+            location: { type: 'string', optional: true },
+            lat: { type: 'number', optional: true },
+            lng: { type: 'number', optional: true },
+        },
+        required: ['id'],
+    },
+    {
+        name: 'delete_chemical_profile',
+        description: 'ลบสูตรสารเคมีออกถาวร (hard-delete ตามนโยบาย) — ต้องยืนยัน confirm=true + audit log. ถ้าผู้ใช้ยังไม่ยืนยัน ให้ถามก่อน',
+        parameters: {
+            id: { type: 'string' },
+            confirm: { type: 'boolean', description: 'ต้อง true เพื่อยืนยันการลบ (false/ไม่ระบุ → ปฏิเสธ)' },
+            location: { type: 'string', optional: true },
+        },
+        required: ['id', 'confirm'],
+    },
 ];
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -70,6 +123,9 @@ export const AI_TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) =>
             message: formatValidationIssues(result),
         };
     },
+    create_chemical_profile: async (args) => createChemicalProfile(args),
+    update_chemical_profile: async (args) => updateChemicalProfile(args),
+    delete_chemical_profile: async (args) => deleteChemicalProfile(args),
 };
 
 export function getTool(name: string): AITool | undefined {

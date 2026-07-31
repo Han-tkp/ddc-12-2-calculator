@@ -6,6 +6,8 @@
  *   - vision:    LLM-based image analysis (ตอน deterministic ไม่ได้ + provider พร้อม)
  *   - fallback:  rule-based (intent + extract + custom + file analysis) — ใช้ตอนไม่มี AI
  *   - queries:   Supabase data builders (query_chemical / create_formula / compare)
+ *   - crud:      AI tool handlers (auth + audit) — import ตรงจาก './crud'
+ *                (ไม่ re-export ที่นี่เพราะ crud.ts ใช้ `@/lib/auth` ที่ pull next-auth)
  *
  * The AI ทำหน้าที่เป็น MCP intermediary — ไม่คำนวณเอง, เรียก Supabase / deterministic extraction
  */
@@ -37,3 +39,8 @@ export {
     queryChemicalProfiles,
     queryCalculations,
 } from './queries';
+
+// crud (AI tool handlers — auth + audit) — import ตรงจาก './crud' เพื่อหลีกเลี่ยง
+// next-auth dependency chain ใน test suites ที่ไม่ต้องการ
+// export { createChemicalProfile, updateChemicalProfile, deleteChemicalProfile } from './crud';
+export type { CrudResult } from './crud';
