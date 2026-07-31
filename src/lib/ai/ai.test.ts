@@ -1,4 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// ─── Hoisted mocks (ต้องอยู่บนสุดก่อน import ที่ใช้ mock) ─────────────────
+// ai.test.ts นำเข้า ./tools ซึ่ง chain ไป ai-mcp/crud.ts ที่ใช้ `@/lib/auth`
+// (pull next-auth → next/server ที่ Node ESM resolve ไม่ได้) — mock เหมือน
+// crud.test.ts เพื่อตัด dependency chain
+const { mockAuth, mockSupabase, mockGuestOwner, mockAudit } = vi.hoisted(() => ({
+    mockAuth: vi.fn(),
+    mockSupabase: { from: vi.fn() },
+    mockGuestOwner: vi.fn(),
+    mockAudit: vi.fn(),
+}));
+
+vi.mock('@/lib/auth', () => ({ auth: mockAuth }));
+vi.mock('@/lib/supabase', () => ({ supabaseAdmin: mockSupabase }));
+vi.mock('@/lib/guest-owner', () => ({ getGuestOwner: mockGuestOwner }));
+vi.mock('@/lib/formula-audit', () => ({ recordFormulaAudit: mockAudit }));
+
 import { AIProviderRouter } from './router';
 import { extractFormulaFromText } from './agent';
 import { AI_TOOLS, AI_TOOL_HANDLERS, getTool } from './tools';

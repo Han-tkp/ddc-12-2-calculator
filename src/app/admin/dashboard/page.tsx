@@ -165,6 +165,8 @@ export default async function AdminDashboard({
         count
     }));
 
+    const todayCount = daysMap.get(format(new Date(), 'yyyy-MM-dd')) || 0;
+
     // Chemical Stats for Pie Chart (Frequency)
     const chemicalStats = popularChemicals.map(item => ({
         name: item.chemical || 'อื่นๆ',
@@ -235,7 +237,7 @@ export default async function AdminDashboard({
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-slate-800">
-                                    {dailyStats[dailyStats.length - 1]?.count || 0}
+                                    {todayCount}
                                 </div>
                                 <p className="text-xs text-slate-500">
                                     จากยอด {totalCalculations} รายการในช่วงเวลานี้

@@ -1,0 +1,14 @@
+# GitHub Issue Labels — จัดการโดย GitHub CLI / Actions
+# sync: gh label create "for-agent" --description "..." --color "..."
+
+- name: for-agent
+  color: "0e8a16"
+  description: "Safe fix/refactor ที่มอบให้ AI Agent ทำงานอัตโนมัติแบบ One-Shot"
+
+- name: human-in-the-loop
+  color: "d93f0b"
+  description: "งานซับซ้อนที่ต้อง Human Judgment ออกแบบโครงสร้างก่อน (Non-trivial change)"
+
+- name: spec-grooming
+  color: "1d76db"
+  description: "ต้องทำ Grill Me / ขุดสเปกและ Test Scenarios ให้ชัดก่อนเริ่มงาน"

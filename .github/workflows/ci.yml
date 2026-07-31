@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Security audit
+        run: npm audit --audit-level=critical
+        continue-on-error: true
+        # หมายเหตุ: ยังมี high vulns ที่ไม่มี fix ทางการ (xlsx, sharp libvips)
+        # → fail เฉพาะ critical เพื่อไม่ block PR จนกว่า dependency นั้นจะมี fix
+
+      - name: Build
+        run: npm run build

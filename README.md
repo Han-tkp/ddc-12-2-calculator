@@ -177,16 +177,21 @@ graph TD
 ## 8. แนวทางการพัฒนาและส่งมอบงาน (Contributing)
 
 หากต้องการร่วมพัฒนา ปรับปรุง UI หรือเพิ่มสูตรคำนวณฉลากยาใหม่ๆ:
-1. ทำการ **Fork** โปรเจกต์นี้ไปยัง Repository ส่วนตัวของคุณ
-2. สร้าง Feature Branch: `git checkout -b feature/amazing-feature`
-3. ก่อนส่งโค้ดเข้ามา โปรดรันคำสั่งเช็คความสะอาดและรัน Unit Test ทุกครั้ง:
+1. เปิด **Issue** ก่อนเสมอ โดยใช้เทมเพลตที่จัดไว้:
+   - `for-agent` — งาน Safe Fix/Refactor ที่ deterministic มีชุดทดสอบรองรับ มอบให้ AI Agent ทำงานอัตโนมัติ
+   - `human-in-the-loop` — งานซับซ้อนที่ต้องออกแบบโครงสร้างก่อน (AI ยังไม่ควรจัดการเอง)
+   - `spec-grooming` — งานที่สเปกยังไม่ชัด ต้องขุดรายละเอียดและ Test Scenarios ก่อน (เทคนิค Grill Me)
+2. ทำการ **Fork** โปรเจกต์นี้ไปยัง Repository ส่วนตัวของคุณ
+3. สร้าง Feature Branch: `git checkout -b feature/amazing-feature`
+4. ก่อนส่งโค้ดเข้ามา โปรดรันคำสั่งเช็คความสะอาดและรัน Unit Test ทุกครั้ง:
    ```bash
    npm run lint
-   npx vitest run
+   npm run typecheck
+   npm test
    ```
-4. Commit การแก้ไขด้วยข้อความแบบมีระเบียบ (เช่น `feat: add new chemical formula profile`)
-5. Push ขึ้น Branch: `git push origin feature/amazing-feature`
-6. เปิด **Pull Request** เข้ามาที่สาขาหลัก (`main`) เพื่อรับการตรวจโค้ด
+5. Commit การแก้ไขด้วยข้อความแบบมีระเบียบ (เช่น `feat: add new chemical formula profile`)
+6. Push ขึ้น Branch: `git push origin feature/amazing-feature`
+7. เปิด **Pull Request** เข้ามาที่สาขาหลัก (`main`) เพื่อรับการตรวจโค้ด — CI (lint, typecheck, test, build, security audit) จะรันอัตโนมัติทุก PR
 
 ---
 

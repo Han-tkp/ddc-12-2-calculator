@@ -1,0 +1,52 @@
+name: "🤖 for-agent — Safe Fix/Refactor"
+description: "งานแก้ไขที่ปลอดภัยและ deterministic — มอบให้ AI Agent ทำงานอัตโนมัติแบบ One-Shot"
+title: "[for-agent] "
+labels: ["for-agent"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > งานประเภท **Safe Fix/Refactor** (ตามยุทธศาสตร์ Agentic Engineering)
+        > — มีชุดทดสอบรองรับ วัดผลได้แบบ Deterministic AI ควรทำงานได้เองเกือบ 100%
+
+  - type: input
+    id: area
+    attributes:
+      label: "พื้นที่ที่เกี่ยวข้อง (Area)"
+      description: "เช่น src/lib/calculations.ts, src/components/calculator/*"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: "พฤติกรรมที่คาดหวัง (Expected behavior)"
+      description: "อธิบายให้เจาะจงและวัดผลได้ — AI จะใช้เป็น spec ตรง ๆ"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Acceptance Criteria (วัดผลได้)"
+      description: "เรียงเป็น bullet ข้อ ๆ เช่น 'เพิ่ม test ครอบคลุมกรณี mix_type=2', 'npm test ผ่าน 59/59'"
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: "ข้อจำกัด / สิ่งต้องห้าม (Constraints)"
+      description: "เช่น ห้ามแตะ API contract, ห้ามเปลี่ยน signature ของ calculate()"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: "พร้อมมอบให้ Agent"
+      options:
+        - label: "รัน `npm run lint` + `npm run typecheck` + `npm test` บน main ผ่านก่อนเริ่มงาน"
+          required: true
+        - label: "PR ต้องรัน CI ผ่านครบ (lint, typecheck, test, build) ก่อน merge"
+          required: true

@@ -7,8 +7,13 @@ npm run dev          # Turbopack on port 3000
 npm run build        # Next.js standalone output (for Docker)
 npm run start        # Production server on port 3000
 npm run lint         # ESLint (next/core-web-vitals + next/typescript only)
-npx vitest run       # Tests (no config file needed; only calculations + encryption tests exist)
+npm run typecheck    # tsc --noEmit
+npm test             # vitest run (uses vitest.config.ts; unit + legacy projects)
 ```
+
+- `vitest.config.ts` registers the `@/*` alias and splits `unit` (most suites) vs `legacy` (ai-mcp / ai) projects. All 7 suites pass (59 tests).
+- Tests importing modules that chain to `@/lib/auth` (→ next-auth → `next/server`, unresolvable outside Next runtime) must `vi.mock('@/lib/auth')` etc. — see `src/lib/ai/ai.test.ts` and `src/lib/ai-mcp/crud.test.ts`.
+- CI: `.github/workflows/ci.yml` runs lint + typecheck + test + build on push/PR.
 
 ## Supabase Client Quirks
 

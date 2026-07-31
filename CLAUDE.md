@@ -15,7 +15,8 @@ npm run dev          # Turbopack dev server on port 3000
 npm run build        # Next.js standalone output (used by Dockerfile)
 npm run start        # Production server on port 3000
 npm run lint         # ESLint (next/core-web-vitals + next/typescript)
-npx vitest run       # All tests (no config file; vitest picks up *.test.ts by convention)
+npm run typecheck    # tsc --noEmit
+npm test             # vitest run (uses vitest.config.ts for `@/*` alias)
 npx vitest run src/lib/calculations.test.ts   # Run a single test file
 ```
 
@@ -105,8 +106,8 @@ Missing env vars print a warning but don't crash the server (uses `placeholder`)
 
 ## Testing
 
-- Vitest, no config file. Tests live next to source as `*.test.ts`. Cover: `calculations`, `encryption`, `formula-validator`, `ai-mcp`, `ai/ai`, `ai/ai-providers`.
-- Run a single test file: `npx vitest run src/lib/calculations.test.ts`.
+- Vitest via `vitest.config.ts` (registers `@/*` alias; splits `unit` and `legacy` projects). Tests live next to source as `*.test.ts`. Cover: `calculations`, `encryption`, `formula-validator`, `ai-mcp`, `ai-mcp/crud`, `ai/ai`, `ai/ai-providers`.
+- Tests that import modules reaching `@/lib/auth` (next-auth → `next/server`) must `vi.mock('@/lib/auth')` etc. — see `crud.test.ts` / `ai.test.ts` for the hoisted-mock pattern. Next.js 16 + Node ESM cannot resolve `next/server` outside the Next runtime.
 
 ## Database / Migrations
 
