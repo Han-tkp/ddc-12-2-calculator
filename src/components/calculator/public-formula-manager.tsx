@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Bot } from 'lucide-react';
 import { toast } from 'sonner';
+import { recordTrackingCalculation } from '@/lib/track-calculation';
 
 interface PublicFormulaManagerProps {
     onFormulaAdded?: (newFormulaName: string) => void;
@@ -99,30 +100,21 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
             }
 
             // Record tracking calculation entry (best-effort)
-            try {
-                const calcRes = await fetch('/api/calculations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        C: Number(C),
-                        S: Number(S),
-                        RA: Number(RA),
-                        RA_unit: RAUnit,
-                        mix_type: Number(mixType),
-                        A0: Number(A0),
-                        A_house: 100,
-                        N: 10,
-                        chemical: name.trim(),
-                        location: location.trim() || 'บันทึกสูตรเคมีภายนอก',
-                        agency: 'ผู้ใช้งานทั่วไป / ภายนอก',
-                        lat: coords?.lat ?? null,
-                        lng: coords?.lng ?? null,
-                    }),
-                });
-                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
-            } catch (calcErr) {
-                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
-            }
+            await recordTrackingCalculation({
+                C: Number(C),
+                S: Number(S),
+                RA: Number(RA),
+                RA_unit: RAUnit,
+                mix_type: Number(mixType),
+                A0: Number(A0),
+                A_house: 100,
+                N: 10,
+                chemical: name.trim(),
+                location: location.trim() || 'บันทึกสูตรเคมีภายนอก',
+                agency: 'ผู้ใช้งานทั่วไป / ภายนอก',
+                lat: coords?.lat ?? null,
+                lng: coords?.lng ?? null,
+            });
 
             toast.success(data.message || `เพิ่มสูตรสารเคมี "${name}" เรียบร้อยแล้ว`);
             setShowConfirm(false);

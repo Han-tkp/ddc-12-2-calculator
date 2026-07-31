@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Upload, Image as ImageIcon, CheckCircle2, AlertTriangle, Clock, FlaskConical, FileText, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { recordTrackingCalculation } from '@/lib/track-calculation';
 
 interface CustomChemicalModalProps {
     isOpen: boolean;
@@ -103,28 +104,19 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตร Custom ได้');
 
             // Record tracking entry (best-effort)
-            try {
-                const calcRes = await fetch('/api/calculations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        C: Number(C),
-                        S: Number(S),
-                        RA: Number(RA),
-                        RA_unit: RAUnit,
-                        mix_type: Number(mixType),
-                        A0: 1000,
-                        A_house: 100,
-                        N: 10,
-                        chemical: name.trim(),
-                        location: location.trim() || 'บันทึกสูตร Custom ลากวางฉลากสารเคมี',
-                        agency: 'Custom Formula Creator',
-                    }),
-                });
-                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
-            } catch (calcErr) {
-                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
-            }
+            await recordTrackingCalculation({
+                C: Number(C),
+                S: Number(S),
+                RA: Number(RA),
+                RA_unit: RAUnit,
+                mix_type: Number(mixType),
+                A0: 1000,
+                A_house: 100,
+                N: 10,
+                chemical: name.trim(),
+                location: location.trim() || 'บันทึกสูตร Custom ลากวางฉลากสารเคมี',
+                agency: 'Custom Formula Creator',
+            });
 
             toast.success(data.message || `เพิ่มสูตร Custom "${name}" เรียบร้อยแล้ว`);
             setShowConfirm(false);

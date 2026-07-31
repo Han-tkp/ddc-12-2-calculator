@@ -27,10 +27,10 @@ export async function DELETE(
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: unknown) {
         const message =
             (error as { message?: string })?.message ||
             (error instanceof Error ? error.message : 'Internal Server Error');
-        return NextResponse.json({ error: message }, { status: 400 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

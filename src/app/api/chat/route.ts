@@ -21,8 +21,7 @@ import type { AIProvider, AIProviderName } from '@/lib/ai/types';
  * โดยมี rule-based classifyIntent เป็น fallback เมื่อไม่มี provider ตั้งค่า
  * และ deterministic draft extraction สำหรับไฟล์แนบ
  */
-function buildRouterFromSettings(settings: unknown): AIProviderRouter {
-    const normalized = normalizeAISettings(settings);
+function buildRouterFromSettings(normalized: ReturnType<typeof normalizeAISettings>): AIProviderRouter {
     const providers = createProviders();
     const map = new Map<AIProviderName, AIProvider>((Object.entries(providers) as [AIProviderName, AIProvider][]));
 
@@ -118,13 +117,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(buildFileAnalysis(fileData.headers, fileData.rows, trimmed, fileData.fileName || 'ไฟล์ที่อัปโหลด'));
         }
 
-        const router = buildRouterFromSettings(aiSettings);
-        console.log(`[AI/MCP] provider=${router.getAvailableProviders().map(p => p.name).join(',') || 'none(rule-based)'} | msg="${trimmed.slice(0, 80)}"`);
+        const normalized = normalizeAISettings(aiSettings);
+        const router = buildRouterFromSettings(normalized);
 
         // 4) มี AI provider → ใช้ LLM tool-calling (ถ้าล้มเหลว → ตกกลับ rule-based)
         if (router.isAnyConfigured()) {
             try {
-                const normalized = normalizeAISettings(aiSettings);
                 const agentResult = await runChatAgent(router, trimmed, {
                     temperature: normalized?.temperature,
                     maxTokens: normalized?.maxTokens,

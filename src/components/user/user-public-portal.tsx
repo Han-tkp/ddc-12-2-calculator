@@ -37,6 +37,7 @@ import {
     BrainCircuit,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { recordTrackingCalculation } from '@/lib/track-calculation';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -198,28 +199,19 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตรได้');
 
             // Record tracking calculation entry (best-effort, อย่าให้ล้มแล้วแจ้งล้มเหลวทั้งสูตร)
-            try {
-                const calcRes = await fetch('/api/calculations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        C: Number(aiC),
-                        S: Number(aiS),
-                        RA: Number(aiRA),
-                        RA_unit: aiRAUnit,
-                        mix_type: Number(aiMixType),
-                        A0: 1000,
-                        A_house: 100,
-                        N: 10,
-                        chemical: aiName.trim(),
-                        location: aiLocation.trim() || 'สร้างผ่าน AI Assistant ผู้ใช้ภายนอก',
-                        agency: 'ผู้ใช้งานทั่วไป / AI Assistant',
-                    }),
-                });
-                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
-            } catch (calcErr) {
-                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
-            }
+            await recordTrackingCalculation({
+                C: Number(aiC),
+                S: Number(aiS),
+                RA: Number(aiRA),
+                RA_unit: aiRAUnit,
+                mix_type: Number(aiMixType),
+                A0: 1000,
+                A_house: 100,
+                N: 10,
+                chemical: aiName.trim(),
+                location: aiLocation.trim() || 'สร้างผ่าน AI Assistant ผู้ใช้ภายนอก',
+                agency: 'ผู้ใช้งานทั่วไป / AI Assistant',
+            });
 
             toast.success(data.message || `เพิ่มสูตรสารเคมี AI "${aiName}" เรียบร้อยแล้ว`);
             setShowAiConfirm(false);

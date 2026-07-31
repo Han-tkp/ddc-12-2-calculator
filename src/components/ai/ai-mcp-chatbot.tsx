@@ -23,6 +23,7 @@ import {
     X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { recordTrackingCalculation } from '@/lib/track-calculation';
 import type { FormulaVariable } from '@/lib/formula-engine';
 import { parseFile, fileToFormulaVariables, type ParsedFile } from '@/lib/file-import';
 
@@ -223,28 +224,19 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตรได้');
 
-            try {
-                const calcRes = await fetch('/api/calculations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        C: Number(selectedFormula.C),
-                        S: Number(selectedFormula.S),
-                        RA: Number(selectedFormula.RA),
-                        RA_unit: selectedFormula.RA_unit,
-                        mix_type: Number(selectedFormula.mix_type),
-                        A0: Number(selectedFormula.A0),
-                        A_house: 100,
-                        N: 10,
-                        chemical: selectedFormula.name,
-                        location: confirmLocation.trim() || 'บันทึกผ่าน AI Chatbot',
-                        agency: 'ผู้ใช้งานทั่วไป / AI Chatbot',
-                    }),
-                });
-                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
-            } catch (calcErr) {
-                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
-            }
+            await recordTrackingCalculation({
+                C: Number(selectedFormula.C),
+                S: Number(selectedFormula.S),
+                RA: Number(selectedFormula.RA),
+                RA_unit: selectedFormula.RA_unit,
+                mix_type: Number(selectedFormula.mix_type),
+                A0: Number(selectedFormula.A0),
+                A_house: 100,
+                N: 10,
+                chemical: selectedFormula.name,
+                location: confirmLocation.trim() || 'บันทึกผ่าน AI Chatbot',
+                agency: 'ผู้ใช้งานทั่วไป / AI Chatbot',
+            });
 
             toast.success(data.message || `เพิ่ม "${selectedFormula.name}" เรียบร้อย`);
             setShowConfirmModal(false);

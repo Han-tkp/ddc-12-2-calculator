@@ -49,12 +49,20 @@ export async function POST(req: NextRequest) {
         if (error) throw error;
 
         return NextResponse.json(calculation);
-    } catch (error) {
-        // Supabase errors (PostgrestError) are not `instanceof Error` — surface their message
+    } catch (error: unknown) {
+        // Zod validation → 400 (client fault)
+        if (error && typeof error === 'object' && 'issues' in error) {
+            const issues = (error as { issues: Array<{ message: string }> }).issues;
+            return NextResponse.json(
+                { error: 'ข้อมูลไม่ถูกต้อง: ' + issues.map((i) => i.message).join(', ') },
+                { status: 400 }
+            );
+        }
+        // Supabase / network / programmer errors → 500
         const message =
             (error as { message?: string })?.message ||
             (error instanceof Error ? error.message : 'Internal Server Error');
-        return NextResponse.json({ error: message }, { status: 400 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
