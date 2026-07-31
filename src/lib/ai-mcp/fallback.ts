@@ -133,7 +133,9 @@ export function buildCustomFormula(params: ExtractedFormulaParams, source: 'quer
     const RA_unit = params.RA_unit ?? defaults.RA_unit;
     const A0 = params.A0 ?? defaults.A0;
     const tankCapacity = params.tankCapacity ?? 10;
-    const mix_type = isULV ? 2 : 2;
+    // ULV → mix_type 2 (แบบผสมกับ — เติมสารทบน้ำมัน/ตัวทำละลาย)
+    // Fogging → mix_type 1 (แบบผสมให้ได้ — รวมปริมาตรคงที่)
+    const mix_type = isULV ? 2 : 1;
     const chemicalName = params.chemicalName || (source === 'query' ? 'สารเคมีใหม่' : 'สูตรใหม่');
 
     const mixLabel = mix_type === 2 ? 'แบบผสมกับ (เติมสารทบ)' : 'แบบผสมให้ได้ (รวมปริมาตรคงที่)';
