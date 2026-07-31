@@ -274,7 +274,7 @@ export default async function AdminDashboard({
 
                     <div className="grid lg:grid-cols-3 gap-6">
                         {/* Map Section - 2/3 width */}
-                        <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5 lg:col-span-2">
+                        <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5 lg:col-span-2 min-w-0">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-lg text-slate-700">
                                     <MapPin className="h-5 w-5 text-violet-500" />
@@ -295,7 +295,7 @@ export default async function AdminDashboard({
                         </Card>
 
                         {/* Recent Table - 1/3 width */}
-                        <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5">
+                        <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5 min-w-0">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-lg text-slate-700">
                                     <Clock className="h-5 w-5" />

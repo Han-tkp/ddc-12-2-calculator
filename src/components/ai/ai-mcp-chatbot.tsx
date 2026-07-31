@@ -69,6 +69,7 @@ interface ChatMessage {
     formula?: FormulaSchema;
     file?: ParsedFile;
     timestamp: string;
+    meta?: { provider?: string; model?: string };
 }
 
 const QUICK_PROMPTS = [
@@ -87,7 +88,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
         {
             id: 'welcome-1',
             role: 'assistant',
-            text: 'สวัสดีครับ ผมคือ AI Assistant พร้อมช่วยคุณคำนวณและจัดการสูตรสารเคมี พิมพ์คำถามหรือเลือกหัวข้อด้านล่างได้เลยครับ',
+            text: 'สวัสดีครับ ผมคือผู้ช่วยสูตรสารเคมี พร้อมช่วยคุณคำนวณ ค้นหา และจัดการสูตรสารเคมีจากฐานข้อมูล พิมพ์คำถามหรือเลือกหัวข้อด้านล่างได้เลยครับ',
             timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
         },
     ]);
@@ -127,6 +128,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
         setIsTyping(true);
 
         try {
+            const aiSettingsRaw = typeof window !== 'undefined' ? localStorage.getItem('ai-provider-settings') : null;
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -135,6 +137,9 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                     fileData: fileToSend
                         ? { fileName: fileToSend.fileName, headers: fileToSend.headers, rows: fileToSend.rows }
                         : undefined,
+                    imageData: fileToSend?.imageData,
+                    rawText: fileToSend?.rawText,
+                    aiSettings: aiSettingsRaw ? JSON.parse(aiSettingsRaw) : undefined,
                 }),
             });
 
@@ -147,6 +152,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                 text: data.text || '...',
                 formula: data.formula || undefined,
                 timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                meta: data.provider ? { provider: data.provider, model: data.model } : undefined,
             };
 
             setMessages((prev) => [...prev, aiMsg]);
@@ -217,23 +223,28 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตรได้');
 
-            await fetch('/api/calculations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    C: Number(selectedFormula.C),
-                    S: Number(selectedFormula.S),
-                    RA: Number(selectedFormula.RA),
-                    RA_unit: selectedFormula.RA_unit,
-                    mix_type: Number(selectedFormula.mix_type),
-                    A0: Number(selectedFormula.A0),
-                    A_house: 100,
-                    N: 10,
-                    chemical: selectedFormula.name,
-                    location: confirmLocation.trim() || 'บันทึกผ่าน AI Chatbot',
-                    agency: 'ผู้ใช้งานทั่วไป / AI Chatbot',
-                }),
-            });
+            try {
+                const calcRes = await fetch('/api/calculations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        C: Number(selectedFormula.C),
+                        S: Number(selectedFormula.S),
+                        RA: Number(selectedFormula.RA),
+                        RA_unit: selectedFormula.RA_unit,
+                        mix_type: Number(selectedFormula.mix_type),
+                        A0: Number(selectedFormula.A0),
+                        A_house: 100,
+                        N: 10,
+                        chemical: selectedFormula.name,
+                        location: confirmLocation.trim() || 'บันทึกผ่าน AI Chatbot',
+                        agency: 'ผู้ใช้งานทั่วไป / AI Chatbot',
+                    }),
+                });
+                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
+            } catch (calcErr) {
+                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
+            }
 
             toast.success(data.message || `เพิ่ม "${selectedFormula.name}" เรียบร้อย`);
             setShowConfirmModal(false);
@@ -249,7 +260,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
         <>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full min-h-0">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-5 py-4 shrink-0">
+                <div className="bg-linear-to-r from-slate-900 to-slate-800 px-5 py-4 shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
@@ -335,7 +346,14 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                                         </div>
                                     )}
 
-                                    <span className="block text-[10px] mt-1.5 text-slate-400">{msg.timestamp}</span>
+                                    <span className="block text-[10px] mt-1.5 text-slate-400">
+                                        {msg.timestamp}
+                                        {msg.meta?.provider && (
+                                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-mono">
+                                                {msg.meta.provider}/{msg.meta.model}
+                                            </span>
+                                        )}
+                                    </span>
 
                                     {/* Formula inline — conversational style */}
                                     {msg.formula && msg.role === 'assistant' && (
@@ -419,11 +437,11 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                     {/* Attached file chip */}
                     {attachedFile && (
                         <div className="mb-2 flex items-center gap-2.5 bg-indigo-50 border border-indigo-200 rounded-xl p-2.5">
-                            <FileSpreadsheet className="h-4 w-4 text-indigo-500 shrink-0" />
+                            {attachedFile.fileType === 'image' ? <FileText className="h-4 w-4 text-indigo-500 shrink-0" /> : <FileSpreadsheet className="h-4 w-4 text-indigo-500 shrink-0" />}
                             <div className="min-w-0 flex-1">
                                 <div className="text-xs font-semibold text-indigo-800 truncate">{attachedFile.fileName}</div>
                                 <div className="text-[10px] text-indigo-500">
-                                    {attachedFile.rowCount} แถว × {attachedFile.colCount} คอลัมน์
+                                    {attachedFile.fileType === 'image' ? 'รอวิเคราะห์ฉลากด้วย AI Vision' : `${attachedFile.rowCount} แถว × ${attachedFile.colCount} คอลัมน์`}
                                 </div>
                             </div>
                             {onSendFileToCalculator && (
@@ -451,7 +469,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".xlsx,.xls,.csv,.tsv,.json,.txt"
+                            accept=".xlsx,.xls,.csv,.tsv,.json,.txt,.png,.jpg,.jpeg,.webp"
                             className="hidden"
                             onChange={handleFileSelect}
                         />
@@ -461,7 +479,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isTyping}
                             className="h-10 w-10 p-0 border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 rounded-xl shrink-0"
-                            title="แนบไฟล์ (Excel/CSV/JSON)"
+                            title="แนบไฟล์ฉลากหรือข้อมูล (PNG/CSV/TXT/Excel/JSON)"
                         >
                             <Paperclip className="h-4 w-4" />
                         </Button>
@@ -486,6 +504,10 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
             {/* Settings Dialog */}
             <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogContent className="max-w-lg rounded-2xl p-0 gap-0 overflow-hidden" showCloseButton={false}>
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>ตั้งค่าระบบเชื่อมต่อ MCP</DialogTitle>
+                        <DialogDescription>เลือกโปรเจคและกำหนดสิทธิ์การเข้าถึงฐานข้อมูล</DialogDescription>
+                    </DialogHeader>
                     <MpcSettingsForm onClose={() => setShowSettings(false)} />
                 </DialogContent>
             </Dialog>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function DELETE(
     req: NextRequest,
@@ -13,7 +13,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('calculations')
             .delete()
             .eq('id', resolvedParams.id)
@@ -28,6 +28,9 @@ export async function DELETE(
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        const message =
+            (error as { message?: string })?.message ||
+            (error instanceof Error ? error.message : 'Internal Server Error');
+        return NextResponse.json({ error: message }, { status: 400 });
     }
 }

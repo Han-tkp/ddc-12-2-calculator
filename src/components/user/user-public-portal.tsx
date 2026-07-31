@@ -197,24 +197,29 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตรได้');
 
-            // Record tracking calculation entry
-            await fetch('/api/calculations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    C: Number(aiC),
-                    S: Number(aiS),
-                    RA: Number(aiRA),
-                    RA_unit: aiRAUnit,
-                    mix_type: Number(aiMixType),
-                    A0: 1000,
-                    A_house: 100,
-                    N: 10,
-                    chemical: aiName.trim(),
-                    location: aiLocation.trim() || 'สร้างผ่าน AI Assistant ผู้ใช้ภายนอก',
-                    agency: 'ผู้ใช้งานทั่วไป / AI Assistant',
-                }),
-            });
+            // Record tracking calculation entry (best-effort, อย่าให้ล้มแล้วแจ้งล้มเหลวทั้งสูตร)
+            try {
+                const calcRes = await fetch('/api/calculations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        C: Number(aiC),
+                        S: Number(aiS),
+                        RA: Number(aiRA),
+                        RA_unit: aiRAUnit,
+                        mix_type: Number(aiMixType),
+                        A0: 1000,
+                        A_house: 100,
+                        N: 10,
+                        chemical: aiName.trim(),
+                        location: aiLocation.trim() || 'สร้างผ่าน AI Assistant ผู้ใช้ภายนอก',
+                        agency: 'ผู้ใช้งานทั่วไป / AI Assistant',
+                    }),
+                });
+                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
+            } catch (calcErr) {
+                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
+            }
 
             toast.success(data.message || `เพิ่มสูตรสารเคมี AI "${aiName}" เรียบร้อยแล้ว`);
             setShowAiConfirm(false);
@@ -236,24 +241,26 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Tab Header Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                <TabsList className="bg-slate-200/70 p-1 rounded-2xl gap-1">
-                    <TabsTrigger value="overview" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
-                        <LayoutDashboard className="h-4 w-4" />
-                        1. ภาพรวมปฏิบัติงาน & วิเคราะห์
-                    </TabsTrigger>
-                    <TabsTrigger value="catalog" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
-                        <Layers className="h-4 w-4" />
-                        2. จัดการสูตร (ผู้ใช้ภายนอก)
-                    </TabsTrigger>
-                    <TabsTrigger value="ai-assistant" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
-                        <Bot className="h-4 w-4" />
-                        3. เพิ่มสารเคมีด้วย AI (MCP)
-                    </TabsTrigger>
-                    <TabsTrigger value="playground" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
-                        <FlaskConical className="h-4 w-4 text-purple-600" />
-                        4. Playground ทดสอบสูตร
-                    </TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-4 px-4 w-full">
+                    <TabsList className="bg-slate-200/70 p-1 rounded-2xl gap-1 w-max min-w-full flex-nowrap justify-start">
+                        <TabsTrigger value="overview" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
+                            <LayoutDashboard className="h-4 w-4" />
+                            1. ภาพรวมปฏิบัติงาน & วิเคราะห์
+                        </TabsTrigger>
+                        <TabsTrigger value="catalog" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
+                            <Layers className="h-4 w-4" />
+                            2. จัดการสูตร (ผู้ใช้ภายนอก)
+                        </TabsTrigger>
+                        <TabsTrigger value="ai-assistant" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
+                            <Bot className="h-4 w-4" />
+                            3. เพิ่มสารเคมีด้วย AI (MCP)
+                        </TabsTrigger>
+                        <TabsTrigger value="playground" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-indigo-600 shadow-xs">
+                            <FlaskConical className="h-4 w-4 text-purple-600" />
+                            4. Playground ทดสอบสูตร
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <div className="flex items-center gap-2">
                     <PublicFormulaManager onFormulaAdded={async () => {

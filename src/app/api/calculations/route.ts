@@ -50,10 +50,11 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(calculation);
     } catch (error) {
-        if (error instanceof Error) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
-        }
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        // Supabase errors (PostgrestError) are not `instanceof Error` — surface their message
+        const message =
+            (error as { message?: string })?.message ||
+            (error instanceof Error ? error.message : 'Internal Server Error');
+        return NextResponse.json({ error: message }, { status: 400 });
     }
 }
 

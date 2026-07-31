@@ -114,7 +114,7 @@ export function MpcSettingsForm({ onClose }: MpcSettingsFormProps) {
                         </Select>
                     ) : (
                         <div className="text-xs text-amber-600 bg-amber-50 rounded-lg p-3 border border-amber-200">
-                            ยังไม่มีโปรเจคที่บันทึกไว้ — ไปที่หน้า <Link href="/admin/credentials" className="font-bold underline">จัดการคีย์เชื่อมต่อ</Link> เพื่อเพิ่ม
+                            กำลังใช้โปรเจคเริ่มต้น (<span className="font-mono font-bold">{DEFAULT_CREDENTIAL.projectRef}</span>) — ไปที่หน้า <Link href="/admin/credentials" className="font-bold underline">จัดการคีย์เชื่อมต่อ</Link> เพื่อเพิ่ม/สลับโปรเจคอื่น
                         </div>
                     )}
                     <Link href="/admin/credentials" className="text-[11px] text-indigo-600 hover:text-indigo-700 flex items-center gap-1 mt-1">

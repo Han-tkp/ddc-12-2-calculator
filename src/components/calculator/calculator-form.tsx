@@ -202,7 +202,7 @@ export function CalculatorForm() {
             setCalculatedInput(input);
 
             // Step 2: Save to DB (auto-log with GPS)
-            await fetch('/api/calculations', {
+            const saveRes = await fetch('/api/calculations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -213,11 +213,16 @@ export function CalculatorForm() {
                 }),
             });
 
+            if (!saveRes.ok) {
+                const data = await saveRes.json().catch(() => ({}));
+                throw new Error(data.error || 'ไม่สามารถบันทึกข้อมูลได้');
+            }
+
             toast.success('คำนวณและบันทึกเรียบร้อย!');
         } catch (e) {
             setResult(null);
             setCalculatedInput(null);
-            toast.error('เกิดข้อผิดพลาด');
+            toast.error(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด');
         } finally {
             setIsCalculating(false);
         }

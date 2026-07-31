@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase';
+import { AIProviderError, defaultRouter } from './ai';
 
 /* =========================================================================
  * AI / MCP Core Architecture
@@ -28,6 +29,109 @@ export interface ChatResponse {
     formula?: AIFormulaResult;
 }
 
+export interface FormulaDraftInput {
+    fileName: string;
+    headers: string[];
+    rows: (string | number)[][];
+}
+
+function asNumber(value: unknown): number | undefined {
+    const parsed = Number(String(value ?? '').replace(/,/g, '').trim());
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/** Extract a formula draft from a structured upload. The draft is never saved automatically. */
+export function buildFormulaDraftFromFile(input: FormulaDraftInput): { text: string; formula?: AIFormulaResult } | null {
+    const headers = input.headers.map(header => header.trim().toLowerCase());
+    const row = input.rows[0] ?? [];
+    const find = (...names: string[]) => {
+        const index = headers.findIndex(header => names.some(name => header === name || header.includes(name)));
+        return index >= 0 ? row[index] : undefined;
+    };
+    const C = asNumber(find('c', 'chemical', 'สารเคมีเข้มข้น', 'สารเคมี'));
+    const S = asNumber(find('s', 'solvent', 'ตัวทำละลาย', 'น้ำมัน', 'น้ำ'));
+    const RA = asNumber(find('ra', 'rate', 'อัตราพ่น', 'อัตราการพ่น'));
+    if (C === undefined || S === undefined || RA === undefined) return null;
+
+    const name = String(find('name', 'ชื่อ', 'สารเคมี') || input.fileName.replace(/\.[^.]+$/, '')).trim();
+    const unitValue = String(find('ra_unit', 'unit', 'หน่วย') || 'cc').toLowerCase();
+    const mixType = asNumber(find('mix_type', 'ประเภทการผสม')) ?? 2;
+    const formula: AIFormulaResult = {
+        name,
+        description: `สูตรจากไฟล์ ${input.fileName}`,
+        C,
+        S,
+        RA,
+        RA_unit: unitValue.includes('ลิตร') || unitValue === 'l' ? 'L' : 'cc',
+        mix_type: mixType === 1 ? 1 : 2,
+        A0: asNumber(find('a0', 'พื้นที่', 'พื้นที่มาตรฐาน')) ?? 1000,
+        tankCapacity: asNumber(find('tankcapacity', 'tank', 'ถัง')) ?? 10,
+    };
+    return {
+        text: `📄 อ่านไฟล์ "${input.fileName}" แล้ว และสร้างสูตรฉบับร่างให้ตรวจสอบ\n\n✅ พบข้อมูล C:S = ${C}:${S}, RA = ${RA} ${formula.RA_unit}\n⚠️ สูตรยังไม่ถูกบันทึก กรุณาตรวจสอบฉลากก่อนกด "บันทึกสูตรนี้"`,
+        formula,
+    };
+}
+
+/** Extract a formula draft from a human-readable label text file. */
+export function buildFormulaDraftFromText(rawText: string, fileName: string): { text: string; formula?: AIFormulaResult } | null {
+    const value = (patterns: RegExp[]) => {
+        for (const pattern of patterns) {
+            const match = rawText.match(pattern);
+            if (match?.[1]) return match[1].trim();
+        }
+        return undefined;
+    };
+    const name = value([/(?:ชื่อสารเคมี|ชื่อสาร|chemical|name)\s*[:=]\s*(.+)/i]);
+    const ratioMatch = rawText.match(/(?:อัตราส่วน|สัดส่วน|ratio)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*[:/]\s*(\d+(?:\.\d+)?)/i);
+    const raMatch = rawText.match(/(?:RA|อัตราพ่น|อัตราการพ่น)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(ลิตร|liter|litre|L|มล\.?|ml|cc)/i);
+    const area = value([/(?:พื้นที่มาตรฐาน|พื้นที่|A0)\s*[:=]?\s*([\d,]+)/i]);
+    const tank = value([/(?:ขนาดถัง|ถัง|tank)\s*[:=]?\s*([\d,.]+)\s*(?:ลิตร|L|liter)?/i]);
+    if (!ratioMatch || !raMatch) return null;
+    const C = Number(ratioMatch[1]);
+    const S = Number(ratioMatch[2]);
+    const RA = Number(raMatch[1]);
+    const RA_unit = /ลิตร|liter|litre|^L$/i.test(raMatch[2]) ? 'L' as const : 'cc' as const;
+    const formula: AIFormulaResult = {
+        name: name || fileName.replace(/\.[^.]+$/, ''),
+        description: `สูตรจากไฟล์ ${fileName}`,
+        C, S, RA, RA_unit,
+        mix_type: /รวม|ได้สุทธิ|fixed/i.test(rawText) ? 1 : 2,
+        A0: Number((area || '1000').replace(/,/g, '')) || 1000,
+        tankCapacity: Number((tank || '10').replace(/,/g, '')) || 10,
+    };
+    return {
+        text: `📄 อ่านข้อความในไฟล์ "${fileName}" แล้ว และสร้างสูตรฉบับร่างให้ตรวจสอบ\n\n✅ พบข้อมูล C:S = ${C}:${S}, RA = ${RA} ${RA_unit}\n⚠️ สูตรยังไม่ถูกบันทึก กรุณาตรวจสอบฉลากก่อนกด "บันทึกสูตรนี้"`,
+        formula,
+    };
+}
+
+/** Analyze a label image with AI Vision (Gemini/Claude/OpenAI) when a provider key is configured. */
+export async function analyzeFormulaImage(imageData: string, fileName: string): Promise<{ text: string; formula?: AIFormulaResult }> {
+    const router = defaultRouter;
+    if (!router.isAnyConfigured()) {
+        return { text: `🖼️ รับไฟล์ภาพ "${fileName}" แล้ว แต่ยังวิเคราะห์อัตโนมัติไม่ได้\n\nกรุณาตั้งค่า API key ของ AI provider อย่างใดอย่างหนึ่งบนเซิร์ฟเวอร์ (GEMINI_API_KEY / ANTHROPIC_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY) หรือส่งข้อมูลเป็น TXT/CSV โดยมีคอลัมน์ name, C, S, RA, RA_unit, mix_type, A0, tankCapacity` };
+    }
+    const match = imageData.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return { text: '⚠️ รูปภาพไม่อยู่ในรูปแบบที่รองรับ' };
+    const prompt = `อ่านข้อความจากฉลากสารเคมีในภาพ แล้วตอบเป็น JSON เท่านั้นตาม schema นี้: {"name":"string","description":"string","C":number,"S":number,"RA":number,"RA_unit":"L"|"cc","mix_type":1|2,"A0":number,"tankCapacity":number}. ห้ามเดาค่าที่อ่านไม่พบ ให้ใช้ 0 และใส่คำว่าไม่พบใน description. ค่า mix_type 1 คือผสมให้ได้ปริมาตรรวมคงที่, 2 คือผสมกับตัวทำละลาย. นี่คือไฟล์ ${fileName}`;
+    try {
+        const response = await router.analyzeImage({
+            prompt,
+            images: [{ mimeType: match[1], data: match[2] }],
+        });
+        const raw = response.text.replace(/```json|```/g, '').trim();
+        if (!raw) throw new Error('ไม่พบผลวิเคราะห์จาก AI Vision');
+        const parsed = JSON.parse(raw) as AIFormulaResult;
+        return { text: `🖼️ วิเคราะห์ฉลาก "${fileName}" แล้ว (${response.provider}/${response.model}) และสร้างสูตรฉบับร่าง\n\n⚠️ กรุณาตรวจสอบค่ากับฉลากจริงก่อนบันทึก`, formula: parsed };
+    } catch (err: any) {
+        if (err instanceof AIProviderError) {
+            return { text: `⚠️ AI Vision ไม่สามารถวิเคราะห์ภาพได้ (${err.kind === 'not_configured' ? 'ยังไม่ตั้งค่า API key' : `HTTP ${err.status || 'error'}`}) กรุณาตรวจสอบการตั้งค่าแล้วลองใหม่` };
+        }
+        throw err;
+    }
+}
+
 /* ───────────── System Prompt ───────────── */
 
 export const SYSTEM_PROMPT = `คุณคือผู้ช่วย AI / MCP ของกรมควบคุมโรค (DDC) สำหรับระบบคำนวณสารเคมีกำจัดยุง
@@ -51,12 +155,14 @@ interface MCPFunction {
 
 async function queryChemicalProfiles(args: Record<string, string>) {
     const search = args.search || '';
+    const limit = Math.min(parseInt(args.limit || '10', 10) || 10, 50);
     const { data, error } = await supabaseAdmin
         .from('label_profiles')
         .select('*')
         .eq('isActive', true)
         .ilike('name', `%${search}%`)
-        .order('name', { ascending: true });
+        .order('name', { ascending: true })
+        .limit(limit);
 
     if (error) throw error;
     return { profiles: data ?? [] };
@@ -92,6 +198,8 @@ export const MCP_FUNCTIONS: MCPFunction[] = [
         handler: queryCalculations,
     },
 ];
+
+export { queryChemicalProfiles, queryCalculations };
 
 /* ───────────── File Data Analysis ───────────── */
 
@@ -196,6 +304,16 @@ export function classifyIntent(text: string): Intent {
     }
 
     if (
+        lower.includes('เทียบ') ||
+        lower.includes('เปรียบเทียบ') ||
+        lower.includes('ต่าง') ||
+        lower.includes('vs') ||
+        lower.includes('compare')
+    ) {
+        return 'compare_chemicals';
+    }
+
+    if (
         lower.includes('ค้นหา') ||
         lower.includes('หาข้อมูล') ||
         lower.includes('มีอะไรบ้าง') ||
@@ -220,16 +338,6 @@ export function classifyIntent(text: string): Intent {
         lower.includes('log')
     ) {
         return 'query_history';
-    }
-
-    if (
-        lower.includes('เทียบ') ||
-        lower.includes('เปรียบเทียบ') ||
-        lower.includes('ต่าง') ||
-        lower.includes('vs') ||
-        lower.includes('compare')
-    ) {
-        return 'compare_chemicals';
     }
 
     return 'general_chat';
@@ -518,23 +626,46 @@ ${
 /** Compare two chemicals using Supabase data */
 export async function buildChemicalComparison(userQuery: string): Promise<{ text: string; formula?: AIFormulaResult }> {
     const lower = userQuery.toLowerCase();
+
+    const BRAND_ALIASES: { brand: string; keys: string[] }[] = [
+        { brand: 'Deltacide', keys: ['deltacide', 'เดลตา'] },
+        { brand: 'Submarine', keys: ['submarine', 'ซับมาริน'] },
+        { brand: 'Fendona', keys: ['fendona', 'เฟนโดนา'] },
+        { brand: 'K-Othrine', keys: ['k-othrine', 'โอทริน', 'โอธริน'] },
+        { brand: 'Aqua Resigen', keys: ['aqua', 'resigen', 'อควา'] },
+    ];
+
+    const findBrand = (text: string): string | null => {
+        for (const { brand, keys } of BRAND_ALIASES) {
+            if (keys.some(k => text.includes(k))) return brand;
+        }
+        return null;
+    };
+
+    // แยกเคมีตัวแรก / ตัวที่สองจาก "เทียบ X กับ Y" / "X vs Y" / "X และ Y"
+    const parts = lower.split(/กับ|vs\.?|และ|เทียบ|เปรียบเทียบ/).map(s => s.trim()).filter(Boolean);
+    const mentioned = [...new Set(lower.match(/deltacide|เดลตา|submarine|ซับมาริน|fendona|เฟนโดนา|k-othrine|โอทริน|โอธริน|aqua|resigen|อควา/g) || [])];
+
     let chem1 = 'Deltacide';
     let chem2 = 'Submarine';
 
-    if (lower.includes('deltacide') || lower.includes('เดลตา')) {
-        chem1 = 'Deltacide';
+    if (mentioned.length >= 2) {
+        const b1 = findBrand(parts[0] || mentioned[0]) || findBrand(mentioned[0]) || chem1;
+        const b2 = findBrand(mentioned[1]) || chem2;
+        chem1 = b1;
+        chem2 = b2;
+    } else {
+        const b1 = findBrand(lower) || chem1;
+        const b2 = mentioned.length === 1 && b1 === findBrand(lower)
+            ? BRAND_ALIASES.find(a => a.brand !== b1)?.brand || chem2
+            : chem2;
+        chem1 = b1;
+        chem2 = b2;
     }
-    if (lower.includes('submarine') || lower.includes('ซับมาริน')) {
-        chem2 = 'Submarine';
-    }
-    if (lower.includes('fendona') || lower.includes('เฟนโดนา')) {
-        chem2 = 'Fendona';
-    }
-    if (lower.includes('k-othrine') || lower.includes('โอทริน')) {
-        chem2 = 'K-Othrine';
-    }
-    if (lower.includes('aqua') || lower.includes('resigen')) {
-        chem2 = 'Aqua Resigen';
+
+    if (chem1 === chem2) {
+        const other = BRAND_ALIASES.find(a => a.brand !== chem1)?.brand || 'Submarine';
+        chem2 = other;
     }
 
     const r1 = await queryChemicalProfiles({ search: chem1 });

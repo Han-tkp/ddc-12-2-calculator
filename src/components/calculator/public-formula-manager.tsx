@@ -98,26 +98,31 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 throw new Error(data.error || 'ไม่สามารถสร้างสูตรสารเคมีได้');
             }
 
-            // Record tracking calculation entry if location is specified
-            await fetch('/api/calculations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    C: Number(C),
-                    S: Number(S),
-                    RA: Number(RA),
-                    RA_unit: RAUnit,
-                    mix_type: Number(mixType),
-                    A0: Number(A0),
-                    A_house: 100,
-                    N: 10,
-                    chemical: name.trim(),
-                    location: location.trim() || 'บันทึกสูตรเคมีภายนอก',
-                    agency: 'ผู้ใช้งานทั่วไป / ภายนอก',
-                    lat: coords?.lat ?? null,
-                    lng: coords?.lng ?? null,
-                }),
-            });
+            // Record tracking calculation entry (best-effort)
+            try {
+                const calcRes = await fetch('/api/calculations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        C: Number(C),
+                        S: Number(S),
+                        RA: Number(RA),
+                        RA_unit: RAUnit,
+                        mix_type: Number(mixType),
+                        A0: Number(A0),
+                        A_house: 100,
+                        N: 10,
+                        chemical: name.trim(),
+                        location: location.trim() || 'บันทึกสูตรเคมีภายนอก',
+                        agency: 'ผู้ใช้งานทั่วไป / ภายนอก',
+                        lat: coords?.lat ?? null,
+                        lng: coords?.lng ?? null,
+                    }),
+                });
+                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
+            } catch (calcErr) {
+                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
+            }
 
             toast.success(data.message || `เพิ่มสูตรสารเคมี "${name}" เรียบร้อยแล้ว`);
             setShowConfirm(false);
@@ -136,10 +141,11 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 type="button"
                 onClick={handleOpenModal}
                 variant="outline"
-                className="bg-indigo-50/80 border-indigo-200/80 hover:bg-indigo-100 text-indigo-700 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-4 shadow-xs transition-all hover:scale-105"
+                className="bg-indigo-50/80 border-indigo-200/80 hover:bg-indigo-100 text-indigo-700 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-3 sm:px-4 shadow-xs transition-all hover:scale-105 shrink-0"
+                title="เพิ่มสูตรสารเคมี"
             >
                 <Plus className="h-4 w-4" />
-                <span>เพิ่มสูตรสารเคมี</span>
+                <span className="hidden sm:inline">เพิ่มสูตรสารเคมี</span>
             </Button>
 
             {/* Main Form Modal */}

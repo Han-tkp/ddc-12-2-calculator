@@ -68,7 +68,7 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
             // โหมด 1: แบบสรุปรายการประจำวัน (Daily Summary Log)
             wsData = [
                 ['วันที่-เวลา', 'หน่วยงาน', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(มล.)', 'น้ำมัน/น้ำเตรียม(มล.)', 'ยอดรวม(มล.)', 'สถานที่/พิกัด'],
-                [dateStr, agencyName, chemName, `1:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
+                [dateStr, agencyName, chemName, `${input.C}:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
             ];
         } else if (mode === 2) {
             // โหมด 2: แบบใบสั่งเตรียมสารเคมี (Chemical Preparation Ticket)
@@ -109,7 +109,7 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                 ['พิกัด GPS:', coords ? `${coords.lat}, ${coords.lng}` : 'N/A'],
                 [''],
                 ['รายละเอียดการใช้สารเคมี:'],
-                ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน 1:${input.S}`],
+                ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน ${input.C}:${input.S}`],
                 ['ฉีดพ่นในอัตรา (RA):', `${input.RA} ${input.RA_unit === 'L' ? 'ลิตร' : 'มล.'}`],
                 ['จำนวนหลังคาเรือนเป้าหมาย:', input.N, 'หลัง'],
                 ['รวมปริมาณสารเคมีที่ใช้สุทธิ:', result.V_C, 'มล.'],
@@ -217,7 +217,7 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                         </div>
                         <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm">
                             <span className="block text-emerald-100 text-xs mb-0.5">อัตราส่วนผสม</span>
-                            <span className="font-bold text-white text-sm sm:text-base leading-relaxed">1 : {input.S} ({chemicalName} : น้ำมัน/น้ำ)</span>
+                            <span className="font-bold text-white text-sm sm:text-base leading-relaxed">{input.C} : {input.S} ({chemicalName} : น้ำมัน/น้ำ)</span>
                         </div>
                         <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-sm lg:col-span-2">
                             <span className="block text-emerald-100 text-xs mb-0.5">อัตราการฉีดพ่น (RA)</span>

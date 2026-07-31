@@ -102,24 +102,29 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตร Custom ได้');
 
-            // Record tracking entry
-            await fetch('/api/calculations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    C: Number(C),
-                    S: Number(S),
-                    RA: Number(RA),
-                    RA_unit: RAUnit,
-                    mix_type: Number(mixType),
-                    A0: 1000,
-                    A_house: 100,
-                    N: 10,
-                    chemical: name.trim(),
-                    location: location.trim() || 'บันทึกสูตร Custom ลากวางฉลากสารเคมี',
-                    agency: 'Custom Formula Creator',
-                }),
-            });
+            // Record tracking entry (best-effort)
+            try {
+                const calcRes = await fetch('/api/calculations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        C: Number(C),
+                        S: Number(S),
+                        RA: Number(RA),
+                        RA_unit: RAUnit,
+                        mix_type: Number(mixType),
+                        A0: 1000,
+                        A_house: 100,
+                        N: 10,
+                        chemical: name.trim(),
+                        location: location.trim() || 'บันทึกสูตร Custom ลากวางฉลากสารเคมี',
+                        agency: 'Custom Formula Creator',
+                    }),
+                });
+                if (!calcRes.ok) console.error('บันทึก tracking calculation ไม่สำเร็จ:', await calcRes.json());
+            } catch (calcErr) {
+                console.error('บันทึก tracking calculation ไม่สำเร็จ:', calcErr);
+            }
 
             toast.success(data.message || `เพิ่มสูตร Custom "${name}" เรียบร้อยแล้ว`);
             setShowConfirm(false);

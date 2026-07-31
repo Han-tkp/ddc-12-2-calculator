@@ -9,9 +9,11 @@ export interface ParsedFile {
     rowCount: number;
     colCount: number;
     numericColumns: string[];
+    imageData?: string;
+    rawText?: string;
 }
 
-export type SupportedFile = 'xlsx' | 'xls' | 'csv' | 'tsv' | 'json' | 'txt';
+export type SupportedFile = 'xlsx' | 'xls' | 'csv' | 'tsv' | 'json' | 'txt' | 'image';
 
 const EXT_MAP: Record<string, SupportedFile> = {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
@@ -22,6 +24,7 @@ const EXT_MAP: Record<string, SupportedFile> = {
 };
 
 function detectType(fileName: string, mime?: string): SupportedFile {
+    if (mime?.startsWith('image/')) return 'image';
     const fromMime = mime ? EXT_MAP[mime] : undefined;
     if (fromMime) return fromMime;
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -51,9 +54,17 @@ export async function parseFile(file: File): Promise<ParsedFile> {
     let headers: string[] = [];
     let rows: (string | number)[][] = [];
     let sheetName: string | undefined;
+    let imageData: string | undefined;
+    let rawText: string | undefined;
 
     try {
-        if (type === 'json') {
+        if (type === 'image') {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+            imageData = `data:${file.type || 'image/png'};base64,${btoa(binary)}`;
+            headers = ['รูปภาพฉลาก'];
+        } else if (type === 'json') {
             const text = new TextDecoder().decode(buffer);
             const data = JSON.parse(text);
             const arr = Array.isArray(data) ? data : (data.data ?? data.rows ?? []);
@@ -66,6 +77,7 @@ export async function parseFile(file: File): Promise<ParsedFile> {
             }
         } else if (type === 'txt') {
             const text = new TextDecoder().decode(buffer);
+            rawText = text;
             rows = text.split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t').map(toCellNumber));
             if (rows.length > 0) {
                 headers = rows[0].map(String);
@@ -125,6 +137,8 @@ export async function parseFile(file: File): Promise<ParsedFile> {
         rowCount: rows.length,
         colCount: headers.length,
         numericColumns,
+        imageData,
+        rawText,
     };
 }
 

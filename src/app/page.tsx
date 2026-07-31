@@ -19,18 +19,19 @@ export default async function Home() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 bg-white/60 backdrop-blur-xl">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="relative w-10 h-10 md:w-12 md:h-12 hover:scale-105 transition-transform duration-300">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <div className="relative w-9 h-9 md:w-12 md:h-12 hover:scale-105 transition-transform duration-300 shrink-0">
               <Image
                 src="/logo.png"
                 alt="DDC Logo"
                 fill
+                sizes="48px"
                 className="object-contain"
                 priority
               />
             </div>
-            <div>
-              <h1 className="font-bold text-lg md:text-xl text-slate-800 tracking-tight leading-tight">
+            <div className="min-w-0">
+              <h1 className="font-bold text-base md:text-xl text-slate-800 tracking-tight leading-tight">
                 VBDC 12.2
               </h1>
               <p className="text-[10px] md:text-xs text-slate-500 font-medium hidden sm:block">
@@ -40,15 +41,16 @@ export default async function Home() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* User Portal Link */}
             <Link href="/user">
               <Button
                 variant="outline"
-                className="bg-emerald-50/80 border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-4 shadow-xs transition-all hover:scale-105"
+                className="bg-emerald-50/80 border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-3 sm:px-4 shadow-xs transition-all hover:scale-105 shrink-0"
+                title="ศูนย์ผู้ใช้งาน"
               >
                 <LayoutDashboard className="h-4 w-4 text-emerald-600" />
-                <span>ศูนย์ผู้ใช้งาน</span>
+                <span className="hidden sm:inline">ศูนย์ผู้ใช้งาน</span>
               </Button>
             </Link>
 
@@ -68,7 +70,7 @@ export default async function Home() {
 
                   {session.user.role === 'ADMIN' && (
                     <Link href="/admin/dashboard">
-                      <Button variant="ghost" size="sm" className="gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
+                      <Button variant="ghost" size="sm" className="gap-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 sm:px-3 shrink-0" title="ระบบหลังบ้าน">
                         <LayoutDashboard className="h-4 w-4" />
                         <span className="hidden sm:inline">ระบบหลังบ้าน</span>
                       </Button>
