@@ -95,6 +95,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                     A0: 1000,
                     tankCapacity: Number(tankCapacity),
                     isActive: true,
+                    location: location.trim() || undefined,
                 }),
             });
 
@@ -120,7 +121,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                 }),
             });
 
-            toast.success(`บันทึกสูตร Custom "${name}" และไฟล์ฉลากเรียบร้อยแล้ว!`);
+            toast.success(data.message || `เพิ่มสูตร Custom "${name}" เรียบร้อยแล้ว`);
             setShowConfirm(false);
             onOpenChange(false);
             if (onSuccess) onSuccess(name.trim());

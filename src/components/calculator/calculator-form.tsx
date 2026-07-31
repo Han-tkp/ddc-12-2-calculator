@@ -34,7 +34,6 @@ export function CalculatorForm() {
     const [result, setResult] = useState<CalculationResult | null>(null);
     const [calculatedInput, setCalculatedInput] = useState<CalculationInput | null>(null);
     const [selectedPreset, setSelectedPreset] = useState<string>('');
-    const [isSaving, setIsSaving] = useState(false);
     const [isCalculating, setIsCalculating] = useState(false);
     const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -445,6 +444,8 @@ export function CalculatorForm() {
                             />
                         </div>
                     </div>
+
+                    {/* Visual Math Builder removed */}
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-4 animate-fade-up">

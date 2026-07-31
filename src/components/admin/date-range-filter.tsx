@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Search, Calendar } from 'lucide-react';
 
 export function DateRangeFilter() {
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
 
     const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
@@ -23,13 +24,14 @@ export function DateRangeFilter() {
         if (toDate) params.set('to', toDate);
         else params.delete('to');
 
-        router.push(`/admin/dashboard?${params.toString()}`);
+        params.delete('page');
+        router.push(`${pathname}?${params.toString()}`);
     };
 
     const clearFilter = () => {
         setFromDate('');
         setToDate('');
-        router.push('/admin/dashboard');
+        router.push(pathname);
     };
 
     return (

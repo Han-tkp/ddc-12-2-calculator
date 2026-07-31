@@ -1,21 +1,28 @@
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, FlaskConical, Clock, TrendingUp, CalendarRange, MapPin } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calculator, FlaskConical, MapPin, CalendarRange, Clock, Users } from 'lucide-react';
+import { TabsContent } from "@/components/ui/tabs";
 import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
 import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
+import { DashboardTabs } from '@/components/admin/dashboard-tabs';
+import { SearchInput } from '@/components/admin/search-input';
+import { Pagination } from '@/components/ui/pagination';
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { formatNumber } from '@/lib/calculations';
+
+const PAGE_SIZE = 100;
 
 export default async function AdminDashboard({
     searchParams,
 }: {
-    searchParams: Promise<{ from?: string; to?: string }>;
+    searchParams: Promise<{ from?: string; to?: string; q?: string; page?: string; tab?: string }>;
 }) {
     // 1. Await searchParams
-    const { from, to } = await searchParams;
+    const { from, to, q, page, tab } = await searchParams;
+    const activeTab = tab || 'operational';
 
     // 2. Date Logic
     const startDate = from ? startOfDay(parseISO(from)) : subDays(startOfDay(new Date()), 30);
@@ -40,19 +47,19 @@ export default async function AdminDashboard({
         .select('*', { count: 'exact', head: true });
 
     // 2.2 Aggregations (fetch data then aggregate)
-    const calcDataPromise = supabase.from('calculations')
+    const calcDataPromise = supabaseAdmin.from('calculations')
         .select('chemical, location, createdAt, V_total')
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte);
 
     // 2.3 Recent Activity (with Join)
-    const recentCalcPromise = supabase.from('calculations')
+    const recentCalcPromise = supabaseAdmin.from('calculations')
         .select('*, user:users(name, email)')
         .order('createdAt', { ascending: false })
         .limit(5);
 
     // 2.5 Map Points
-    const mapPointsPromise = supabase.from('calculations')
+    const mapPointsPromise = supabaseAdmin.from('calculations')
         .select('id, lat, lng, chemical, location, V_total, createdAt')
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte)
@@ -61,19 +68,44 @@ export default async function AdminDashboard({
         .order('createdAt', { ascending: false })
         .limit(200);
 
+    // 2.6 History table (paginated, searchable)
+    const currentPage = parseInt(page || '1', 10);
+    const historyFrom = (currentPage - 1) * PAGE_SIZE;
+    const historyTo = historyFrom + PAGE_SIZE - 1;
+
+    let historyQuery = supabaseAdmin
+        .from('calculations')
+        .select('*, user:users(name, email)', { count: 'exact' })
+        .gte('createdAt', dateFilterStr.gte)
+        .lte('createdAt', dateFilterStr.lte)
+        .order('createdAt', { ascending: false });
+
+    if (q && q.trim()) {
+        const keyword = `%${q.trim()}%`;
+        historyQuery = historyQuery.or(`chemical.ilike.${keyword},location.ilike.${keyword},agency.ilike.${keyword}`);
+    }
+
+    const historyPromise = historyQuery.range(historyFrom, historyTo);
+
     const [
         { count: totalCalculations },
         { count: totalUsers },
         { data: allCalcData },
         { data: recentCalculations },
         { data: mapPoints },
+        { data: historyRows, count: historyCount },
     ] = await Promise.all([
         calcCountPromise,
         userCountPromise,
         calcDataPromise,
         recentCalcPromise,
-        mapPointsPromise
+        mapPointsPromise,
+        historyPromise
     ]);
+
+    const historyRowsSafe = (historyRows || []) as any[];
+    const historyTotal = historyCount || 0;
+    const historyTotalPages = Math.ceil(historyTotal / PAGE_SIZE);
 
     // 3. Process Data for Charts & Stats
     const calculationsInRange = allCalcData || [];
@@ -159,6 +191,11 @@ export default async function AdminDashboard({
         userName: calc.user ? (decrypt(calc.user.name || '') || calc.user.name) : 'Guest'
     }));
 
+    const historyWithNames = historyRowsSafe.map((calc: any) => ({
+        ...calc,
+        userName: calc.user ? (decrypt(calc.user.name || '') || calc.user.name || 'ไม่ระบุชื่อ') : (calc.agency || 'ผู้ใช้งานภาคสนาม'),
+    }));
+
     const uniqueLocations = Array.from(locationCounts.keys());
     const locationReport = locationReportData.map(loc => ({
         name: loc.location || 'ไม่ระบุ',
@@ -187,25 +224,7 @@ export default async function AdminDashboard({
             {/* Filter */}
             <DateRangeFilter />
 
-            <Tabs defaultValue="operational" className="space-y-6">
-                <TabsList className="bg-slate-100 p-1 w-full md:w-auto h-auto flex-wrap sm:flex-nowrap justify-start border border-slate-200/50 rounded-xl mb-4 lg:mb-0">
-                    <TabsTrigger value="operational" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm px-4 py-2 rounded-lg gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span className="hidden sm:inline">ปฏิบัติการ</span>
-                        <span className="sm:hidden">Opera</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="analytics" className="data-[state=active]:bg-white data-[state=active]:text-amber-700 data-[state=active]:shadow-sm px-4 py-2 rounded-lg gap-2">
-                        <TrendingUp className="h-4 w-4" />
-                        <span className="hidden sm:inline">วิเคราะห์เชิงลึก</span>
-                        <span className="sm:hidden">Analy</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="strategic" className="data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm px-4 py-2 rounded-lg gap-2">
-                        <Users className="h-4 w-4" />
-                        <span className="hidden sm:inline">กลยุทธ์และเป้าหมาย</span>
-                        <span className="sm:hidden">Strate</span>
-                    </TabsTrigger>
-                </TabsList>
-
+            <DashboardTabs defaultValue={activeTab}>
                 {/* 1. Operational Dashboard - การปฏิบัติงาน (Real-time tracking) */}
                 <TabsContent value="operational" className="space-y-4 m-0 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2">
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -376,7 +395,65 @@ export default async function AdminDashboard({
                         </Card>
                     </div>
                 </TabsContent>
-            </Tabs>
+
+                {/* 4. Full History - ประวัติทั้งหมด */}
+                <TabsContent value="history" className="space-y-4 m-0 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                        <p className="text-xs sm:text-sm text-slate-500">
+                            ประวัติการคำนวณทั้งหมดในรอบนี้ ({historyTotal} รายการ)
+                        </p>
+                        <div className="w-full sm:w-80">
+                            <SearchInput placeholder="ค้นหา สารเคมี / สถานที่ / หน่วยงาน..." />
+                        </div>
+                    </div>
+
+                    <div className="glass-card rounded-xl border border-slate-200/50 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto w-full">
+                            <table className="w-full text-left text-sm min-w-225">
+                                <thead className="bg-slate-50 text-slate-600 sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th className="p-3 font-semibold">เวลา</th>
+                                        <th className="p-3 font-semibold">ผู้บันทึก</th>
+                                        <th className="p-3 font-semibold">สถานที่</th>
+                                        <th className="p-3 font-semibold">สารเคมี / สัดส่วน</th>
+                                        <th className="p-3 font-semibold text-right">ยอดรวม (มล.)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {historyWithNames.map((calc: any) => (
+                                        <tr key={calc.id} className="hover:bg-slate-50">
+                                            <td className="p-3 text-xs text-slate-600">
+                                                {format(new Date(calc.createdAt), 'd MMM yy HH:mm', { locale: th })}
+                                            </td>
+                                            <td className="p-3 text-xs font-semibold text-slate-700">
+                                                {calc.userName}
+                                            </td>
+                                            <td className="p-3 text-xs text-slate-600">{calc.location || 'ไม่ระบุสถานที่'}</td>
+                                            <td className="p-3">
+                                                <div className="text-xs font-semibold text-slate-800">{calc.chemical || 'สูตรกำหนดเอง'}</div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    สัดส่วน {calc.C}:{calc.S} {calc.mix_type === 2 ? '(แบบผสมกับ)' : '(แบบผสมให้ได้)'}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-right text-xs font-bold text-emerald-600">
+                                                {formatNumber(calc.V_total)} มล.
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {historyWithNames.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="p-8 text-center text-sm text-slate-500">
+                                                ไม่พบข้อมูลการคำนวณ
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <Pagination currentPage={currentPage} totalPages={historyTotalPages} totalItems={historyTotal} />
+                    </div>
+                </TabsContent>
+            </DashboardTabs>
         </div>
     );
 }

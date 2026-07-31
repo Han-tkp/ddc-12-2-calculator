@@ -1,11 +1,11 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { decrypt } from '@/lib/encryption';
 import { startOfDay, endOfDay, parseISO } from 'date-fns';
 
 export async function getExportData(fromDateStr?: string, toDateStr?: string) {
-    let query = supabase
+    let query = supabaseAdmin
         .from('calculations')
         .select('*, user:users(name, email)')
         .order('createdAt', { ascending: false });

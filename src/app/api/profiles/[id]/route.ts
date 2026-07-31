@@ -1,121 +1,166 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
-import { profileSchema } from '@/lib/validations';
+import { recordFormulaAudit } from '@/lib/formula-audit';
+import { getGuestOwner } from '@/lib/guest-owner';
+import { supabaseAdmin } from '@/lib/supabase';
+import { profileMutationSchema } from '@/lib/validations';
+import { z } from 'zod';
 
-// UPDATE profile
+async function getProfile(id: string) {
+    const { data, error } = await supabaseAdmin
+        .from('label_profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
+}
+
+async function canManageProfile(profile: { guestOwnerToken?: string | null }, isAdmin: boolean) {
+    if (isAdmin) return { allowed: true, guestOwnerToken: null };
+
+    const guestOwner = await getGuestOwner();
+    return {
+        allowed: profile.guestOwnerToken === guestOwner.token,
+        guestOwnerToken: guestOwner.token,
+    };
+}
+
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
-
-        if (!session?.user || session.user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึง: เฉพาะผู้ดูแลระบบเท่านั้น' }, { status: 403 });
-        }
-
-        const resolvedParams = await params;
-        const { id } = resolvedParams;
-        const body = await request.json();
-
-        // Check if profile exists
-        const { data: currentProfile } = await supabase
-            .from('label_profiles')
-            .select('*')
-            .eq('id', id)
-            .single();
+        const isAdmin = session?.user?.role === 'ADMIN';
+        const { id } = await params;
+        const currentProfile = await getProfile(id);
 
         if (!currentProfile) {
             return NextResponse.json({ error: 'ไม่พบสูตรที่ต้องการแก้ไข' }, { status: 404 });
         }
 
-        const validated = profileSchema.parse(body);
+        const access = await canManageProfile(currentProfile, isAdmin);
+        if (!access.allowed) {
+            return NextResponse.json({ error: 'แก้ไขได้เฉพาะสูตรที่คุณเพิ่มเอง' }, { status: 403 });
+        }
 
-        // Check if new name conflicts with other formulas
-        if (validated.name !== currentProfile.name) {
-            const { data: existing } = await supabase
+        const validated = profileMutationSchema.parse(await request.json());
+        const { actorLabel, location, lat, lng, ...profileInput } = validated;
+
+        if (profileInput.name !== currentProfile.name) {
+            const { data: existing, error: existingError } = await supabaseAdmin
                 .from('label_profiles')
                 .select('id')
-                .eq('name', validated.name)
+                .eq('name', profileInput.name)
                 .neq('id', id)
-                .eq('isActive', true)
-                .single();
+                .maybeSingle();
 
+            if (existingError) throw existingError;
             if (existing) {
-                return NextResponse.json({ error: 'ชื่อสูตรนี้มีใช้งานอยู่ในระบบแล้ว' }, { status: 400 });
+                return NextResponse.json({ error: 'มีชื่อสูตรนี้อยู่ในระบบแล้ว' }, { status: 400 });
             }
         }
 
-        const { data: updatedProfile, error } = await supabase
+        const isActive = isAdmin ? profileInput.isActive : currentProfile.isActive;
+        const { data: updatedProfile, error } = await supabaseAdmin
             .from('label_profiles')
             .update({
-                name: validated.name,
-                description: validated.description,
-                C: validated.C,
-                S: validated.S,
-                RA: validated.RA,
-                RA_unit: validated.RA_unit,
-                mix_type: validated.mix_type,
-                A0: validated.A0,
-                updatedAt: new Date().toISOString()
+                ...profileInput,
+                isActive,
+                updatedAt: new Date().toISOString(),
             })
             .eq('id', id)
             .select()
             .single();
 
-        if (error) {
-            console.error('Supabase Update Error:', error);
-            return NextResponse.json({ error: `ไม่สามารถบันทึกการแก้ไขได้: ${error.message}` }, { status: 500 });
+        if (error) throw error;
+
+        try {
+            await recordFormulaAudit({
+                formulaId: id,
+                action: isAdmin && !currentProfile.isActive && isActive ? 'ACTIVATE' : 'UPDATE',
+                actorType: isAdmin ? 'ADMIN' : 'GUEST',
+                actorUserId: isAdmin ? session.user.id : null,
+                guestOwnerToken: access.guestOwnerToken,
+                actorLabel: isAdmin ? session.user.name : actorLabel || 'ผู้ใช้งานทั่วไป',
+                location,
+                lat,
+                lng,
+                beforeData: currentProfile,
+                afterData: updatedProfile,
+            });
+        } catch (auditError) {
+            console.error('Formula audit error:', auditError);
         }
 
-        return NextResponse.json(updatedProfile);
-    } catch (error: any) {
+        return NextResponse.json({ profile: updatedProfile, message: 'บันทึกการแก้ไขสูตรเรียบร้อยแล้ว' });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: error.issues }, { status: 400 });
+        }
+        const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล';
         console.error('Update profile error:', error);
-        return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล' }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
-// DELETE profile (soft delete)
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
+        const isAdmin = session?.user?.role === 'ADMIN';
+        const { id } = await params;
+        const currentProfile = await getProfile(id);
 
-        if (!session?.user || session.user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'ไม่มีสิทธิ์เข้าถึง: เฉพาะผู้ดูแลระบบเท่านั้น' }, { status: 403 });
-        }
-
-        const resolvedParams = await params;
-        const { id } = resolvedParams;
-
-        // Check if profile exists
-        const { data: profile } = await supabase
-            .from('label_profiles')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (!profile) {
+        if (!currentProfile) {
             return NextResponse.json({ error: 'ไม่พบสูตรที่ต้องการลบ' }, { status: 404 });
         }
 
-        // Hard delete (ลบถาวรจากฐานข้อมูล)
-        const { error } = await supabase
+        const access = await canManageProfile(currentProfile, isAdmin);
+        if (!access.allowed) {
+            return NextResponse.json({ error: 'ลบได้เฉพาะสูตรที่คุณเพิ่มเอง' }, { status: 403 });
+        }
+
+        const body: unknown = await request.json().catch(() => ({}));
+        const metadata = z.object({
+            location: z.string().trim().max(200).optional(),
+            lat: z.number().min(-90).max(90).optional().nullable(),
+            lng: z.number().min(-180).max(180).optional().nullable(),
+        }).parse(body);
+
+        const { error } = await supabaseAdmin
             .from('label_profiles')
             .delete()
             .eq('id', id);
 
-        if (error) {
-            console.error('Supabase Delete Error:', error);
-            return NextResponse.json({ error: `ไม่สามารถลบสูตรได้: ${error.message}` }, { status: 500 });
+        if (error) throw error;
+
+        try {
+            await recordFormulaAudit({
+                formulaId: id,
+                action: 'DELETE',
+                actorType: isAdmin ? 'ADMIN' : 'GUEST',
+                actorUserId: isAdmin ? session.user.id : null,
+                guestOwnerToken: access.guestOwnerToken,
+                actorLabel: isAdmin ? session.user.name : 'ผู้ใช้งานทั่วไป',
+                ...metadata,
+                beforeData: currentProfile,
+            });
+        } catch (auditError) {
+            console.error('Formula audit error:', auditError);
         }
 
-        return NextResponse.json({ success: true, message: 'ลบสูตรออกจากระบบอย่างถาวรเรียบร้อยแล้ว' });
-    } catch (error: any) {
+        return NextResponse.json({ success: true, message: 'ลบสูตรออกจากระบบถาวรแล้ว' });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: error.issues }, { status: 400 });
+        }
+        const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล';
         console.error('Delete profile error:', error);
-        return NextResponse.json({ error: error?.message || 'เกิดข้อผิดพลาดในการลบข้อมูล' }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

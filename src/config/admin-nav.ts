@@ -3,8 +3,10 @@ import {
     Bot,
     Settings,
     FileText,
+    ClipboardList,
     Inbox,
-    FlaskConical
+    FlaskConical,
+    Key,
 } from 'lucide-react';
 
 export const adminNavItems = [
@@ -34,8 +36,18 @@ export const adminNavItems = [
         icon: FileText
     },
     {
+        href: '/admin/audit',
+        label: 'ประวัติจัดการสูตร',
+        icon: ClipboardList
+    },
+    {
         href: '/admin/inbox',
         label: 'กล่องข้อความ',
         icon: Inbox
+    },
+    {
+        href: '/admin/credentials',
+        label: 'จัดการคีย์เชื่อมต่อ',
+        icon: Key
     }
 ];

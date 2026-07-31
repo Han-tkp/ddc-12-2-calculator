@@ -24,8 +24,10 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { NodeVisualCalculator } from './node-visual-calculator';
 
 export function FormulaPlayground() {
+    const [viewMode, setViewMode] = useState<'node' | 'standard'>('node');
     // Left Pane Form State
     const [name, setName] = useState('เดลตาไซด์ ULV (สูตรทดสอบภาคสนาม)');
     const [description, setDescription] = useState('สูตรทดสอบพารามิเตอร์พ่นฝอยละเอียด ULV สำหรับเครื่องพ่นสะพายหลัง');
@@ -193,17 +195,42 @@ export function FormulaPlayground() {
                     </p>
                 </div>
 
-                <Button
-                    onClick={() => setShowConfirmModal(true)}
-                    disabled={!validations.isValid}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold gap-2 shadow-md h-11 px-6 rounded-2xl shrink-0"
-                >
-                    <Save className="h-4 w-4" /> บันทึกและซิงค์สูตรนี้เข้าฐานข้อมูล
-                </Button>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200">
+                        <Button
+                            variant={viewMode === 'node' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('node')}
+                            className={`rounded-xl text-xs font-bold gap-1.5 ${viewMode === 'node' ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                        >
+                            <Sparkles className="h-3.5 w-3.5" /> 🧩 เครื่องคิดเลขสมการ (Formula Pad)
+                        </Button>
+                        <Button
+                            variant={viewMode === 'standard' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('standard')}
+                            className={`rounded-xl text-xs font-bold gap-1.5 ${viewMode === 'standard' ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                        >
+                            <FlaskConical className="h-3.5 w-3.5" /> 📝 ฟอร์มทดสอบสูตร
+                        </Button>
+                    </div>
+
+                    <Button
+                        onClick={() => setShowConfirmModal(true)}
+                        disabled={!validations.isValid}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold gap-2 shadow-md h-11 px-6 rounded-2xl shrink-0"
+                    >
+                        <Save className="h-4 w-4" /> บันทึกสูตรเข้าฐานข้อมูล
+                    </Button>
+                </div>
             </div>
 
-            {/* Side-by-Side Grid Architecture */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* View Mode Content */}
+            {viewMode === 'node' ? (
+                <NodeVisualCalculator />
+            ) : (
+                /* Side-by-Side Grid Architecture */
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* LEFT PANE: Form & Parameter Editor */}
                 <Card className="border-indigo-100 shadow-sm bg-white rounded-3xl overflow-hidden">
                     <CardHeader className="bg-indigo-50/50 border-b border-indigo-100">
@@ -418,6 +445,7 @@ export function FormulaPlayground() {
                     </CardContent>
                 </Card>
             </div>
+            )}
 
             {/* Confirmation Alert Dialog */}
             <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>

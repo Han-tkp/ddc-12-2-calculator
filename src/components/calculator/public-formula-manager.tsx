@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Sparkles, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Beaker, ShieldAlert, Bot } from 'lucide-react';
+import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PublicFormulaManagerProps {
@@ -29,13 +29,10 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
     const [mixType, setMixType] = useState<number>(2); // 1 = ผสมให้ได้, 2 = ผสมกับ
     const [A0, setA0] = useState<number>(1000);
     const [tankCapacity, setTankCapacity] = useState<number>(10);
+    const [actorLabel, setActorLabel] = useState('');
     const [location, setLocation] = useState('');
     const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [isGpsLoading, setIsGpsLoading] = useState(false);
-
-    // AI Assistant Mode State
-    const [aiQuery, setAiQuery] = useState('');
-    const [isAiSuggesting, setIsAiSuggesting] = useState(false);
 
     // Request GPS location on open
     const captureGps = () => {
@@ -54,41 +51,6 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
     const handleOpenModal = () => {
         setIsOpen(true);
         captureGps();
-    };
-
-    // AI Formula Generator trigger
-    const handleAiGenerate = () => {
-        if (!aiQuery.trim()) {
-            toast.error('กรุณาระบุยี่ห้อสารเคมีหรือศัตรูพืชที่ต้องการกำจัด');
-            return;
-        }
-        setIsAiSuggesting(true);
-        setTimeout(() => {
-            const queryLower = aiQuery.toLowerCase();
-            if (queryLower.includes('ulv') || queryLower.includes('ยูแอลวี')) {
-                setName(aiQuery.includes('เดลตา') ? 'Deltacide ULV (สูตรใหม่)' : `${aiQuery} (ULV)`);
-                setC(1);
-                setS(4);
-                setRA(75);
-                setRAUnit('cc');
-                setMixType(1);
-                setA0(1000);
-                setTankCapacity(10);
-                setDescription('สูตรแนะนำโดย AI สำหรับพ่นฝอยละเอียด (ULV) ปริมาณพ่น 75 มล./1,000 ตร.ม.');
-            } else {
-                setName(aiQuery.includes('ซับมาริน') ? 'Submarine (สูตรใหม่)' : `${aiQuery} (หมอกควัน)`);
-                setC(1);
-                setS(79);
-                setRA(1);
-                setRAUnit('L');
-                setMixType(2);
-                setA0(1000);
-                setTankCapacity(10);
-                setDescription('สูตรแนะนำโดย AI สำหรับพ่นหมอกควัน (Thermal Fogging) พ่น 1 ลิตร/1,000 ตร.ม.');
-            }
-            setIsAiSuggesting(false);
-            toast.success('AI ช่วยเติมข้อมูลสูตรสารเคมีเรียบร้อยแล้ว');
-        }, 600);
     };
 
     // Trigger pre-submit confirmation
@@ -124,6 +86,10 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                     A0: Number(A0),
                     tankCapacity: Number(tankCapacity),
                     isActive: true,
+                    actorLabel: actorLabel.trim() || undefined,
+                    location: location.trim() || undefined,
+                    lat: coords?.lat ?? null,
+                    lng: coords?.lng ?? null,
                 }),
             });
 
@@ -153,7 +119,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 }),
             });
 
-            toast.success(`เพิ่มสูตรสารเคมี "${name}" และบันทึกประวัติเข้าสู่ระบบเรียบร้อยแล้ว!`);
+            toast.success(data.message || `เพิ่มสูตรสารเคมี "${name}" เรียบร้อยแล้ว`);
             setShowConfirm(false);
             setIsOpen(false);
             if (onFormulaAdded) onFormulaAdded(name.trim());
@@ -189,44 +155,17 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* AI Generator Bar */}
-                    <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-4 rounded-xl border border-indigo-100 space-y-2">
-                        <div className="flex items-center justify-between font-bold text-xs text-indigo-800">
-                            <span className="flex items-center gap-2">
-                                <Bot className="h-4 w-4 text-indigo-600" />
-                                ผู้ช่วย AI เพิ่มสูตรอัตโนมัติ (AI Formula Assistant)
-                            </span>
-                        </div>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="เช่น เดลตาไซด์ ULV หรือ ซับมาริน หมอกควัน..."
-                                value={aiQuery}
-                                onChange={(e) => setAiQuery(e.target.value)}
-                                className="h-9 text-xs bg-white"
-                            />
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={handleAiGenerate}
-                                disabled={isAiSuggesting}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1 shrink-0"
-                            >
-                                {isAiSuggesting ? <Clock className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                                เติมสูตรด้วย AI
-                            </Button>
-                        </div>
-                        <Link href="/user?tab=ai-assistant" onClick={() => setIsOpen(false)} className="block pt-1">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold text-xs gap-1.5"
-                            >
-                                <Bot className="h-4 w-4 text-indigo-600" />
-                                หรือเปิดหน้าพูดคุยกับ AI Chatbot เต็มรูปแบบ 🤖
-                            </Button>
-                        </Link>
-                    </div>
+                    {/* AI Generator Button — opens chatbot page */}
+                    <Link href="/user?tab=ai-assistant" onClick={() => setIsOpen(false)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 hover:from-indigo-500/20 hover:via-purple-500/20 hover:to-pink-500/20 border-indigo-200 text-indigo-700 font-semibold text-xs gap-2 h-10 rounded-xl"
+                        >
+                            <Bot className="h-4 w-4 text-indigo-600" />
+                            เพิ่มสูตรด้วย AI
+                        </Button>
+                    </Link>
 
                     <form onSubmit={handlePreSubmit} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -327,6 +266,15 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         </div>
 
                         {/* Tracking metadata */}
+                        <div className="space-y-1">
+                            <Label className="font-semibold text-slate-700">ชื่อผู้ทำรายการ</Label>
+                            <Input
+                                placeholder="ระบุชื่อเพื่อให้ผู้ดูแลตรวจสอบย้อนหลัง"
+                                value={actorLabel}
+                                onChange={(e) => setActorLabel(e.target.value)}
+                            />
+                        </div>
+
                         <div className="space-y-1">
                             <Label className="font-semibold text-slate-700 flex items-center gap-1">
                                 <MapPin className="h-3.5 w-3.5 text-red-500" /> สถานที่ปฏิบัติงาน / พื้นที่อ้างอิง

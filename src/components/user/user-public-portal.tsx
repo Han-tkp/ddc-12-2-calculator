@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,11 @@ import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
-import { AiMcpChatbot } from '@/components/ai/ai-mcp-chatbot';
-import { FormulaPlayground } from '@/components/admin/formula-playground';
+import { PublicFormulaActions } from '@/components/calculator/public-formula-actions';
+import { AiMcpChatbot, formulaSchemaToVariables } from '@/components/ai/ai-mcp-chatbot';
+import type { FormulaSchema } from '@/components/ai/ai-mcp-chatbot';
+import type { FormulaVariable } from '@/lib/formula-engine';
+import { FreeFormulaCalculator } from '@/components/calculator/free-formula-calculator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -29,7 +32,9 @@ import {
     ShieldAlert,
     Beaker,
     Plus,
-    Activity
+    Activity,
+    Sigma,
+    BrainCircuit,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,8 +50,33 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
     const tabParam = searchParams.get('tab');
     const [activeTab, setActiveTab] = useState(tabParam || 'overview');
 
+    // Calculator state — receives formulas from chatbot
+    const [calcVars, setCalcVars] = useState<FormulaVariable[] | null>(null);
+    const [calcKey, setCalcKey] = useState(0);
+
+    const handleSendToCalculator = (formula: FormulaSchema) => {
+        setCalcVars(formulaSchemaToVariables(formula));
+        setCalcKey((k) => k + 1);
+        setActiveTab('playground');
+    };
+
+    const handleSendFileToCalculator = (vars: FormulaVariable[]) => {
+        setCalcVars(vars);
+        setCalcKey((k) => k + 1);
+        setActiveTab('playground');
+    };
+
     // Formula List State
     const [profiles, setProfiles] = useState<any[]>(initialProfiles);
+
+    const refreshProfiles = async () => {
+        const response = await fetch('/api/profiles');
+        if (response.ok) setProfiles(await response.json());
+    };
+
+    useEffect(() => {
+        void refreshProfiles();
+    }, []);
 
     // AI Assistant State
     const [aiQuery, setAiQuery] = useState('');
@@ -160,6 +190,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                     A0: 1000,
                     tankCapacity: Number(aiTankCap),
                     isActive: true,
+                    location: aiLocation.trim() || undefined,
                 }),
             });
 
@@ -185,7 +216,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                 }),
             });
 
-            toast.success(`บันทึกสูตรสารเคมี AI "${aiName}" เข้าสู่ระบบเรียบร้อยแล้ว!`);
+            toast.success(data.message || `เพิ่มสูตรสารเคมี AI "${aiName}" เรียบร้อยแล้ว`);
             setShowAiConfirm(false);
 
             // Refresh profiles list
@@ -226,8 +257,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
 
                 <div className="flex items-center gap-2">
                     <PublicFormulaManager onFormulaAdded={async () => {
-                        const res = await fetch('/api/profiles');
-                        if (res.ok) setProfiles(await res.json());
+                        await refreshProfiles();
                     }} />
                 </div>
             </div>
@@ -316,8 +346,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                             </CardDescription>
                         </div>
                         <PublicFormulaManager onFormulaAdded={async () => {
-                            const res = await fetch('/api/profiles');
-                            if (res.ok) setProfiles(await res.json());
+                            await refreshProfiles();
                         }} />
                     </CardHeader>
 
@@ -332,6 +361,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                         <th className="p-3 text-center">อัตราพ่น (RA)</th>
                                         <th className="p-3 text-center">ถังมาตรฐาน</th>
                                         <th className="p-3">คำอธิบาย</th>
+                                        <th className="p-3 text-right">จัดการ</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -358,6 +388,9 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                             <td className="p-3 text-slate-500 max-w-xs truncate">
                                                 {p.description || '-'}
                                             </td>
+                                            <td className="p-3">
+                                                <PublicFormulaActions profile={p} onChanged={refreshProfiles} />
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -370,15 +403,22 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
             {/* TAB 3: เพิ่มสารเคมีด้วย AI (MCP Chatbot) */}
             <TabsContent value="ai-assistant" className="space-y-6 mt-0">
                 <AiMcpChatbot onFormulaSaved={async () => {
-                    const res = await fetch('/api/profiles');
-                    if (res.ok) setProfiles(await res.json());
-                }} />
+                    await refreshProfiles();
+                }} onSendToCalculator={handleSendToCalculator} onSendFileToCalculator={handleSendFileToCalculator} />
             </TabsContent>
 
-            {/* TAB 4: Playground ทดสอบสูตร */}
+            {/* TAB 4: Playground ทดสอบสูตรอิสระ */}
             <TabsContent value="playground" className="space-y-6 mt-0">
-                <FormulaPlayground />
+                <div className="flex items-center gap-2 p-4 bg-linear-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                    <Calculator className="h-5 w-5 text-indigo-600" />
+                    <div>
+                        <h3 className="text-sm font-bold text-indigo-900">เครื่องคำนวณสูตรอิสระ (Excel-like)</h3>
+                        <p className="text-xs text-indigo-700">กำหนดตัวแปร เขียนสูตรเอง คำนวณได้ทุกอย่าง เหมือนใช้ Excel</p>
+                    </div>
+                </div>
+                <FreeFormulaCalculator key={calcKey} initialVariables={calcVars ?? undefined} />
             </TabsContent>
+
         </Tabs>
     );
 }

@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Loader2, Save, Upload } from 'lucide-react';
+import { CheckCircle2, Plus, Pencil, Trash2, Loader2, Save, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { CustomChemicalModal } from '@/components/calculator/custom-chemical-modal';
@@ -38,6 +38,7 @@ interface Profile {
     RA_unit: string;
     mix_type: number;
     A0: number;
+    tankCapacity?: number;
     isActive: boolean;
     isDefault: boolean;
     createdBy: { name: string | null; email: string } | null;
@@ -53,6 +54,10 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+    const [pendingAction, setPendingAction] = useState<{
+        type: 'create' | 'update' | 'activate' | 'delete';
+        profile?: Profile;
+    } | null>(null);
 
     const initialFormData = {
         name: '',
@@ -63,6 +68,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         RA_unit: 'L',
         mix_type: 1,
         A0: 1000,
+        tankCapacity: 10,
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -78,13 +84,18 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             RA: profile.RA,
             RA_unit: profile.RA_unit,
             mix_type: profile.mix_type || 1,
-            A0: profile.A0
+            A0: profile.A0,
+            tankCapacity: profile.tankCapacity || 10,
         });
         setIsEditDialogOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setPendingAction({ type: 'create' });
+    };
+
+    const createProfile = async () => {
         setIsLoading(true);
 
         try {
@@ -115,6 +126,11 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingProfileId) return;
+        setPendingAction({ type: 'update' });
+    };
+
+    const updateProfile = async () => {
+        if (!editingProfileId) return;
         setIsLoading(true);
 
         try {
@@ -140,9 +156,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`ต้องการลบสูตร "${name}" หรือไม่?`)) return;
-
+    const deleteProfile = async (id: string) => {
         try {
             const response = await fetch(`/api/profiles/${id}`, {
                 method: 'DELETE',
@@ -152,11 +166,61 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                 throw new Error('ไม่สามารถลบได้');
             }
 
-            toast.success('ลบสูตรสำเร็จ');
+            toast.success('ลบสูตรออกจากระบบถาวรแล้ว');
             router.refresh();
         } catch (error) {
             toast.error('เกิดข้อผิดพลาดในการลบ');
         }
+    };
+
+    const activateProfile = async (profile: Profile) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`/api/profiles/${profile.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: profile.name,
+                    description: profile.description,
+                    C: profile.C,
+                    S: profile.S,
+                    RA: profile.RA,
+                    RA_unit: profile.RA_unit,
+                    mix_type: profile.mix_type,
+                    A0: profile.A0,
+                    tankCapacity: profile.tankCapacity || 10,
+                    isActive: true,
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'ไม่สามารถเผยแพร่สูตรได้');
+            }
+
+            toast.success('อนุมัติและเผยแพร่สูตรสำเร็จ');
+            router.refresh();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการเผยแพร่สูตร');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const confirmPendingAction = async () => {
+        if (!pendingAction) return;
+
+        if (pendingAction.type === 'create') {
+            await createProfile();
+        } else if (pendingAction.type === 'update') {
+            await updateProfile();
+        } else if (pendingAction.type === 'activate' && pendingAction.profile) {
+            await activateProfile(pendingAction.profile);
+        } else if (pendingAction.profile) {
+            await deleteProfile(pendingAction.profile.id);
+        }
+
+        setPendingAction(null);
     };
 
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
@@ -263,6 +327,19 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="add-tank-capacity">ความจุถังมาตรฐาน (ลิตร)</Label>
+                                <Input
+                                    id="add-tank-capacity"
+                                    type="number"
+                                    min="0.1"
+                                    step="0.1"
+                                    value={formData.tankCapacity}
+                                    onChange={(e) => setFormData({ ...formData, tankCapacity: parseFloat(e.target.value) || 0 })}
+                                    required
+                                />
                             </div>
 
                             <div className="space-y-2">
@@ -423,6 +500,19 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-tank-capacity">ความจุถังมาตรฐาน (ลิตร)</Label>
+                                <Input
+                                    id="edit-tank-capacity"
+                                    type="number"
+                                    min="0.1"
+                                    step="0.1"
+                                    value={editData.tankCapacity}
+                                    onChange={(e) => setEditData({ ...editData, tankCapacity: parseFloat(e.target.value) || 0 })}
+                                    required
+                                />
+                            </div>
+
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                                     ยกเลิก
@@ -503,6 +593,17 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1">
+                                                {!profile.isActive && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                                        onClick={() => setPendingAction({ type: 'activate', profile })}
+                                                        title="อนุมัติและเผยแพร่สูตร"
+                                                    >
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -516,8 +617,8 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                                                    onClick={() => handleDelete(profile.id, profile.name)}
-                                                    title="ลบสูตร"
+                                                    onClick={() => setPendingAction({ type: 'delete', profile })}
+                                                    title="ลบสูตรถาวร"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -536,6 +637,31 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                 onOpenChange={setIsCustomModalOpen}
                 onSuccess={() => router.refresh()}
             />
+
+            <Dialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {pendingAction?.type === 'create' && 'ยืนยันการเพิ่มสูตร'}
+                            {pendingAction?.type === 'update' && 'ยืนยันการแก้ไขสูตร'}
+                            {pendingAction?.type === 'activate' && 'ยืนยันการอนุมัติสูตร'}
+                            {pendingAction?.type === 'delete' && 'ยืนยันการลบสูตรถาวร'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {pendingAction?.type === 'create' && `จะเพิ่มสูตร “${formData.name}” และเผยแพร่ให้ใช้งานทันที`}
+                            {pendingAction?.type === 'update' && `จะบันทึกการแก้ไขสูตร “${editData.name}”`}
+                            {pendingAction?.type === 'activate' && `จะเผยแพร่สูตร “${pendingAction.profile?.name}” ให้ผู้ใช้งานเลือกใช้`}
+                            {pendingAction?.type === 'delete' && `จะลบสูตร “${pendingAction.profile?.name}” ออกจากระบบถาวร การกระทำนี้ไม่สามารถย้อนกลับได้`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setPendingAction(null)} disabled={isLoading}>ยกเลิก</Button>
+                        <Button type="button" onClick={confirmPendingAction} disabled={isLoading} variant={pendingAction?.type === 'delete' ? 'destructive' : 'default'}>
+                            {isLoading ? 'กำลังบันทึก...' : 'ยืนยัน'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

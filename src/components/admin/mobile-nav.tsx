@@ -7,7 +7,8 @@ import {
     Menu,
     LogOut,
     Home,
-    X
+    X,
+    Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet';
@@ -23,7 +24,7 @@ export function MobileNav() {
     return (
         <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200">
             <div className="flex items-center gap-2 font-bold text-lg text-slate-800">
-                <span className="text-xl">🧪</span>
+                <Shield className="h-5 w-5 text-indigo-600" />
                 Admin Panel
             </div>
 

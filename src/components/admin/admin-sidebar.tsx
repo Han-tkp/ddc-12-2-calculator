@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { adminNavItems } from '@/config/admin-nav';
-import { ChevronLeft, ChevronRight, Home, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, LogOut, Shield } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface AdminSidebarProps {
@@ -28,12 +28,12 @@ export function AdminSidebar({ isCollapsed, toggleCollapse }: AdminSidebarProps)
                 isCollapsed ? "justify-center" : "px-6 justify-between"
             )}>
                 {!isCollapsed && (
-                    <div className="flex items-center gap-2 font-bold text-xl text-slate-800">
-                        <span className="text-2xl">🧪</span>
-                        Admin
+                    <div className="flex items-center gap-2 font-bold text-lg text-slate-800">
+                        <Shield className="h-5 w-5 text-indigo-600" />
+                        Admin Panel
                     </div>
                 )}
-                {isCollapsed && <span className="text-2xl">🧪</span>}
+                {isCollapsed && <Shield className="h-5 w-5 text-indigo-600 mx-auto" />}
 
                 <Button
                     variant="ghost"

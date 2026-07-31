@@ -1,33 +1,49 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Pagination } from '@/components/ui/pagination';
-import Link from 'next/link';
-import { ArrowLeft, FileText, Shield, User, Calendar, Droplets, FlaskConical } from 'lucide-react';
+import { Shield, User, Calendar, FlaskConical } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { formatNumber } from '@/lib/calculations';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
 import { ExportExcelButton } from '@/components/admin/export-excel-button';
+import { RoleFilter } from '@/components/admin/role-filter';
+import { SearchInput } from '@/components/admin/search-input';
 
-async function getLogs(pageStr: string | undefined, fromDateStr?: string, toDateStr?: string) {
+async function getLogs(pageStr: string | undefined, fromDateStr?: string, toDateStr?: string, role?: string, q?: string) {
     const currentPage = parseInt(pageStr || '1', 10);
     const pageSize = 100;
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
+    let query = supabaseAdmin
         .from('calculations')
-        .select('*, user:users(name, email)', { count: 'exact' })
+        .select('*, user:users(name, email, role)', { count: 'exact' })
         .order('createdAt', { ascending: false });
+
+    if (q && q.trim()) {
+        const keyword = `%${q.trim()}%`;
+        query = query.or(`chemical.ilike.${keyword},location.ilike.${keyword},agency.ilike.${keyword}`);
+    }
 
     if (fromDateStr) {
         query = query.gte('createdAt', startOfDay(parseISO(fromDateStr)).toISOString());
     }
     if (toDateStr) {
         query = query.lte('createdAt', endOfDay(parseISO(toDateStr)).toISOString());
+    }
+
+    // ตัวกรองบทบาท: admin = บันทึกโดยผู้ล็อกอิน (userId มีค่า) หรือ agency มีคำว่า Admin
+    // user = กลับด้าน: userId ว่าง และ agency ไม่ใช่ Admin
+    if (role === 'admin') {
+        query = query.or('userId.not.is.null,agency.ilike.%Admin%');
+    } else if (role === 'user') {
+        query = query.or(
+            'and(userId.is.null,agency.not.ilike.%Admin%),' +
+            'and(userId.is.null,agency.is.null)'
+        );
     }
 
     const { data: logs, count, error } = await query.range(from, to);
@@ -45,16 +61,16 @@ async function getLogs(pageStr: string | undefined, fromDateStr?: string, toDate
     };
 }
 
-export default async function AdminLogsPage({ searchParams }: { searchParams: Promise<{ page?: string; from?: string; to?: string }> }) {
+export default async function AdminLogsPage({ searchParams }: { searchParams: Promise<{ page?: string; from?: string; to?: string; role?: string; q?: string }> }) {
     const session = await auth();
-    const { page, from, to } = await searchParams;
+    const { page, from, to, role, q } = await searchParams;
 
     // Check if user is admin
     if (!session?.user || session.user.role !== 'ADMIN') {
         redirect('/login');
     }
 
-    const { logs, count, currentPage, totalPages } = await getLogs(page, from, to);
+    const { logs, count, currentPage, totalPages } = await getLogs(page, from, to, role, q);
 
     return (
         <div className="space-y-4 sm:space-y-6">
@@ -64,6 +80,12 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                     <p className="text-xs sm:text-sm text-slate-500">ดูประวัติการคำนวณทั้งหมดในระบบ ({count} รายการ)</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 w-full xl:w-auto">
+                    <div className="w-full xl:w-52">
+                        <SearchInput placeholder="ค้นหา สารเคมี / สถานที่ / หน่วยงาน..." />
+                    </div>
+                    <div className="w-full sm:w-auto">
+                        <RoleFilter allLabel="ทั้งหมด" adminLabel="Admin" userLabel="ผู้ใช้" />
+                    </div>
                     <div className="flex-1 w-full">
                         <DateRangeFilter />
                     </div>

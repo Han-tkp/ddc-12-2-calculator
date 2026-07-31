@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { calculationSchema } from '@/lib/validations';
 import { calculate } from '@/lib/calculations';
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
         // Calculate results on server to ensure integrity
         const result = calculate(body);
 
-        const { data: calculation, error } = await supabase
+        const { data: calculation, error } = await supabaseAdmin
             .from('calculations')
             .insert({
                 userId: userId,
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
                 N: body.N,
                 // Optional Fields
                 location: body.location,
+                agency: body.agency,
                 chemical: body.chemical,
                 lat: body.lat ?? null,
                 lng: body.lng ?? null,
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: calculations, error } = await supabase
+        const { data: calculations, error } = await supabaseAdmin
             .from('calculations')
             .select('*')
             .eq('userId', session.user.id)

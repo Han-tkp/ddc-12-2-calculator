@@ -35,6 +35,13 @@ export const profileSchema = z.object({
     isActive: z.boolean().default(true),
 });
 
+export const profileMutationSchema = profileSchema.extend({
+    actorLabel: z.string().trim().min(1, 'กรุณาระบุชื่อผู้ทำรายการ').max(100, 'ชื่อผู้ทำรายการยาวเกินไป').optional(),
+    location: z.string().trim().max(200, 'ชื่อสถานที่ยาวเกินไป').optional(),
+    lat: z.number().min(-90).max(90).optional().nullable(),
+    lng: z.number().min(-180).max(180).optional().nullable(),
+});
+
 export const loginSchema = z.object({
     email: z.string({ message: 'กรุณาระบุอีเมล' }).min(1, 'กรุณาระบุอีเมล').email('รูปแบบอีเมลไม่ถูกต้อง'),
     password: z.string({ message: 'กรุณาระบุรหัสผ่าน' }).min(1, 'กรุณาระบุรหัสผ่าน'),
@@ -52,7 +59,6 @@ export const registerSchema = z.object({
 
 export type CalculationInput = z.infer<typeof calculationSchema>;
 export type ProfileInput = z.infer<typeof profileSchema>;
+export type ProfileMutationInput = z.infer<typeof profileMutationSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
-
-

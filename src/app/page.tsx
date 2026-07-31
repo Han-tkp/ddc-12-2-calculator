@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { CalculatorForm } from '@/components/calculator/calculator-form';
 import { Footer } from '@/components/footer';
-import { Calculator, LogIn, LayoutDashboard, LogOut, User, Plus } from 'lucide-react';
+import { Calculator, LogIn, LayoutDashboard, LogOut, User, Plus, Zap } from 'lucide-react';
 import Image from 'next/image';
 
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';

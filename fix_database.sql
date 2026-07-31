@@ -2,6 +2,9 @@
 ALTER TABLE public.label_profiles ADD COLUMN IF NOT EXISTS mix_type INTEGER DEFAULT 1 NOT NULL;
 ALTER TABLE public.calculations ADD COLUMN IF NOT EXISTS mix_type INTEGER DEFAULT 1 NOT NULL;
 
+-- 1.1 เพิ่มคอลัมน์ agency (หน่วยงาน/ผู้บันทึก) ให้ตาราง calculations
+ALTER TABLE public.calculations ADD COLUMN IF NOT EXISTS agency TEXT;
+
 -- 2. ลบสูตรรุ่นเก่าที่เป็นค่าเริ่มต้นออก (เพื่อไม่ให้ซ้ำกับสูตรใหม่)
 DELETE FROM public.label_profiles WHERE "isDefault" = true;
 
