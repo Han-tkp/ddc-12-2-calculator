@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { calculate } from '@/lib/calculations';
 
 const LABEL_PROFILES = [
     {
         name: 'Deltacide (หมอกควัน 1:79)',
         description: 'เดลตาไซด์ อัตราส่วน 1:79 สำหรับพ่นหมอกควัน Thermal Fogging กำจัดยุงลาย ยุงรำคาญ',
-        C: 1, S: 79, RA: 1, RA_unit: 'L', mix_type: 2, A0: 1000, tankCapacity: 10,
+        C: 1, S: 79, RA: 1, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
         isActive: true, isDefault: true,
     },
     {
@@ -29,7 +30,7 @@ const LABEL_PROFILES = [
     {
         name: 'Fendona (หมอกควัน 1:99)',
         description: 'เฟนโดนา อัตราส่วน 1:99 สำหรับพ่นหมอกควัน กำจัดแมลงศัตรูพืช',
-        C: 1, S: 99, RA: 1, RA_unit: 'L', mix_type: 2, A0: 1000, tankCapacity: 10,
+        C: 1, S: 99, RA: 1, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
         isActive: true, isDefault: false,
     },
     {
@@ -98,16 +99,16 @@ export async function POST() {
                 const N = randomInt(5, 80);
                 const A_house = 100;
 
-                const V_per_house = (profile.RA * 1000) * (A_house / profile.A0);
-                const V_total = V_per_house * N;
-                const ratio = profile.C + profile.S;
-                const V_C = profile.mix_type === 2
-                    ? (profile.C / profile.S) * V_total
-                    : (profile.C / ratio) * V_total;
-                const V_S = V_total - V_C;
-                const V_C_1L = profile.mix_type === 2
-                    ? (profile.C / profile.S) * 1000
-                    : (profile.C / ratio) * 1000;
+                const calc = calculate({
+                    C: profile.C,
+                    S: profile.S,
+                    RA: profile.RA,
+                    RA_unit: profile.RA_unit as 'L' | 'cc',
+                    mix_type: profile.mix_type,
+                    A0: profile.A0,
+                    A_house,
+                    N,
+                });
 
                 const daysAgo = randomInt(0, 30);
                 const createdAt = new Date();
@@ -135,11 +136,11 @@ export async function POST() {
                     A0: profile.A0,
                     A_house,
                     N,
-                    V_per_house: parseFloat(V_per_house.toFixed(3)),
-                    V_total: parseFloat(V_total.toFixed(3)),
-                    V_C: parseFloat(V_C.toFixed(3)),
-                    V_S: parseFloat(V_S.toFixed(3)),
-                    V_C_1L: parseFloat(V_C_1L.toFixed(3)),
+                    V_per_house: calc.V_per_house,
+                    V_total: calc.V_total,
+                    V_C: calc.V_C,
+                    V_S: calc.V_S,
+                    V_C_1L: calc.V_C_1L,
                     location: loc.name,
                     chemical: profile.name,
                     agency,

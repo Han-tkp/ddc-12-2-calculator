@@ -61,6 +61,7 @@ CalculatorForm → validations.ts (Zod) → calculate() in calculations.ts → /
 ### AI / MCP chatbot
 
 - `src/lib/ai-mcp.ts` is the **MCP intermediary**: classifies user intent → calls Supabase (queries or RPC) → returns results. The LLM **never computes** — it only orchestrates data fetches and tool calls.
+- **Calculation is always deterministic**: the `calculate_formula` MCP tool (`src/lib/ai/tools.ts` → `buildCalculationResponse` in `src/lib/ai-mcp/fallback.ts`) calls the same `calculate()` engine as the app UI. The LLM/rule-based fallback must never compute volumes by hand — it only maps user language to parameters (C, S, RA, RA_unit, N, mix_type) and returns the engine's numbers.
 - `src/lib/ai/router.ts` provides multi-provider fallback: `DEFAULT_ORDER = ['gemini', 'anthropic', 'openrouter', 'openai']`. Only retries on transient errors (429, timeout, network); does NOT fall back on auth/key/invalid errors.
 - `src/lib/ai/agent.ts` is the LLM tool-calling loop.
 - Configured via `/admin/ai` (per-provider model overrides, enable/disable, order) → persisted to DB → read by `runChatAgent` at request time.

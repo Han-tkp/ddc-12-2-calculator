@@ -1,6 +1,7 @@
 import { queryChemicalProfiles, queryCalculations } from '../ai-mcp';
 import { validateFormulaDraft, formatValidationIssues } from '../formula-validator';
 import { createChemicalProfile, updateChemicalProfile, deleteChemicalProfile } from '../ai-mcp/crud';
+import { buildCalculationResponse } from '../ai-mcp/fallback';
 import type { AITool } from './types';
 
 /* =========================================================================
@@ -39,6 +40,24 @@ export const AI_TOOLS: AITool[] = [
             },
         },
         required: ['formula'],
+    },
+    {
+        name: 'calculate_formula',
+        description: 'คำนวณปริมาณสารเคมีจริงด้วย deterministic engine (ค่าถูกต้องเสมอ) — รับ C, S, RA, RA_unit, N (จำนวนหลัง), A0, A_house, mix_type และคืน V_total, V_C, V_S, ต่อหลัง, จำนวนถัง ควรเรียกเมื่อผู้ใช้ถาม "คำนวณ/เท่าไหร่/กี่ถัง/ต้องผสมเท่าไร" หรือต้องการตัวเลขปริมาณ (ห้าม AI คำนวณเอง — ให้ engine คำนวณ)',
+        parameters: {
+            C: { type: 'number', description: 'สัดส่วนสารออกฤทธิ์ (จาก query_chemical_profiles หรือที่ผู้ใช้ให้)' },
+            S: { type: 'number', description: 'สัดส่วนตัวทำละลาย' },
+            RA: { type: 'number', description: 'อัตราการพ่น' },
+            RA_unit: { type: 'string', enum: ['L', 'cc'] },
+            mix_type: { type: 'number', enum: [1, 2], description: '1=ผสมให้ได้, 2=ผสมกับ (default ตามวิธี)' },
+            N: { type: 'number', description: 'จำนวนหลังบ้าน (default 1)' },
+            A0: { type: 'number', default: 1000, description: 'พื้นที่มาตรฐาน (ตร.ม.)' },
+            A_house: { type: 'number', default: 100, description: 'พื้นที่ต่อหลัง (ตร.ม.)' },
+            targetVolume: { type: 'number', default: 1, description: 'ปริมาณ target (ลิตร) สำหรับ V_C_target/V_S_target' },
+            tankCapacity: { type: 'number', default: 10, description: 'ขนาดถังพ่น (ลิตร)' },
+            chemicalName: { type: 'string', optional: true, description: 'ชื่อสารเคมีเพื่อแสดงในผลลัพธ์' },
+        },
+        required: ['C', 'S', 'RA', 'RA_unit'],
     },
     {
         name: 'create_chemical_profile',
@@ -123,6 +142,7 @@ export const AI_TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) =>
             message: formatValidationIssues(result),
         };
     },
+    calculate_formula: async (args) => buildCalculationResponse(args),
     create_chemical_profile: async (args) => createChemicalProfile(args),
     update_chemical_profile: async (args) => updateChemicalProfile(args),
     delete_chemical_profile: async (args) => deleteChemicalProfile(args),

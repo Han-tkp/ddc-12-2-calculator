@@ -343,13 +343,13 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                                 <div className="p-3 rounded-xl bg-white/60 border border-purple-100 flex justify-between items-center">
                                     <span className="text-purple-800 font-medium">🧪 ตวงสารเคมีต่อ 1 ถัง:</span>
                                     <span className="text-base font-bold text-purple-900">
-                                        {formatNumber(result.V_C_per_tank || (result.V_C_1L * (result.tankCapacity || 10)))} มล.
+                                        {formatNumber(result.V_C_per_tank ?? (result.V_C_1L * (result.tankCapacity ?? 10)))} มล.
                                     </span>
                                 </div>
                                 <div className="p-3 rounded-xl bg-white/60 border border-purple-100 flex justify-between items-center">
                                     <span className="text-purple-800 font-medium">🛢️ เติมน้ำมัน/น้ำต่อ 1 ถัง:</span>
                                     <span className="text-base font-bold text-purple-900">
-                                        {formatNumber((result.V_S_per_tank || (result.V_S_1L * (result.tankCapacity || 10))) / 1000, 2)} ลิตร
+                                        {formatNumber((result.V_S_per_tank ?? (result.V_S_1L * (result.tankCapacity ?? 10))) / 1000, 2)} ลิตร
                                     </span>
                                 </div>
                             </div>

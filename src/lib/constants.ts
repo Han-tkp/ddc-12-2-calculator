@@ -7,7 +7,7 @@ export const CHEMICAL_PRESETS = [
         S: 79,
         RA: 1,
         RA_unit: 'L' as const,
-        mix_type: 2,
+        mix_type: 1,
         A0: 1000,
         A_house: 100,
         description: 'เดลตาไซด์ 1 ลิตร ผสมน้ำมัน 79 ลิตร'
