@@ -13,7 +13,7 @@ export default async function Home() {
   const session = await auth();
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 relative flex flex-col">
+    <main className="min-h-screen bg-white dark:from-slate-950 dark:to-slate-900 relative flex flex-col">
       <div className="absolute inset-0 bg-grid-slate-200/50 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-800/50 pointer-events-none" />
 
       {/* Header */}
@@ -22,7 +22,7 @@ export default async function Home() {
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
             <div className="relative w-9 h-9 md:w-12 md:h-12 hover:scale-105 transition-transform duration-300 shrink-0">
               <Image
-                src="/logo.png"
+                src="/logo-vbdc.png"
                 alt="DDC Logo"
                 fill
                 sizes="48px"
@@ -61,8 +61,8 @@ export default async function Home() {
             <div className="flex items-center gap-2">
               {session?.user ? (
                 <>
-                  <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-linear-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-200/50">
-                    <User className="h-4 w-4 text-indigo-600" />
+                  <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-brand-line">
+                    <User className="h-4 w-4 text-brand" />
                     <span className="text-sm font-medium text-slate-700">
                       {session.user.name}
                     </span>
@@ -70,7 +70,7 @@ export default async function Home() {
 
                   {session.user.role === 'ADMIN' && (
                     <Link href="/admin/dashboard">
-                      <Button variant="ghost" size="sm" className="gap-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 sm:px-3 shrink-0" title="ระบบหลังบ้าน">
+                      <Button variant="ghost" size="sm" className="gap-1.5 text-brand hover:text-brand-dark hover:bg-brand-soft px-2 sm:px-3 shrink-0" title="ระบบหลังบ้าน">
                         <LayoutDashboard className="h-4 w-4" />
                         <span className="hidden sm:inline">ระบบหลังบ้าน</span>
                       </Button>
@@ -88,7 +88,7 @@ export default async function Home() {
                 </>
               ) : (
                 <Link href="/login">
-                  <Button variant="default" className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/20 rounded-full px-6 transition-all hover:scale-105 active:scale-95">
+                  <Button variant="default" className="bg-brand hover:bg-brand-dark text-white shadow-lg shadow-brand/20 rounded-full px-6 transition-all hover:scale-105 active:scale-95">
                     <LogIn className="mr-2 h-4 w-4" />
                     เข้าสู่ระบบ
                   </Button>
@@ -103,15 +103,15 @@ export default async function Home() {
       <div className="flex-1 w-full">
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="max-w-3xl mx-auto text-center mb-10 space-y-4 animate-fade-up">
-            <div className="inline-block p-1 rounded-full bg-indigo-50 border border-indigo-100 mb-2">
-              <span className="px-3 py-1 text-xs font-semibold text-indigo-600 tracking-wide uppercase">
+            <div className="inline-block p-1 rounded-full bg-white border border-brand mb-2">
+              <span className="px-3 py-1 text-xs font-semibold text-brand tracking-wide uppercase">
                 Official Calculator
               </span>
             </div>
 
             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
               ระบบคำนวณสารเคมี
-              <span className="block mt-2 pb-2 text-transparent bg-clip-text bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 leading-normal">
+              <span className="block mt-2 pb-2 text-brand leading-normal">
                 เพื่อการควบคุมโรค
               </span>
             </h2>

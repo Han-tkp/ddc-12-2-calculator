@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { recordFormulaAudit } from '@/lib/formula-audit';
+import { deviceInfoFromRequest } from '@/lib/device-info';
 import { getGuestOwner } from '@/lib/guest-owner';
 import { supabaseAdmin } from '@/lib/supabase';
 import { profileMutationSchema } from '@/lib/validations';
@@ -88,6 +89,7 @@ export async function PUT(
                 location,
                 lat,
                 lng,
+                device: deviceInfoFromRequest(request),
                 beforeData: currentProfile,
                 afterData: updatedProfile,
             });
@@ -148,6 +150,7 @@ export async function DELETE(
                 guestOwnerToken: access.guestOwnerToken,
                 actorLabel: isAdmin ? session.user.name : 'ผู้ใช้งานทั่วไป',
                 ...metadata,
+                device: deviceInfoFromRequest(request),
                 beforeData: currentProfile,
             });
         } catch (auditError) {

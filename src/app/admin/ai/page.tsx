@@ -22,7 +22,6 @@ import {
     AlertTriangle,
 } from 'lucide-react';
 import {
-    AI_SETTINGS_KEY,
     DEFAULT_AI_SETTINGS,
     normalizeAISettings,
 } from '@/lib/ai/settings';
@@ -32,7 +31,7 @@ import type { AICallLog } from '@/lib/ai/usage';
 const PROVIDERS: { name: AIProviderName; displayName: string; color: string }[] = [
     { name: 'gemini', displayName: 'Gemini (Google)', color: 'text-blue-600' },
     { name: 'anthropic', displayName: 'Claude (Anthropic)', color: 'text-orange-600' },
-    { name: 'openrouter', displayName: 'OpenRouter', color: 'text-violet-600' },
+    { name: 'openrouter', displayName: 'OpenRouter', color: 'text-brand' },
     { name: 'openai', displayName: 'OpenAI', color: 'text-emerald-600' },
 ];
 
@@ -55,7 +54,7 @@ export default function AdminAIPage() {
         try {
             const res = await fetch('/api/ai/status');
             if (res.ok) {
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
                 setStatus(data.providers);
             }
         } catch { /* */ }
@@ -65,7 +64,7 @@ export default function AdminAIPage() {
         try {
             const res = await fetch('/api/ai/usage?limit=100');
             if (res.ok) {
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
                 setLogs(data.logs);
                 setQuotaState(data.quotaState);
             }
@@ -73,19 +72,36 @@ export default function AdminAIPage() {
     }, []);
 
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem(AI_SETTINGS_KEY);
-            const parsed = normalizeAISettings(raw ? JSON.parse(raw) : undefined);
-            setSettings(parsed ?? DEFAULT_AI_SETTINGS);
-        } catch { /* */ }
-        setLoaded(true);
+        (async () => {
+            try {
+                const res = await fetch('/api/admin/ai-settings');
+                if (res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    setSettings(normalizeAISettings(data) ?? DEFAULT_AI_SETTINGS);
+                }
+            } catch { /* */ }
+            setLoaded(true);
+        })();
         loadStatus();
         loadUsage();
     }, [loadStatus, loadUsage]);
 
+    // Local UI state only — actually persisted server-side (all admins share one
+    // config) when "บันทึก" is clicked, via saveSettings().
     const persist = (next: AIClientSettings) => {
         setSettings(next);
-        localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(next));
+    };
+
+    const saveSettings = async (next: AIClientSettings) => {
+        const res = await fetch('/api/admin/ai-settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(next),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'ไม่สามารถบันทึกการตั้งค่าได้');
+        }
     };
 
     const setEnabled = (name: AIProviderName, enabled: boolean) => {
@@ -110,15 +126,23 @@ export default function AdminAIPage() {
         persist({ ...settings, order });
     };
 
-    const handleSave = () => {
-        localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
-        toast.success('บันทึกการตั้งค่า AI เรียบร้อย');
+    const handleSave = async () => {
+        try {
+            await saveSettings(settings);
+            toast.success('บันทึกการตั้งค่า AI เรียบร้อย (ใช้ร่วมกันทุกแอดมิน)');
+        } catch (err: any) {
+            toast.error(err.message || 'ไม่สามารถบันทึกการตั้งค่าได้');
+        }
     };
 
-    const handleReset = () => {
-        localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(DEFAULT_AI_SETTINGS));
-        setSettings(DEFAULT_AI_SETTINGS);
-        toast.success('รีเซ็ตเป็นค่าเริ่มต้น');
+    const handleReset = async () => {
+        try {
+            await saveSettings(DEFAULT_AI_SETTINGS);
+            setSettings(DEFAULT_AI_SETTINGS);
+            toast.success('รีเซ็ตเป็นค่าเริ่มต้น');
+        } catch (err: any) {
+            toast.error(err.message || 'ไม่สามารถรีเซ็ตได้');
+        }
     };
 
     const handleTest = async (name: AIProviderName) => {
@@ -129,7 +153,7 @@ export default function AdminAIPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ provider: name, model: settings.providers[name]?.model || undefined }),
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (data.ok) {
                 toast.success(`${data.provider}/${data.model} ตอบกลับใน ${data.latencyMs}ms`);
             } else {
@@ -156,21 +180,22 @@ export default function AdminAIPage() {
         <div className="p-4 md:p-6 space-y-6 pb-10">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Cpu className="h-5 w-5 text-indigo-600" />
+                    <Cpu className="h-5 w-5 text-brand" />
                     <h1 className="text-lg font-bold text-slate-800">ตั้งค่า AI Provider</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handleReset} className="h-8 text-xs gap-1.5 rounded-xl">
                         <RefreshCw className="h-3.5 w-3.5" /> รีเซ็ต
                     </Button>
-                    <Button size="sm" onClick={handleSave} className="h-8 text-xs gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <Button size="sm" onClick={handleSave} className="h-8 text-xs gap-1.5 rounded-xl bg-brand hover:bg-brand-dark text-white">
                         <Save className="h-3.5 w-3.5" /> บันทึก
                     </Button>
                 </div>
             </div>
 
             <p className="text-xs text-slate-500 -mt-3">
-                คีย์ API ถูกเก็บฝั่งเซิร์ฟเวอร์ (env) เท่านั้น — หน้าที่นี้จัดการลำดับสำรอง, การเปิด/ปิด provider และ model ที่ใช้
+                คีย์ API ถูกเก็บฝั่งเซิร์ฟเวอร์ (env) เท่านั้น — หน้านี้จัดการลำดับสำรอง, การเปิด/ปิด provider และ model ที่ใช้
+                การตั้งค่านี้บันทึกไว้ส่วนกลาง แอดมินทุกคนเห็นค่าเดียวกัน
             </p>
 
             {/* Provider order + cards */}

@@ -29,11 +29,11 @@ export function AdminSidebar({ isCollapsed, toggleCollapse }: AdminSidebarProps)
             )}>
                 {!isCollapsed && (
                     <div className="flex items-center gap-2 font-bold text-lg text-slate-800">
-                        <Shield className="h-5 w-5 text-indigo-600" />
+                        <Shield className="h-5 w-5 text-brand" />
                         Admin Panel
                     </div>
                 )}
-                {isCollapsed && <Shield className="h-5 w-5 text-indigo-600 mx-auto" />}
+                {isCollapsed && <Shield className="h-5 w-5 text-brand mx-auto" />}
 
                 <Button
                     variant="ghost"
@@ -63,11 +63,11 @@ export function AdminSidebar({ isCollapsed, toggleCollapse }: AdminSidebarProps)
                                 variant={isActive ? 'secondary' : 'ghost'}
                                 className={cn(
                                     "w-full justify-start mb-1 transition-all",
-                                    isActive && "bg-indigo-50 text-indigo-600 font-medium",
+                                    isActive && "bg-brand-soft text-brand font-medium",
                                     isCollapsed ? "px-0 justify-center" : "gap-3 px-3"
                                 )}
                             >
-                                <Icon className={cn("h-5 w-5", isActive ? "text-indigo-600" : "text-slate-500")} />
+                                <Icon className={cn("h-5 w-5", isActive ? "text-brand" : "text-slate-500")} />
                                 {!isCollapsed && <span>{item.label}</span>}
                             </Button>
                         </Link>
@@ -88,7 +88,7 @@ export function AdminSidebar({ isCollapsed, toggleCollapse }: AdminSidebarProps)
                     <Button
                         variant="outline"
                         className={cn(
-                            "w-full border-slate-200 hover:bg-slate-50 hover:text-indigo-600",
+                            "w-full border-slate-200 hover:bg-slate-50 hover:text-brand",
                             isCollapsed ? "px-0 justify-center" : "gap-2"
                         )}
                     >

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { supabaseAdmin } from '@/lib/supabase';
 import { auth } from '@/lib/auth';
-import { decrypt } from '@/lib/encryption';
+import { decryptName } from '@/lib/encryption';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
@@ -39,7 +39,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                     <p className="text-xs sm:text-sm text-slate-500">รายชื่อเจ้าหน้าที่ที่สามารถเข้าใช้งานระบบได้</p>
                 </div>
                 <Link href="/admin/users/new" className="w-full sm:w-auto">
-                    <Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white gap-2 h-10 shadow-sm">
+                    <Button className="w-full sm:w-auto bg-brand hover:bg-brand-dark text-white gap-2 h-10 shadow-sm">
                         <UserPlus className="h-4 w-4" />
                         เพิ่มผู้ใช้งาน
                     </Button>
@@ -63,17 +63,17 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                                 <TableRow key={user.id} className="hover:bg-slate-50/50">
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                                            <div className="w-8 h-8 rounded-full bg-brand-soft text-brand flex items-center justify-center text-xs font-bold">
                                                 {/* Decrypt name here for display, handle null/undefined */}
-                                                {user.name ? decrypt(user.name).charAt(0).toUpperCase() : '?'}
+                                                {decryptName(user.name, '?').charAt(0).toUpperCase()}
                                             </div>
-                                            <span>{user.name ? decrypt(user.name) : 'ไม่ระบุชื่อ'}</span>
+                                            <span>{decryptName(user.name)}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-slate-600">{user.email}</TableCell>
                                     <TableCell>
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'ADMIN'
-                                            ? 'bg-purple-100 text-purple-800'
+                                            ? 'bg-brand-soft text-brand-dark'
                                             : 'bg-green-100 text-green-800'
                                             }`}>
                                             {user.role}

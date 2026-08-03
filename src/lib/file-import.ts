@@ -142,28 +142,6 @@ export async function parseFile(file: File): Promise<ParsedFile> {
     };
 }
 
-/** สร้างข้อความสรุปข้อมูลสำหรับ AI */
-export function buildFileSummary(file: ParsedFile, maxRows = 20): string {
-    const lines: string[] = [];
-    lines.push(`ไฟล์: ${file.fileName} (${file.fileType.toUpperCase()})`);
-    if (file.sheetName) lines.push(`ชีต: ${file.sheetName}`);
-    lines.push(`ขนาด: ${file.rowCount} แถว × ${file.colCount} คอลัมน์`);
-    lines.push(`คอลัมน์: ${file.headers.join(', ')}`);
-    if (file.numericColumns.length > 0) {
-        lines.push(`คอลัมน์ตัวเลข: ${file.numericColumns.join(', ')}`);
-    }
-    lines.push('');
-    lines.push(`ตัวอย่างข้อมูล (${Math.min(file.rowCount, maxRows)} แถวแรก):`);
-    lines.push(['#', ...file.headers].join('\t'));
-    for (let i = 0; i < Math.min(file.rowCount, maxRows); i++) {
-        lines.push([i + 1, ...file.rows[i].map(String)].join('\t'));
-    }
-    if (file.rowCount > maxRows) {
-        lines.push(`... และอีก ${file.rowCount - maxRows} แถว`);
-    }
-    return lines.join('\n');
-}
-
 /** แปลงคอลัมน์ตัวเลขให้เป็นตัวแปรของเครื่องคำนวณ (แต่ละคอลัมน์ = ตัวแปร 1 ตัว) */
 export function fileToFormulaVariables(file: ParsedFile): { id: string; name: string; expression: string; unit?: string; description?: string }[] {
     const vars: { id: string; name: string; expression: string; unit?: string; description?: string }[] = [];

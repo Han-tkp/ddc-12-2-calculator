@@ -3,6 +3,8 @@
  * ใช้ตอนไม่มี AI provider หรือ provider ล้มเหลว
  */
 import { calculate } from '../calculations';
+import { resolveAreaPerHouse } from '../area-per-house';
+import { ratioFromQuantities, simplifyRatio, parseQuantity } from '../quantity';
 import type { AIFormulaResult, FileAnalysisResult, ExtractedFormulaParams, Intent } from './types';
 
 function round(n: number, digits = 2): number {
@@ -18,6 +20,11 @@ export interface CalculationRequest {
     RA_unit?: 'L' | 'cc';
     A0?: number;
     A_house?: number;
+    /** Total area treated (m²). With N, this back-derives A_house — see area-per-house.ts. */
+    A_total?: number;
+    /** Footprint of a representative house (m), when the officer measured it instead. */
+    houseWidth?: number;
+    houseLength?: number;
     N?: number;
     targetVolume?: number;
     mix_type?: number;
@@ -43,9 +50,23 @@ export function buildCalculationResponse(params: CalculationRequest): { text: st
     const S = params.S ?? defaults.S;
     const RA = params.RA ?? defaults.RA;
     const RA_unit = params.RA_unit ?? defaults.RA_unit;
+    // A0 divides straight into the dose, so a wrong or silently-defaulted value scales
+    // the whole result. Weak models routinely drop it — they read "1,250 cc ต่อ 10,000
+    // ตร.ม." and send only the 1,250 — which quietly turns a correct answer into a
+    // tenfold overdose. Track the omission and say so in the reply.
+    const A0IsAssumed = params.A0 === undefined || params.A0 === null;
     const A0 = params.A0 ?? defaults.A0;
-    const A_house = params.A_house ?? 100;
     const N = params.N ?? 1;
+    // A_house never appears on a chemical label — it describes the target area, not the
+    // product. Derive it from whatever the officer actually knows, deterministically.
+    const area = resolveAreaPerHouse({
+        A_house: params.A_house,
+        A_total: params.A_total,
+        N,
+        width: params.houseWidth,
+        length: params.houseLength,
+    });
+    const A_house = area.A_house;
     const targetVolume = params.targetVolume ?? 1;
     const tankCapacity = params.tankCapacity ?? 10;
     const mix_type = method ?? (defaults.RA_unit === 'L' ? 1 : 2);
@@ -66,7 +87,11 @@ export function buildCalculationResponse(params: CalculationRequest): { text: st
         return {
             text: `🧪 **ผลการคำนวณ: ${chemicalName}** (${mixLabel})
 
-• จำนวนหลังบ้าน: ${N} หลัง (พื้นที่ ${A_house} ตร.ม./หลัง)
+• จำนวนหลังบ้าน: ${N} หลัง (พื้นที่รวม ${round(N * A_house, 2).toLocaleString('th-TH')} ตร.ม.)
+• พื้นที่ต่อหลัง: ${round(A_house, 2)} ตร.ม. ${area.isAssumed ? '⚠️' : '✓'} ${area.explanation}
+• อัตราพ่น: ${RA} ${RA_unit === 'L' ? 'ลิตร' : 'มล.'} ต่อ ${A0.toLocaleString('th-TH')} ตร.ม. ${A0IsAssumed
+                    ? '⚠️ ไม่ได้ระบุพื้นที่อ้างอิง จึงใช้ค่าเริ่มต้น 1,000 ตร.ม. — ถ้าฉลากระบุเป็นค่าอื่น (เช่น ต่อ 10,000 ตร.ม.) ปริมาณยาจะผิดเป็นเท่าตัว กรุณาระบุให้ชัด'
+                    : '✓'}
 • สารเข้มข้น (C): ${res.V_C} cc
 • ตัวทำละลาย (S): ${res.V_S} cc
 • **ปริมาณผสมรวม (Total): ${res.V_total} cc** (${round(res.V_total / 1000, 3)} ลิตร)
@@ -100,6 +125,21 @@ export function buildCalculationResponse(params: CalculationRequest): { text: st
 
 export function classifyIntent(text: string): Intent {
     const lower = text.toLowerCase();
+
+    // Checked first, and before 'create_formula', because "คำนวณ...ผสม..." would otherwise
+    // be read as a request to author a formula. The calculation engine is deterministic,
+    // so this intent must stay reachable even with no AI provider or subscription —
+    // otherwise the chat can't do arithmetic precisely when it has no model to lean on.
+    if (
+        lower.includes('คำนวณ') ||
+        lower.includes('คํานวณ') ||
+        lower.includes('ต้องใช้เท่าไหร่') ||
+        lower.includes('ต้องผสมเท่าไร') ||
+        lower.includes('กี่ถัง') ||
+        lower.includes('calculate')
+    ) {
+        return 'calculate';
+    }
 
     if (
         lower.includes('สร้าง') ||
@@ -155,6 +195,83 @@ export function classifyIntent(text: string): Intent {
  * ดึงค่าพารามิเตอร์ของสูตรจากข้อความของผู้ใช้ เช่น
  * "สร้างสูตร ULV สำหรับยาสาร X อัตราส่วน 1:9 RA 50 ถัง 5 ลิตร"
  */
+/**
+ * Pulls calculation parameters out of a Thai sentence for the rule-based path.
+ *
+ * Ratios go through ratioFromQuantities so "500 มล. ต่อ 12.5 ลิตร" normalises to 1:25
+ * rather than 500:12.5 — the same thousand-fold hazard the spreadsheet importer guards
+ * against. A_house is deliberately NOT guessed here; it is derived downstream by
+ * resolveAreaPerHouse from whichever of A_total / dimensions the officer supplied.
+ */
+export function extractCalculationParams(userQuery: string): CalculationRequest {
+    const text = userQuery.trim();
+    const params: CalculationRequest = {};
+
+    const UNIT = '(?:ลิตร|ล\\.|มล\\.?|ml|cc|ซีซี|ส่วน)';
+
+    // Ratio, written either "500 มล. : 12.5 ลิตร" or "500 มล. ต่อ 12.5 ลิตร".
+    const ratioMatch = text.match(
+        new RegExp(`(\\d+(?:\\.\\d+)?\\s*${UNIT}?)\\s*(?::|ต่อ)\\s*(\\d+(?:\\.\\d+)?\\s*${UNIT})`, 'i')
+    );
+    if (ratioMatch) {
+        const ratio = ratioFromQuantities(ratioMatch[1], ratioMatch[2]);
+        if (ratio) {
+            const simple = simplifyRatio(ratio.C, ratio.S);
+            params.C = simple.C;
+            params.S = simple.S;
+        }
+    }
+
+    // Spray rate and its reference area: "พ่น 1.25 ลิตรต่อ 10000 ตร.ม."
+    const raMatch = text.match(
+        new RegExp(`(?:พ่น|อัตรา(?:การ)?พ่น|ra)\\s*(?:=|คือ)?\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})\\s*(?:ต่อ|/)\\s*([\\d,]+)\\s*(?:ตร\\.?\\s*ม\\.?|ตารางเมตร|m2)`, 'i')
+    );
+    if (raMatch) {
+        const quantity = parseQuantity(`${raMatch[1]} ${raMatch[2]}`);
+        if (quantity?.milliliters != null) {
+            params.RA = quantity.milliliters;
+            params.RA_unit = 'cc';
+        }
+        params.A0 = Number(raMatch[3].replace(/,/g, '')) || undefined;
+    }
+
+    // House count.
+    const nMatch = text.match(/(\d[\d,]*)\s*หลัง/);
+    if (nMatch) params.N = Number(nMatch[1].replace(/,/g, ''));
+
+    // Total treated area — the figure an officer actually has for a zone.
+    const totalMatch = text.match(/พื้นที่(?:รวม|ทั้งหมด|ทั้งหมู่บ้าน)\s*([\d,]+(?:\.\d+)?)/);
+    if (totalMatch) params.A_total = Number(totalMatch[1].replace(/,/g, ''));
+
+    // Explicit per-house area, if stated outright.
+    const perHouseMatch = text.match(/(?:พื้นที่)?ต่อหลัง\s*([\d,]+(?:\.\d+)?)|บ้านละ\s*([\d,]+(?:\.\d+)?)\s*(?:ตร\.?\s*ม\.?|ตารางเมตร)/);
+    if (perHouseMatch) {
+        const raw = perHouseMatch[1] ?? perHouseMatch[2];
+        if (raw) params.A_house = Number(raw.replace(/,/g, ''));
+    }
+
+    // House footprint: "บ้านกว้าง 8 ยาว 12".
+    const dimMatch = text.match(/กว้าง\s*(\d+(?:\.\d+)?)\s*(?:ม\.?|เมตร)?\s*(?:ยาว|x|×)\s*(\d+(?:\.\d+)?)/);
+    if (dimMatch) {
+        params.houseWidth = Number(dimMatch[1]);
+        params.houseLength = Number(dimMatch[2]);
+    }
+
+    // Mixing method.
+    if (/ผสมให้ได้/.test(text)) params.mix_type = 1;
+    else if (/ผสมกับ/.test(text)) params.mix_type = 2;
+
+    // Tank size.
+    const tankMatch = text.match(/ถัง\s*(\d+(?:\.\d+)?)\s*ลิตร/);
+    if (tankMatch) params.tankCapacity = Number(tankMatch[1]);
+
+    // Chemical name, for the reply header only — never used in arithmetic.
+    const nameMatch = text.match(/คำนวณ\s*([฀-๿a-zA-Z0-9\s-]{2,40}?)\s*(?:ULV|หมอกควัน|อัตราส่วน|สัดส่วน|$)/i);
+    if (nameMatch?.[1]?.trim()) params.chemicalName = nameMatch[1].trim();
+
+    return params;
+}
+
 export function extractFormulaParams(userQuery: string): ExtractedFormulaParams {
     const lower = userQuery.toLowerCase();
     const params: ExtractedFormulaParams = {};

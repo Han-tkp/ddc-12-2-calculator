@@ -12,7 +12,7 @@ export function Footer() {
                         </h3>
                         <div className="text-slate-600 text-sm space-y-1">
                             <p className="flex items-center justify-center md:justify-start gap-2">
-                                <MapPin className="h-4 w-4 text-indigo-500" />
+                                <MapPin className="h-4 w-4 text-brand" />
                                 428 ถ.ไทรบุรี ต.บ่อยาง อ.เมืองสงขลา จ.สงขลา 90000
                             </p>
                             <div className="flex items-center justify-center md:justify-start gap-4">
@@ -28,8 +28,8 @@ export function Footer() {
                     </div>
 
                     <div className="flex flex-col items-center md:items-end gap-2">
-                        <div className="bg-indigo-50 px-4 py-2 rounded-full">
-                            <p className="text-indigo-700 font-medium text-sm flex items-center gap-2">
+                        <div className="bg-brand-soft px-4 py-2 rounded-full">
+                            <p className="text-brand-dark font-medium text-sm flex items-center gap-2">
                                 <HeartPulse className="h-4 w-4 text-red-500" />
                                 "กรมควบคุมโรคห่วงใย อยากให้คนไทยสุขภาพดี"
                             </p>

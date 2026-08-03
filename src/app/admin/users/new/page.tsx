@@ -40,7 +40,7 @@ export default function NewUserPage() {
                 body: JSON.stringify(data),
             });
 
-            const result = await response.json();
+            const result = await response.json().catch(() => ({}));
 
             if (!response.ok) {
                 toast.error(result.error || 'เกิดข้อผิดพลาด');
@@ -74,8 +74,8 @@ export default function NewUserPage() {
             <Card className="border-slate-200 shadow-sm">
                 <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-xl">
                     <div className="flex items-center gap-2">
-                        <div className="bg-indigo-100 p-2 rounded-lg">
-                            <UserPlus className="h-5 w-5 text-indigo-600" />
+                        <div className="bg-brand-soft p-2 rounded-lg">
+                            <UserPlus className="h-5 w-5 text-brand" />
                         </div>
                         <div>
                             <CardTitle className="text-base">ข้อมูลผู้ใช้งาน</CardTitle>
@@ -135,7 +135,7 @@ export default function NewUserPage() {
                         </div>
 
                         <div className="pt-4 flex justify-end">
-                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto" disabled={isLoading}>
+                            <Button type="submit" className="bg-brand hover:bg-brand-dark w-full sm:w-auto" disabled={isLoading}>
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

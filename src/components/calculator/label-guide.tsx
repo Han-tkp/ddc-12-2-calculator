@@ -16,7 +16,7 @@ export function LabelGuide() {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 hover:bg-violet-50">
+                <Button variant="ghost" size="sm" className="text-brand hover:text-brand-dark hover:bg-brand-soft">
                     <HelpCircle className="h-4 w-4 mr-1.5" />
                     วิธีอ่านฉลาก
                 </Button>
@@ -24,7 +24,7 @@ export function LabelGuide() {
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto rounded-3xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-xl">
-                        <BookOpen className="h-5 w-5 text-violet-500" />
+                        <BookOpen className="h-5 w-5 text-brand" />
                         คู่มือการอ่านฉลากสารเคมี
                     </DialogTitle>
                     <DialogDescription>
@@ -66,11 +66,11 @@ export function LabelGuide() {
 
                     <TabsContent value="step2" className="space-y-4">
                         <div className="grid gap-4">
-                            <div className="bg-violet-50/50 p-5 rounded-2xl border border-violet-100">
-                                <h4 className="font-semibold text-violet-700 mb-2">1. การหาอัตราส่วนผสม (C : S)</h4>
+                            <div className="bg-brand-soft/50 p-5 rounded-2xl border border-brand-soft">
+                                <h4 className="font-semibold text-brand-dark mb-2">1. การหาอัตราส่วนผสม (C : S)</h4>
                                 <ul className="space-y-3 text-sm text-slate-700">
                                     <li className="flex gap-3 bg-white p-3 rounded-xl shadow-xs">
-                                        <div className="shrink-0 w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-bold">A</div>
+                                        <div className="shrink-0 w-6 h-6 rounded-full bg-brand-soft text-brand flex items-center justify-center font-bold">A</div>
                                         <div>
                                             <p className="font-medium">แบบระบุตรงตัว</p>
                                             <p className="text-slate-500">"ผสม 1 ลิตร กับน้ำมัน 79 ลิตร"</p>
@@ -78,7 +78,7 @@ export function LabelGuide() {
                                         </div>
                                     </li>
                                     <li className="flex gap-3 bg-white p-3 rounded-xl shadow-xs">
-                                        <div className="shrink-0 w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-bold">B</div>
+                                        <div className="shrink-0 w-6 h-6 rounded-full bg-brand-soft text-brand flex items-center justify-center font-bold">B</div>
                                         <div>
                                             <p className="font-medium">แบบพันธุ์ผสมให้ได้จำนวนรวม</p>
                                             <p className="text-slate-500">"ผสม 1 ลิตร กับน้ำให้ได้ 40 ลิตร"</p>

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { calculationSchema } from '@/lib/validations';
 import { calculate } from '@/lib/calculations';
+import { deviceInfoFromRequest } from '@/lib/device-info';
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,35 +17,58 @@ export async function POST(req: NextRequest) {
         // Calculate results on server to ensure integrity
         const result = calculate(body);
 
-        const { data: calculation, error } = await supabaseAdmin
-            .from('calculations')
-            .insert({
-                userId: userId,
-                // Inputs
-                C: body.C,
-                S: body.S,
-                RA: body.RA,
-                RA_unit: body.RA_unit as 'L' | 'cc',
-                A0: body.A0,
-                A_house: body.A_house,
-                N: body.N,
-                // Optional Fields
-                location: body.location,
-                agency: body.agency,
-                chemical: body.chemical,
-                lat: body.lat ?? null,
-                lng: body.lng ?? null,
-                mix_type: body.mix_type ?? 1,
-                // Results
-                V_per_house: result.V_per_house,
-                V_total: result.V_total,
-                V_C: result.V_C,
-                V_S: result.V_S,
-                V_C_1L: result.V_C_1L,
-                updatedAt: new Date().toISOString(),
-            })
-            .select()
-            .single();
+        // Read from the header, not the body — a client-supplied device string would be
+        // forgeable and would make the provenance record worthless.
+        const device = deviceInfoFromRequest(req);
+
+        const baseRow = {
+            userId: userId,
+            // Inputs
+            C: body.C,
+            S: body.S,
+            RA: body.RA,
+            RA_unit: body.RA_unit as 'L' | 'cc',
+            A0: body.A0,
+            A_house: body.A_house,
+            N: body.N,
+            // Optional Fields
+            location: body.location,
+            agency: body.agency,
+            chemical: body.chemical,
+            lat: body.lat ?? null,
+            lng: body.lng ?? null,
+            mix_type: body.mix_type ?? 1,
+            // Results
+            V_per_house: result.V_per_house,
+            V_total: result.V_total,
+            V_C: result.V_C,
+            V_S: result.V_S,
+            V_C_1L: result.V_C_1L,
+            updatedAt: new Date().toISOString(),
+        };
+
+        const insertRow = (row: Record<string, unknown>) =>
+            supabaseAdmin.from('calculations').insert(row).select().single();
+
+        // Device provenance (paired with lat/lng above)
+        let { data: calculation, error } = await insertRow({
+            ...baseRow,
+            deviceOs: device.os,
+            deviceBrowser: device.browser,
+            deviceModel: device.deviceModel,
+        });
+
+        // PGRST204 = column absent from PostgREST's schema cache, i.e. the device-tracking
+        // migration hasn't been applied to this database yet. Losing provenance on a few
+        // rows is recoverable; blocking every field officer from recording a calculation
+        // because a migration lagged the deploy is not. Retry without those columns.
+        if (error?.code === 'PGRST204') {
+            console.warn(
+                'ยังไม่ได้รัน migration 20260804100000_add_device_tracking.sql — บันทึกโดยไม่มีข้อมูลอุปกรณ์:',
+                error.message
+            );
+            ({ data: calculation, error } = await insertRow(baseRow));
+        }
 
         if (error) throw error;
 

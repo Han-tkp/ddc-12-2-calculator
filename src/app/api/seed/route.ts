@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { calculate } from '@/lib/calculations';
+import { auth } from '@/lib/auth';
 
 const LABEL_PROFILES = [
     {
@@ -78,6 +79,16 @@ function randomFloat(min: number, max: number, decimals = 3) {
 
 export async function POST() {
     try {
+        // Seeding writes profiles and generates calculation history rows — admin only,
+        // otherwise anyone could flood the database with fabricated records.
+        const session = await auth();
+        if (!session?.user || session.user.role !== 'ADMIN') {
+            return NextResponse.json(
+                { error: 'ไม่มีสิทธิ์เข้าถึง: เฉพาะผู้ดูแลระบบเท่านั้น' },
+                { status: 403 }
+            );
+        }
+
         const result: string[] = [];
 
         // 1) Upsert label_profiles

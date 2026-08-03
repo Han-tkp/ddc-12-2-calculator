@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import type { DeviceInfo } from '@/lib/device-info';
 
 export type FormulaAuditAction = 'CREATE' | 'UPDATE' | 'ACTIVATE' | 'DEACTIVATE' | 'DELETE';
 export type FormulaActorType = 'ADMIN' | 'GUEST';
@@ -15,6 +16,8 @@ export interface FormulaAuditEvent {
     lng?: number | null;
     beforeData?: unknown;
     afterData?: unknown;
+    /** Device provenance, parsed server-side from the User-Agent (see src/lib/device-info.ts). */
+    device?: DeviceInfo | null;
 }
 
 /** Logs a CRUD event without exposing audit-table access to the browser. */
@@ -31,6 +34,9 @@ export async function recordFormulaAudit(event: FormulaAuditEvent): Promise<void
         lng: event.lng ?? null,
         beforeData: event.beforeData ?? null,
         afterData: event.afterData ?? null,
+        deviceOs: event.device?.os ?? null,
+        deviceBrowser: event.device?.browser ?? null,
+        deviceModel: event.device?.deviceModel ?? null,
     });
 
     if (error) {

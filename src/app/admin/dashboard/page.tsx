@@ -1,12 +1,15 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, FlaskConical, MapPin, CalendarRange, Clock, Users } from 'lucide-react';
+import { Calculator, FlaskConical, MapPin, CalendarRange, Clock, Users, FileText, Droplets } from 'lucide-react';
 import { TabsContent } from "@/components/ui/tabs";
 import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
 import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
 import { DashboardTabs } from '@/components/admin/dashboard-tabs';
+import { TrendDelta } from '@/components/admin/trend-delta';
+import { DimensionFilter } from '@/components/admin/dimension-filter';
+import { DashboardExportButton } from '@/components/admin/dashboard-export-button';
 import { SearchInput } from '@/components/admin/search-input';
 import { Pagination } from '@/components/ui/pagination';
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval, parseISO } from 'date-fns';
@@ -18,10 +21,10 @@ const PAGE_SIZE = 100;
 export default async function AdminDashboard({
     searchParams,
 }: {
-    searchParams: Promise<{ from?: string; to?: string; q?: string; page?: string; tab?: string }>;
+    searchParams: Promise<{ from?: string; to?: string; q?: string; page?: string; tab?: string; chemical?: string; location?: string }>;
 }) {
     // 1. Await searchParams
-    const { from, to, q, page, tab } = await searchParams;
+    const { from, to, q, page, tab, chemical, location } = await searchParams;
     const activeTab = tab || 'operational';
 
     // 2. Date Logic
@@ -37,48 +40,89 @@ export default async function AdminDashboard({
         lte: endDate.toISOString(),
     };
 
+    // The immediately preceding window of the SAME length, so "vs. ช่วงก่อนหน้า" compares
+    // like with like whatever range the user picked — a 7-day view is measured against the
+    // 7 days before it, a 30-day view against the 30 before that.
+    const rangeMs = endDate.getTime() - startDate.getTime();
+    const prevEndDate = new Date(startDate.getTime() - 1);
+    const prevStartDate = new Date(prevEndDate.getTime() - rangeMs);
+
+    /**
+     * Applies the dimension filters to any calculations query.
+     *
+     * Every panel on this page goes through here. A filter that narrowed only the
+     * history table while the KPI cards, charts and map kept showing everything would
+     * be worse than no filter at all — the reader would take the unfiltered numbers as
+     * the filtered ones.
+     *
+     * Typed loosely on purpose: threading Supabase's builder generics through a helper
+     * blows past TypeScript's instantiation depth (TS2589). The shape is checked where
+     * each query is declared.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const withDimensions = (query: any): any => {
+        let q2 = query;
+        if (chemical) q2 = q2.eq('chemical', chemical);
+        if (location) q2 = q2.eq('location', location);
+        return q2;
+    };
+
     // 2.1 Counts
-    const calcCountPromise = supabaseAdmin.from('calculations')
+    const calcCountPromise = withDimensions(supabaseAdmin.from('calculations')
         .select('*', { count: 'exact', head: true })
         .gte('createdAt', dateFilterStr.gte)
-        .lte('createdAt', dateFilterStr.lte);
+        .lte('createdAt', dateFilterStr.lte));
+
+    const prevCalcDataPromise = withDimensions(supabaseAdmin.from('calculations')
+        .select('chemical, location, V_total')
+        .gte('createdAt', prevStartDate.toISOString())
+        .lte('createdAt', prevEndDate.toISOString()));
 
     const userCountPromise = supabaseAdmin.from('users')
         .select('*', { count: 'exact', head: true });
 
-    // 2.2 Aggregations (fetch data then aggregate)
-    const calcDataPromise = supabaseAdmin.from('calculations')
-        .select('chemical, location, createdAt, V_total')
+    // Distinct values that populate the filter drop-downs. Read from the whole date
+    // range but WITHOUT the dimension filters, so choosing a chemical never removes the
+    // other chemicals from the list and traps the user in their own selection.
+    const filterOptionsPromise = supabaseAdmin.from('calculations')
+        .select('chemical, location')
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte);
 
-    // 2.3 Recent Activity (with Join)
-    const recentCalcPromise = supabaseAdmin.from('calculations')
+    // 2.2 Aggregations (fetch data then aggregate)
+    const calcDataPromise = withDimensions(supabaseAdmin.from('calculations')
+        .select('chemical, location, createdAt, V_total')
+        .gte('createdAt', dateFilterStr.gte)
+        .lte('createdAt', dateFilterStr.lte));
+
+    // 2.3 Recent Activity (with Join) — filtered too, otherwise "สูตรที่ใช้งานล่าสุด"
+    // reports a chemical the user has filtered out, contradicting the rest of the page.
+    const recentCalcPromise = withDimensions(supabaseAdmin.from('calculations')
         .select('*, user:users(name, email)')
         .order('createdAt', { ascending: false })
-        .limit(5);
+        .limit(5));
 
     // 2.5 Map Points
-    const mapPointsPromise = supabaseAdmin.from('calculations')
+    const mapPointsPromise = withDimensions(supabaseAdmin.from('calculations')
         .select('id, lat, lng, chemical, location, V_total, createdAt')
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte)
         .not('lat', 'is', null)
         .not('lng', 'is', null)
         .order('createdAt', { ascending: false })
-        .limit(200);
+        .limit(200));
 
     // 2.6 History table (paginated, searchable)
     const currentPage = parseInt(page || '1', 10);
     const historyFrom = (currentPage - 1) * PAGE_SIZE;
     const historyTo = historyFrom + PAGE_SIZE - 1;
 
-    let historyQuery = supabaseAdmin
+    let historyQuery = withDimensions(supabaseAdmin
         .from('calculations')
         .select('*, user:users(name, email)', { count: 'exact' })
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte)
-        .order('createdAt', { ascending: false });
+        .order('createdAt', { ascending: false }));
 
     if (q && q.trim()) {
         const keyword = `%${q.trim()}%`;
@@ -87,6 +131,23 @@ export default async function AdminDashboard({
 
     const historyPromise = historyQuery.range(historyFrom, historyTo);
 
+    // Export reads its own unpaginated query. Reusing the history page's rows would have
+    // exported only the 100 rows currently on screen while the button advertised the
+    // filtered total — a file that silently disagrees with the dashboard it came from.
+    // Capped so a wide date range can't pull an unbounded result set into memory.
+    const EXPORT_LIMIT = 5000;
+    let exportQuery = withDimensions(supabaseAdmin
+        .from('calculations')
+        .select('createdAt, chemical, location, agency, C, S, RA, RA_unit, N, V_C, V_S, V_total, lat, lng')
+        .gte('createdAt', dateFilterStr.gte)
+        .lte('createdAt', dateFilterStr.lte)
+        .order('createdAt', { ascending: false }));
+    if (q && q.trim()) {
+        const keyword = `%${q.trim()}%`;
+        exportQuery = exportQuery.or(`chemical.ilike.${keyword},location.ilike.${keyword},agency.ilike.${keyword}`);
+    }
+    const exportPromise = exportQuery.limit(EXPORT_LIMIT);
+
     const [
         { count: totalCalculations },
         { count: totalUsers },
@@ -94,18 +155,44 @@ export default async function AdminDashboard({
         { data: recentCalculations },
         { data: mapPoints },
         { data: historyRows, count: historyCount },
+        { data: prevCalcData },
+        { data: filterOptionRows },
+        { data: exportSourceRows },
     ] = await Promise.all([
         calcCountPromise,
         userCountPromise,
         calcDataPromise,
         recentCalcPromise,
         mapPointsPromise,
-        historyPromise
+        historyPromise,
+        prevCalcDataPromise,
+        filterOptionsPromise,
+        exportPromise,
     ]);
+
+    const chemicalOptions = [...new Set(
+        (filterOptionRows || []).map((r: any) => r.chemical).filter(Boolean) as string[]
+    )].sort((a, b) => a.localeCompare(b, 'th'));
+    const locationOptions = [...new Set(
+        (filterOptionRows || []).map((r: any) => r.location).filter(Boolean) as string[]
+    )].sort((a, b) => a.localeCompare(b, 'th'));
 
     const historyRowsSafe = (historyRows || []) as any[];
     const historyTotal = historyCount || 0;
     const historyTotalPages = Math.ceil(historyTotal / PAGE_SIZE);
+
+    // Export payload: the history rows the current filters produced, so the file always
+    // matches the dashboard it came from.
+    const exportRows = ((exportSourceRows || []) as any[]).map((c: any) => ({
+        createdAt: c.createdAt ? new Date(c.createdAt).toLocaleString('th-TH') : '',
+        chemical: c.chemical ?? '',
+        location: c.location ?? '',
+        agency: c.agency ?? '',
+        C: c.C ?? '', S: c.S ?? '', RA: c.RA ?? '', RA_unit: c.RA_unit ?? '', N: c.N ?? '',
+        V_C: c.V_C ?? '', V_S: c.V_S ?? '', V_total: c.V_total ?? '',
+        lat: c.lat ?? '', lng: c.lng ?? '',
+    }));
+
 
     // 3. Process Data for Charts & Stats
     const calculationsInRange = allCalcData || [];
@@ -166,6 +253,13 @@ export default async function AdminDashboard({
     }));
 
     const todayCount = daysMap.get(format(new Date(), 'yyyy-MM-dd')) || 0;
+    const yesterdayCount = daysMap.get(format(subDays(new Date(), 1), 'yyyy-MM-dd')) || 0;
+
+    // Period-over-period baselines for the KPI cards.
+    const previousRows = (prevCalcData || []) as { V_total: number | null }[];
+    const previousCount = previousRows.length;
+    const previousVolumeL = previousRows.reduce((sum, r) => sum + (Number(r.V_total) || 0), 0) / 1000;
+    const currentVolumeL = calculationsInRange.reduce((sum: number, c: any) => sum + (Number(c.V_total) || 0), 0) / 1000;
 
     // Chemical Stats for Pie Chart (Frequency)
     const chemicalStats = popularChemicals.map(item => ({
@@ -185,17 +279,19 @@ export default async function AdminDashboard({
         .map(([name, value]) => ({ name, value: Math.round(value) }))
         .sort((a, b) => b.value - a.value);
 
-    // Decrypt names for recent activity
-    const { decrypt } = await import('@/lib/encryption');
+    // Decrypt names for display. decryptName() is used rather than decrypt() because the
+    // latter throws on a key mismatch — inside a server component that takes down the
+    // whole dashboard — and because falling back to the raw column prints ciphertext.
+    const { decryptName } = await import('@/lib/encryption');
 
-    const recentWithNames = (recentCalculations || []).map((calc: any) => ({
+    const recentWithNames = ((recentCalculations || []) as any[]).map((calc: any) => ({
         ...calc,
-        userName: calc.user ? (decrypt(calc.user.name || '') || calc.user.name) : 'Guest'
+        userName: calc.user ? decryptName(calc.user.name, 'ไม่ระบุชื่อ') : 'Guest',
     }));
 
     const historyWithNames = historyRowsSafe.map((calc: any) => ({
         ...calc,
-        userName: calc.user ? (decrypt(calc.user.name || '') || calc.user.name || 'ไม่ระบุชื่อ') : (calc.agency || 'ผู้ใช้งานภาคสนาม'),
+        userName: calc.user ? decryptName(calc.user.name, 'ไม่ระบุชื่อ') : (calc.agency || 'ผู้ใช้งานภาคสนาม'),
     }));
 
     const uniqueLocations = Array.from(locationCounts.keys());
@@ -217,14 +313,31 @@ export default async function AdminDashboard({
                         ข้อมูลระหว่าง {format(startDate, 'd MMM yyyy', { locale: th })} - {format(endDate, 'd MMM yyyy', { locale: th })}
                     </p>
                 </div>
-                <div className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
+                <div className="flex items-center gap-2 bg-brand-soft text-brand-dark px-3 py-1 rounded-full text-sm font-medium">
                     <CalendarRange className="h-4 w-4" />
                     {totalCalculations} รายการในช่วงเวลานี้
                 </div>
             </div>
 
-            {/* Filter */}
-            <DateRangeFilter />
+            {/* Filters — one row, all writing into searchParams so the view is shareable */}
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                    <DateRangeFilter />
+                </div>
+                <DimensionFilter paramKey="chemical" label="สารเคมี" options={chemicalOptions} allLabel="ทุกสารเคมี" />
+                <DimensionFilter paramKey="location" label="สถานที่" options={locationOptions} allLabel="ทุกสถานที่" />
+                <DashboardExportButton
+                    rows={exportRows}
+                    fileLabel={`dashboard_${format(startDate, 'yyyy-MM-dd')}_${format(endDate, 'yyyy-MM-dd')}`}
+                />
+            </div>
+
+            {(chemical || location) && (
+                <p className="text-xs text-brand-muted -mt-3">
+                    กำลังกรอง: {[chemical && `สารเคมี "${chemical}"`, location && `สถานที่ "${location}"`].filter(Boolean).join(' • ')}
+                    {' — '}ทุกกราฟ การ์ดสรุป และแผนที่ในหน้านี้ถูกกรองตามนี้ทั้งหมด
+                </p>
+            )}
 
             <DashboardTabs defaultValue={activeTab}>
                 {/* 1. Operational Dashboard - การปฏิบัติงาน (Real-time tracking) */}
@@ -233,15 +346,41 @@ export default async function AdminDashboard({
                         <Card className="glass-card ring-1 ring-black/5 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-slate-600">คำนวณใหม่วันนี้</CardTitle>
-                                <Calculator className="h-4 w-4 text-emerald-500" />
+                                <Calculator className="h-4 w-4 text-brand" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-slate-800">
+                                <div className="text-2xl font-bold text-brand-ink tabular-nums">
                                     {todayCount}
                                 </div>
-                                <p className="text-xs text-slate-500">
-                                    จากยอด {totalCalculations} รายการในช่วงเวลานี้
-                                </p>
+                                <TrendDelta current={todayCount} previous={yesterdayCount} unit="รายการ" periodLabel="จากเมื่อวาน" />
+                            </CardContent>
+                        </Card>
+                        <Card className="glass-card ring-1 ring-black/5 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-slate-600">รายการในช่วงที่เลือก</CardTitle>
+                                <FileText className="h-4 w-4 text-brand" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-brand-ink tabular-nums">
+                                    {(totalCalculations || 0).toLocaleString('th-TH')}
+                                </div>
+                                <TrendDelta current={totalCalculations || 0} previous={previousCount} unit="รายการ" />
+                            </CardContent>
+                        </Card>
+                        <Card className="glass-card ring-1 ring-black/5 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-slate-600">ปริมาณสารเคมีรวม</CardTitle>
+                                <Droplets className="h-4 w-4 text-brand" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-brand-ink tabular-nums">
+                                    {currentVolumeL.toLocaleString('th-TH', { maximumFractionDigits: 1 })} <span className="text-sm font-normal text-brand-muted">ลิตร</span>
+                                </div>
+                                <TrendDelta
+                                    current={currentVolumeL}
+                                    previous={Number(previousVolumeL.toFixed(1))}
+                                    unit="ลิตร"
+                                />
                             </CardContent>
                         </Card>
                         <Card className="glass-card ring-1 ring-black/5 shadow-sm">
@@ -261,7 +400,7 @@ export default async function AdminDashboard({
                         <Card className="glass-card ring-1 ring-black/5 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-slate-600">สูตรที่ใช้งานล่าสุด</CardTitle>
-                                <FlaskConical className="h-4 w-4 text-violet-500" />
+                                <FlaskConical className="h-4 w-4 text-brand" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-xl font-bold text-slate-800 truncate">
@@ -279,7 +418,7 @@ export default async function AdminDashboard({
                         <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5 lg:col-span-2 min-w-0">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-lg text-slate-700">
-                                    <MapPin className="h-5 w-5 text-violet-500" />
+                                    <MapPin className="h-5 w-5 text-brand" />
                                     แผนที่การปฏิบัติงานล่าสุด
                                 </CardTitle>
                             </CardHeader>
@@ -348,7 +487,7 @@ export default async function AdminDashboard({
                         <Card className="glass-card shadow-sm border-0 ring-1 ring-black/5">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-slate-600">พฤติกรรมยอดนิยม (Top Formula)</CardTitle>
-                                <FlaskConical className="h-4 w-4 text-violet-500" />
+                                <FlaskConical className="h-4 w-4 text-brand" />
                             </CardHeader>
                             <CardContent className="pt-4">
                                 <div className="text-3xl font-bold text-slate-800 truncate mb-1">
@@ -385,13 +524,13 @@ export default async function AdminDashboard({
                                 <p className="text-sm text-slate-500 mt-1">ผู้ปฏิบัติงานทั้งหมดในระบบที่ลงทะเบียน</p>
                             </CardContent>
                         </Card>
-                        <Card className="glass-card ring-1 ring-black/5 shadow-sm bg-linear-to-br from-white to-pink-50/50">
+                        <Card className="glass-card ring-1 ring-black/5 shadow-sm bg-linear-to-br from-white to-brand-soft/50">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-slate-600">พื้นที่ปฏิบัติการ (Total Coverage)</CardTitle>
-                                <MapPin className="h-4 w-4 text-pink-500" />
+                                <MapPin className="h-4 w-4 text-brand" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold text-pink-700">{uniqueLocations.length} แห่ง</div>
+                                <div className="text-3xl font-bold text-brand-dark">{uniqueLocations.length} แห่ง</div>
                                 <p className="text-sm text-slate-500 mt-1">จำนวนสถานที่ปฏิบัติงานที่ไม่ซ้ำกันในรอบนี้</p>
                             </CardContent>
                         </Card>

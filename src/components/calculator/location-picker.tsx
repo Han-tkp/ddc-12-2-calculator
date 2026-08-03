@@ -18,7 +18,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
         const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=th&zoom=18&addressdetails=1&namedetails=1`
         );
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         // Priority 1: POI name (เช่น โลตัสสงขลา, ราชภัฏสงขลา)
         if (data.namedetails?.name) {
@@ -159,8 +159,8 @@ export function LocationPicker({ lat, lng, onLocationChange, onRequestGPS, gpsSt
                     onClick={onRequestGPS}
                     disabled={gpsStatus === 'loading'}
                     className="absolute bottom-3 left-3 z-1000 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
-                        bg-white/90 backdrop-blur-sm text-violet-700 shadow-lg border border-violet-200
-                        hover:bg-violet-50 transition-all disabled:opacity-50"
+                        bg-white/90 backdrop-blur-sm text-brand-dark shadow-lg border border-brand/20
+                        hover:bg-brand-soft transition-all disabled:opacity-50"
                 >
                     {gpsStatus === 'loading' ? (
                         <>

@@ -49,7 +49,7 @@ export function RoleFilter({
                         className={cn(
                             "h-8 text-xs gap-1.5 rounded-lg transition-all",
                             isActive
-                                ? "bg-white text-indigo-600 font-medium shadow-sm"
+                                ? "bg-white text-brand font-medium shadow-sm"
                                 : "text-slate-500 hover:text-slate-700"
                         )}
                     >

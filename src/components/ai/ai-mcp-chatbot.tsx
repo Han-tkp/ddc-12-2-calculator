@@ -129,7 +129,6 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
         setIsTyping(true);
 
         try {
-            const aiSettingsRaw = typeof window !== 'undefined' ? localStorage.getItem('ai-provider-settings') : null;
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -140,11 +139,10 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                         : undefined,
                     imageData: fileToSend?.imageData,
                     rawText: fileToSend?.rawText,
-                    aiSettings: aiSettingsRaw ? JSON.parse(aiSettingsRaw) : undefined,
                 }),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.text || data.error || 'ไม่สามารถเชื่อมต่อได้');
 
             const aiMsg: ChatMessage = {
@@ -221,7 +219,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                 }),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตรได้');
 
             await recordTrackingCalculation({
@@ -351,12 +349,12 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                                     {msg.formula && msg.role === 'assistant' && (
                                         <div className="mt-3 pt-3 border-t border-slate-100">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <FlaskConical className="h-3.5 w-3.5 text-indigo-500" />
-                                                <span className="text-xs font-semibold text-indigo-700">{msg.formula.name}</span>
+                                                <FlaskConical className="h-3.5 w-3.5 text-brand" />
+                                                <span className="text-xs font-semibold text-brand-dark">{msg.formula.name}</span>
                                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                                     msg.formula.mix_type === 2
                                                         ? 'bg-amber-100 text-amber-700'
-                                                        : 'bg-indigo-100 text-indigo-700'
+                                                        : 'bg-brand-soft text-brand-dark'
                                                 }`}>
                                                     {msg.formula.mix_type === 2 ? 'ผสมกับ' : 'ผสมให้ได้'}
                                                 </span>
@@ -386,7 +384,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                                             <div className="mt-2 flex gap-2">
                                                 <button
                                                     onClick={() => handleTriggerSave(msg.formula!)}
-                                                    className="flex-1 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
+                                                    className="flex-1 py-1.5 rounded-lg bg-brand-soft hover:bg-brand-soft text-brand-dark text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                                                 >
                                                     <CheckCircle2 className="h-3 w-3" /> บันทึกสูตรนี้
                                                 </button>
@@ -403,7 +401,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                             </div>
 
                             {msg.role === 'user' && (
-                                <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1">
+                                <div className="w-7 h-7 rounded-full bg-brand flex items-center justify-center shrink-0 mt-1">
                                     <User className="h-3.5 w-3.5 text-white" />
                                 </div>
                             )}
@@ -428,25 +426,25 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                 <div className="p-3 bg-white border-t border-slate-100 shrink-0">
                     {/* Attached file chip */}
                     {attachedFile && (
-                        <div className="mb-2 flex items-center gap-2.5 bg-indigo-50 border border-indigo-200 rounded-xl p-2.5">
-                            {attachedFile.fileType === 'image' ? <FileText className="h-4 w-4 text-indigo-500 shrink-0" /> : <FileSpreadsheet className="h-4 w-4 text-indigo-500 shrink-0" />}
+                        <div className="mb-2 flex items-center gap-2.5 bg-brand-soft border border-brand/20 rounded-xl p-2.5">
+                            {attachedFile.fileType === 'image' ? <FileText className="h-4 w-4 text-brand shrink-0" /> : <FileSpreadsheet className="h-4 w-4 text-brand shrink-0" />}
                             <div className="min-w-0 flex-1">
-                                <div className="text-xs font-semibold text-indigo-800 truncate">{attachedFile.fileName}</div>
-                                <div className="text-[10px] text-indigo-500">
+                                <div className="text-xs font-semibold text-brand-dark truncate">{attachedFile.fileName}</div>
+                                <div className="text-[10px] text-brand">
                                     {attachedFile.fileType === 'image' ? 'รอวิเคราะห์ฉลากด้วย AI Vision' : `${attachedFile.rowCount} แถว × ${attachedFile.colCount} คอลัมน์`}
                                 </div>
                             </div>
                             {onSendFileToCalculator && (
                                 <button
                                     onClick={handleSendFileToCalc}
-                                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-medium shrink-0 flex items-center gap-1"
+                                    className="px-2.5 py-1 rounded-lg bg-brand hover:bg-brand-dark text-white text-[11px] font-medium shrink-0 flex items-center gap-1"
                                 >
                                     <Calculator className="h-3 w-3" /> ส่งไปคำนวณ
                                 </button>
                             )}
                             <button
                                 onClick={() => setAttachedFile(null)}
-                                className="text-indigo-400 hover:text-indigo-600 shrink-0"
+                                className="text-brand/60 hover:text-brand shrink-0"
                                 title="ลบไฟล์"
                             >
                                 <X className="h-3.5 w-3.5" />
@@ -470,7 +468,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                             variant="outline"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isTyping}
-                            className="h-10 w-10 p-0 border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 rounded-xl shrink-0"
+                            className="h-10 w-10 p-0 border-slate-200 text-slate-400 hover:text-brand hover:border-brand/20 rounded-xl shrink-0"
                             title="แนบไฟล์ฉลากหรือข้อมูล (PNG/CSV/TXT/Excel/JSON)"
                         >
                             <Paperclip className="h-4 w-4" />

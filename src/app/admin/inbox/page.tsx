@@ -31,8 +31,8 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <div className="bg-indigo-100 p-2.5 rounded-xl border border-indigo-200 shadow-sm">
-                    <Inbox className="h-6 w-6 text-indigo-600" />
+                <div className="bg-brand-soft p-2.5 rounded-xl border border-brand/20 shadow-sm">
+                    <Inbox className="h-6 w-6 text-brand" />
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-slate-800">กล่องข้อความ</h1>

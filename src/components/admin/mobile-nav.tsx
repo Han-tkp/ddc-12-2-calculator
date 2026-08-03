@@ -24,7 +24,7 @@ export function MobileNav() {
     return (
         <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200">
             <div className="flex items-center gap-2 font-bold text-lg text-slate-800">
-                <Shield className="h-5 w-5 text-indigo-600" />
+                <Shield className="h-5 w-5 text-brand" />
                 Admin Panel
             </div>
 
@@ -58,7 +58,7 @@ export function MobileNav() {
                                         variant={isActive ? 'secondary' : 'ghost'}
                                         className={cn(
                                             "w-full justify-start gap-3 mb-1",
-                                            isActive && "bg-slate-100 text-indigo-600"
+                                            isActive && "bg-slate-100 text-brand"
                                         )}
                                     >
                                         <Icon className="h-5 w-5" />

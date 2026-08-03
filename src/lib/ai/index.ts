@@ -2,6 +2,7 @@ import { GeminiProvider } from './gemini';
 import { AnthropicProvider } from './anthropic';
 import { OpenAIProvider, OpenRouterProvider } from './openai';
 import { AIProviderRouter } from './router';
+import { guardQuota } from './usage';
 import type { AIProvider, AIProviderName } from './types';
 
 export { AIProviderRouter, DEFAULT_ORDER } from './router';
@@ -45,7 +46,8 @@ export function createProviders(): Record<AIProviderName, AIProvider> {
 export function createRouter(order?: AIProviderName[]): AIProviderRouter {
     const providers = createProviders();
     const map = new Map<AIProviderName, AIProvider>(Object.entries(providers) as [AIProviderName, AIProvider][]);
-    return new AIProviderRouter(map, order);
+    // Wire the quota guard so AI_MAX_REQUESTS_PER_MINUTE / _PER_HOUR actually apply.
+    return new AIProviderRouter(map, order, { guard: (provider) => guardQuota(provider) });
 }
 
 /** ค่าเริ่มต้นสำหรับรัน agent ทั่วระบบ */

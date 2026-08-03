@@ -1,3 +1,5 @@
+import { tokenize as tokenizeExpr, parse as parseExpr, evaluate as evaluateExpr, ExprError } from './expr-parser';
+
 export interface FormulaVariable {
     id: string;
     name: string;
@@ -32,28 +34,20 @@ const MATH_FUNCTIONS: Record<string, (...args: number[]) => number> = {
     TAN: (x) => Math.tan(x),
 };
 
-function tokenize(expr: string): string[] {
-    const tokens: string[] = [];
-    let i = 0;
-    while (i < expr.length) {
-        if (expr[i] === ' ' || expr[i] === '\t') { i++; continue; }
-        if ('+-*/^(),'.includes(expr[i])) { tokens.push(expr[i]); i++; continue; }
-        if (expr[i] === ':' && expr[i + 1] === ':') { tokens.push('::'); i += 2; continue; }
-        let word = '';
-        while (i < expr.length && !'+-*/^(), \t'.includes(expr[i])) { word += expr[i]; i++; }
-        if (word) tokens.push(word);
+/** Extracts variable identifiers referenced by an expression (excludes MATH_FUNCTIONS names). */
+export function extractVarRefs(expression: string): string[] {
+    let tokens;
+    try {
+        tokens = tokenizeExpr(expression);
+    } catch {
+        return [];
     }
-    return tokens;
-}
-
-function extractVarRefs(expression: string): string[] {
-    const tokens = tokenize(expression);
     const reserved = new Set(Object.keys(MATH_FUNCTIONS));
-    reserved.add('true'); reserved.add('false');
+    reserved.add('TRUE'); reserved.add('FALSE');
     const refs: string[] = [];
     for (const t of tokens) {
-        if (/^[a-zA-Z_]\w*$/.test(t) && !reserved.has(t)) {
-            refs.push(t);
+        if (t.type === 'ident' && !reserved.has(t.value.toUpperCase())) {
+            refs.push(t.value);
         }
     }
     return [...new Set(refs)];
@@ -114,25 +108,9 @@ export function evaluateVariable(
     if (isNumeric) return { value: Number(expression.trim()) };
 
     try {
-        let processed = expression;
-
-        for (const [fnName, fnImpl] of Object.entries(MATH_FUNCTIONS)) {
-            const regex = new RegExp(`\\b${fnName}\\s*\\(`, 'gi');
-            processed = processed.replace(regex, (match) => {
-                return `MATH_FUNCTIONS.${fnName}(`;
-            });
-        }
-
-        const keys = Object.keys(scope);
-        const values = keys.map(k => scope[k]);
-
-        const fn = new Function(
-            'MATH_FUNCTIONS',
-            ...keys,
-            `"use strict"; return (${processed});`
-        );
-
-        const raw = fn(MATH_FUNCTIONS, ...values);
+        const tokens = tokenizeExpr(expression);
+        const ast = parseExpr(tokens, new Set(Object.keys(MATH_FUNCTIONS)));
+        const raw = evaluateExpr(ast, scope, MATH_FUNCTIONS);
         const value = typeof raw === 'number' ? raw : Number(raw);
 
         if (isNaN(value)) return { value: null, error: 'ผลลัพธ์ไม่ใช่ตัวเลข' };
@@ -140,7 +118,7 @@ export function evaluateVariable(
 
         return { value };
     } catch (e: any) {
-        return { value: null, error: e.message || 'ไม่สามารถคำนวณได้' };
+        return { value: null, error: e instanceof ExprError ? e.message : (e.message || 'ไม่สามารถคำนวณได้') };
     }
 }
 
@@ -159,25 +137,18 @@ export function computeAll(variables: FormulaVariable[]): ComputedVariable[] {
     const result: ComputedVariable[] = [];
 
     for (const v of sorted) {
-        const scopeKeys = Object.keys(scope);
-        const scopeValues = scopeKeys.map(k => scope[k]);
-
-        const evaluator = new Function(
-            'MATH_FUNCTIONS',
-            ...scopeKeys,
-            `"use strict"; return (${v.expression});`
-        );
-
         let computed: number | null = null;
         let evalError: string | undefined;
 
         try {
-            const raw = evaluator(MATH_FUNCTIONS, ...scopeValues);
+            const tokens = tokenizeExpr(v.expression);
+            const ast = parseExpr(tokens, new Set(Object.keys(MATH_FUNCTIONS)));
+            const raw = evaluateExpr(ast, scope, MATH_FUNCTIONS);
             computed = typeof raw === 'number' ? raw : Number(raw);
             if (isNaN(computed)) { computed = null; evalError = 'ผลลัพธ์ไม่ใช่ตัวเลข'; }
             else if (!isFinite(computed)) { computed = null; evalError = 'ค่าไม่จำกัด (Infinity)'; }
         } catch (e: any) {
-            evalError = e.message || 'ไม่สามารถคำนวณได้';
+            evalError = e instanceof ExprError ? e.message : (e.message || 'ไม่สามารถคำนวณได้');
         }
 
         if (computed !== null) scope[v.name] = computed;

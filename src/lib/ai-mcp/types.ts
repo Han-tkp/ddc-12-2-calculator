@@ -31,7 +31,7 @@ export interface FileAnalysisResult {
     formula?: AIFormulaResult;
 }
 
-export type Intent = 'create_formula' | 'query_chemical' | 'query_history' | 'general_chat' | 'compare_chemicals';
+export type Intent = 'calculate' | 'create_formula' | 'query_chemical' | 'query_history' | 'general_chat' | 'compare_chemicals';
 
 export interface ExtractedFormulaParams {
     chemicalName?: string;

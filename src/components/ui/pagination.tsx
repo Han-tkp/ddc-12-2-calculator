@@ -93,7 +93,7 @@ export function Pagination({ currentPage, totalPages, totalItems }: PaginationPr
                                     key={`page-${page}`}
                                     variant={isCurrent ? 'default' : 'outline'}
                                     className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 focus:outline-offset-0
-                                        ${isCurrent ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50'}`}
+                                        ${isCurrent ? 'bg-brand text-white hover:bg-brand' : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50'}`}
                                     onClick={() => handlePageChange(page as number)}
                                 >
                                     {page}

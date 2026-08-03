@@ -46,6 +46,11 @@ export class AIProviderError extends Error {
         let kind: AIErrorKind;
         if (status === 401 || status === 403) kind = 'auth';
         else if (status === 429) kind = 'rate_limit';
+        // 402 = the account is out of credit (OpenRouter returns this once the balance
+        // hits zero). Classifying it as 'quota' makes it retryable, so the router moves
+        // on to the next provider instead of failing the whole request — running dry on
+        // one paid provider is precisely what the fallback chain exists for.
+        else if (status === 402) kind = 'quota';
         else if (status >= 500) kind = 'provider_unavailable';
         else if (status === 400 || status === 404 || status === 422) kind = 'invalid_request';
         else kind = 'unknown';

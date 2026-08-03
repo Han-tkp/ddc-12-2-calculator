@@ -74,7 +74,7 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                         : { location: form.location, ...coordinates }
                 ),
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'ไม่สามารถบันทึกการเปลี่ยนแปลงได้');
 
             toast.success(data.message || 'บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว');
@@ -91,7 +91,7 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
     return (
         <>
             <div className="flex items-center justify-end gap-1">
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => setIsEditOpen(true)} title="แก้ไขสูตรของฉัน">
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-brand" onClick={() => setIsEditOpen(true)} title="แก้ไขสูตรของฉัน">
                     <Pencil className="h-4 w-4" />
                 </Button>
                 <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => setConfirmation('delete')} title="ลบสูตรของฉัน">

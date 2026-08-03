@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { decryptName } from '@/lib/encryption';
 import { Pagination } from '@/components/ui/pagination';
 import { Shield, User, Calendar, FlaskConical } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
@@ -118,12 +119,12 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                         <td className="p-4 text-sm text-slate-600 dark:text-slate-400">
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-1.5 font-medium text-slate-800">
-                                                    <Calendar className="h-4 w-4 text-indigo-500" />
+                                                    <Calendar className="h-4 w-4 text-brand" />
                                                     {format(new Date(log.createdAt), 'd MMM yy HH:mm', { locale: th })}
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     {isAi ? (
-                                                        <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold">
+                                                        <span className="px-2 py-0.5 rounded-full bg-brand-soft text-brand-dark text-[10px] font-bold">
                                                             🤖 สั่งสร้างโดย AI
                                                         </span>
                                                     ) : isCustom ? (
@@ -142,17 +143,36 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                         <td className="p-4">
                                             <div className="space-y-1">
                                                 {isAdmin ? (
-                                                    <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold inline-flex items-center gap-1">
-                                                        <Shield className="h-3 w-3 text-indigo-600" /> ผู้ดูแลระบบ (Admin)
+                                                    <span className="px-2.5 py-1 rounded-full bg-brand-soft text-brand-dark text-xs font-bold inline-flex items-center gap-1">
+                                                        <Shield className="h-3 w-3 text-brand" /> ผู้ดูแลระบบ (Admin)
                                                     </span>
                                                 ) : (
                                                     <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold inline-flex items-center gap-1">
                                                         <User className="h-3 w-3 text-emerald-600" /> ผู้ใช้งานทั่วไป (External User)
                                                     </span>
                                                 )}
-                                                <div className="text-xs text-slate-500 font-medium pt-0.5">
-                                                    {log.agency || log.user?.name || 'ผู้ใช้งานภาคสนาม'}
-                                                </div>
+                                                {(() => {
+                                                    // Prefer the person's name; fall back to the agency. Suppress it
+                                                    // entirely when it just restates the role badge above — many rows
+                                                    // store agency as literally "ผู้ดูแลระบบ (Admin)", and printing it
+                                                    // twice adds a line without adding information.
+                                                    const roleLabel = isAdmin ? 'ผู้ดูแลระบบ (Admin)' : 'ผู้ใช้งานทั่วไป (External User)';
+                                                    const actor = decryptName(log.user?.name, '') || log.agency || '';
+                                                    if (!actor || actor.trim() === roleLabel) return null;
+                                                    return (
+                                                        <div className="text-xs text-slate-500 font-medium pt-0.5 truncate max-w-56" title={actor}>
+                                                            {actor}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {/* Device provenance, parsed server-side from the User-Agent.
+                                                    Sits with the actor rather than in its own column: "who" and
+                                                    "from what device" are read together. */}
+                                                {(log.deviceOs || log.deviceModel || log.deviceBrowser) && (
+                                                    <div className="text-[11px] text-slate-400 font-mono">
+                                                        {[log.deviceOs, log.deviceModel, log.deviceBrowser].filter(Boolean).join(' · ')}
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
 
@@ -162,7 +182,7 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                                     {log.location || 'ไม่ระบุสถานที่'}
                                                 </div>
                                                 {log.lat != null && log.lng != null ? (
-                                                    <div className="text-[11px] text-indigo-600 font-mono flex items-center gap-1">
+                                                    <div className="text-[11px] text-brand font-mono flex items-center gap-1">
                                                         📍 พิกัด: {Number(log.lat).toFixed(4)}, {Number(log.lng).toFixed(4)}
                                                     </div>
                                                 ) : (
@@ -174,7 +194,7 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                         <td className="p-4">
                                             <div className="space-y-1 text-xs">
                                                 <div className="font-bold text-slate-900 flex items-center gap-1">
-                                                    <FlaskConical className="h-3.5 w-3.5 text-purple-600" />
+                                                    <FlaskConical className="h-3.5 w-3.5 text-brand" />
                                                     {log.chemical || 'สูตรกำหนดเอง'}
                                                 </div>
                                                 <div className="text-slate-600 font-semibold">

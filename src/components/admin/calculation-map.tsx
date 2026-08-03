@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -21,6 +21,11 @@ interface CalculationMapProps {
 export function CalculationMap({ points }: CalculationMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
+
+    const pointsKey = useMemo(
+        () => points.map(p => `${p.id}:${p.lat},${p.lng}`).join('|'),
+        [points]
+    );
 
     useEffect(() => {
         if (!mapRef.current) return;
@@ -51,7 +56,7 @@ export function CalculationMap({ points }: CalculationMapProps) {
         const icon = L.divIcon({
             className: 'custom-map-marker',
             html: `<div style="
-                background: linear-gradient(135deg, #8b5cf6, #d946ef);
+                background: #0b724a;
                 width: 18px; height: 18px;
                 border-radius: 50% 50% 50% 0;
                 transform: rotate(-45deg);
@@ -78,25 +83,36 @@ export function CalculationMap({ points }: CalculationMapProps) {
                             ${point.chemical || 'ไม่ระบุสูตร'}
                         </div>
                         <div style="font-size: 12px; color: #64748b;">
-                            📍 ${point.location || 'ไม่ระบุสถานที่'}<br/>
-                            💧 ปริมาณรวม: <strong>${point.V_total.toFixed(2)} cc</strong><br/>
-                            🕐 ${date}
+                            ${point.location || 'ไม่ระบุสถานที่'}<br/>
+                            ปริมาณรวม: <strong>${point.V_total.toFixed(2)} cc</strong><br/>
+                            ${date}
                         </div>
                     </div>
                 `);
         });
 
-        // Fit bounds if multiple points
+        // Fit bounds if multiple points.
+        // `animate: false` is deliberate. fitBounds animates by default, and if the map
+        // unmounts mid-flight — switching dashboard tabs does exactly that — Leaflet's
+        // _onZoomTransitionEnd still fires against panes that no longer exist and throws
+        // "Cannot read properties of undefined (reading '_leaflet_pos')".
         if (validPoints.length > 1) {
             const bounds = L.latLngBounds(validPoints.map(p => [p.lat, p.lng]));
-            map.fitBounds(bounds, { padding: [50, 50] });
+            map.fitBounds(bounds, { padding: [50, 50], animate: false });
         }
 
         return () => {
+            // Cancel anything still in flight (a user-initiated zoom, a pan) before
+            // tearing the map down, so no transition handler outlives its panes.
+            map.stop();
             map.remove();
             mapInstanceRef.current = null;
         };
-    }, [points]);
+        // Keyed on the points' content, not the array's identity: callers build this
+        // array inline on every render, so depending on `points` rebuilt the whole map
+        // on each parent re-render — wasteful, and it widened the unmount race above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pointsKey]);
 
     return (
         <div className="relative">
@@ -117,8 +133,8 @@ export function CalculationMap({ points }: CalculationMapProps) {
             {/* Points counter badge */}
             {points.filter(p => p.lat && p.lng).length > 0 && (
                 <div className="absolute bottom-3 right-3 z-1000">
-                    <span className="inline-flex items-center gap-1 text-xs text-white bg-violet-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
-                        📍 {points.filter(p => p.lat && p.lng).length} จุดปฏิบัติงาน
+                    <span className="inline-flex items-center gap-1 text-xs text-white bg-brand/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
+                        {points.filter(p => p.lat && p.lng).length} จุดปฏิบัติงาน
                     </span>
                 </div>
             )}

@@ -45,3 +45,6 @@ next-env.d.ts
 /eximage/
 /.env
 
+#files example vbdc 12.2
+/examplevbdc
+/แก้ตามคำร้อง

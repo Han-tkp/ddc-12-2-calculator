@@ -60,7 +60,7 @@ export function SearchInput({
                     </button>
                 )}
             </div>
-            <Button type="submit" size="icon" className="h-9 w-9 bg-indigo-600 hover:bg-indigo-700 shrink-0 shadow-sm">
+            <Button type="submit" size="icon" className="h-9 w-9 bg-brand hover:bg-brand-dark shrink-0 shadow-sm">
                 <Search className="h-4 w-4" />
             </Button>
         </form>

@@ -94,7 +94,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 }),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 throw new Error(data.error || 'ไม่สามารถสร้างสูตรสารเคมีได้');
             }
@@ -133,7 +133,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 type="button"
                 onClick={handleOpenModal}
                 variant="outline"
-                className="bg-indigo-50/80 border-indigo-200/80 hover:bg-indigo-100 text-indigo-700 font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-3 sm:px-4 shadow-xs transition-all hover:scale-105 shrink-0"
+                className="bg-brand-soft/80 border-brand/20 hover:bg-brand-soft text-brand-dark font-semibold gap-1.5 h-10 text-xs sm:text-sm rounded-full px-3 sm:px-4 shadow-xs transition-all hover:scale-105 shrink-0"
                 title="เพิ่มสูตรสารเคมี"
             >
                 <Plus className="h-4 w-4" />
@@ -145,7 +145,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                 <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                            <FlaskConical className="h-6 w-6 text-indigo-600" />
+                            <FlaskConical className="h-6 w-6 text-brand" />
                             เพิ่มสูตรสารเคมีใหม่ (Public Catalog)
                         </DialogTitle>
                         <DialogDescription className="text-xs text-slate-500">
@@ -158,9 +158,9 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 hover:from-indigo-500/20 hover:via-purple-500/20 hover:to-pink-500/20 border-indigo-200 text-indigo-700 font-semibold text-xs gap-2 h-10 rounded-xl"
+                            className="w-full bg-gradient-to-r from-brand/10 via-brand/10 to-brand/10 hover:from-brand/20 hover:via-brand/20 hover:to-brand/20 border-brand/20 text-brand-dark font-semibold text-xs gap-2 h-10 rounded-xl"
                         >
-                            <Bot className="h-4 w-4 text-indigo-600" />
+                            <Bot className="h-4 w-4 text-brand" />
                             เพิ่มสูตรด้วย AI
                         </Button>
                     </Link>
@@ -226,7 +226,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         </div>
 
                         {/* Spray Coverage & Tank Capacity */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-brand-soft/50 rounded-xl border border-brand-soft">
                             <div className="space-y-1">
                                 <Label className="font-semibold text-slate-700">อัตราการพ่น (RA)</Label>
                                 <Input
@@ -288,7 +288,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
                                 ยกเลิก
                             </Button>
-                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                            <Button type="submit" className="bg-brand hover:bg-brand-dark text-white gap-2">
                                 <CheckCircle2 className="h-4 w-4" /> ดำเนินการเพิ่มสูตร
                             </Button>
                         </DialogFooter>
@@ -339,7 +339,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                             type="button"
                             onClick={handleConfirmSubmit}
                             disabled={isSubmitting}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+                            className="bg-brand hover:bg-brand-dark text-white gap-2"
                         >
                             {isSubmitting ? <Clock className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                             ยืนยันเพิ่มสูตรสารเคมี

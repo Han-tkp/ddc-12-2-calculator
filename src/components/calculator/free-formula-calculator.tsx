@@ -13,6 +13,15 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import {
     Plus,
     Trash2,
     Save,
@@ -28,6 +37,7 @@ import {
     X,
     Copy,
     RefreshCw,
+    Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { KaTeXDisplay } from '@/components/ui/katex-display';
@@ -38,6 +48,7 @@ import {
     evaluateVariable,
     DEFAULT_TEMPLATES,
 } from '@/lib/formula-engine';
+import { resolvePrimaryResultFromVariables } from '@/lib/formula-result';
 
 const STORAGE_KEY = 'free-formula-variables';
 
@@ -63,6 +74,9 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [showFunctions, setShowFunctions] = useState(false);
     const [viewMode, setViewMode] = useState<'table' | 'calculation'>('table');
+    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const [saveFormData, setSaveFormData] = useState({ name: '', description: '' });
+    const [isSaving, setIsSaving] = useState(false);
 
     const computedList = useMemo(() => computeAll(variables), [variables]);
 
@@ -121,6 +135,46 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
         onVariablesChange?.(variables);
         toast.success('บันทึกสูตรลงในเครื่องเรียบร้อย');
     }, [variables, onVariablesChange]);
+
+    const saveFormulaToServer = async () => {
+        if (!saveFormData.name.trim()) {
+            toast.error('กรุณาระบุชื่อสูตร');
+            return;
+        }
+
+        // Dry-run computeAll to validate
+        const computed = computeAll(variables);
+        if (computed.some(c => c.error)) {
+            toast.error('สูตรมีข้อผิดพลาด ไม่สามารถบันทึกได้');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/profiles/from-formula', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: saveFormData.name.trim(),
+                    description: saveFormData.description.trim(),
+                    variables,
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || 'ไม่สามารถบันทึกสูตรได้');
+            }
+
+            toast.success('บันทึกเป็นสูตรสารเคมีเรียบร้อย!');
+            setIsSaveDialogOpen(false);
+            setSaveFormData({ name: '', description: '' });
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const exportJson = useCallback(() => {
         const blob = new Blob([JSON.stringify({ version: 1, variables }, null, 2)], { type: 'application/json' });
@@ -198,6 +252,9 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                 <Button variant="outline" size="sm" onClick={saveToLocal} className="gap-1.5 text-xs h-9">
                     <Save className="h-3.5 w-3.5" /> บันทึก
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsSaveDialogOpen(true)} className="gap-1.5 text-xs h-9 bg-brand hover:bg-brand-dark text-white border-brand">
+                    <Database className="h-3.5 w-3.5" /> บันทึกเป็นสูตรสารเคมี
+                </Button>
                 <Button variant="outline" size="sm" onClick={exportJson} className="gap-1.5 text-xs h-9">
                     <Download className="h-3.5 w-3.5" /> ส่งออก
                 </Button>
@@ -244,13 +301,13 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
             {/* Formula Bar — shows selected variable's expression */}
             {selectedVar && (
                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <span className="text-xs font-bold text-indigo-600 shrink-0 min-w-[80px]">
+                    <span className="text-xs font-bold text-brand shrink-0 min-w-[80px]">
                         {selectedVar.name} =
                     </span>
                     <Input
                         value={selectedVar.expression}
                         onChange={(e) => handleExpressionChange(selectedVar.id, e.target.value)}
-                        className="flex-1 h-8 text-xs font-mono bg-white border-slate-200 focus:border-indigo-400"
+                        className="flex-1 h-8 text-xs font-mono bg-white border-slate-200 focus:border-brand/60"
                         placeholder="พิมพ์สูตร เช่น C + S หรือ A * B / 2"
                     />
                     <div className="flex items-center gap-2 shrink-0">
@@ -290,7 +347,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
 
             {/* Functions reference */}
             {showFunctions && (
-                <Card className="border-indigo-100 bg-indigo-50/30">
+                <Card className="border-brand-soft bg-brand-soft/30">
                     <CardContent className="p-3">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                             {[
@@ -302,7 +359,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                                 ['MAX(a,b,c...)', 'สูงสุด'], ['PI()', 'ค่า π'],
                             ].map(([fn, desc]) => (
                                 <div key={fn} className="bg-white p-2 rounded-lg border border-slate-200">
-                                    <code className="font-bold text-indigo-700 text-[11px]">{fn}</code>
+                                    <code className="font-bold text-brand-dark text-[11px]">{fn}</code>
                                     <p className="text-slate-500 text-[10px] mt-0.5">{desc}</p>
                                 </div>
                             ))}
@@ -338,7 +395,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                                         key={cv.id}
                                         className={`cursor-pointer transition-colors ${
                                             isSelected
-                                                ? 'bg-indigo-50 border-l-2 border-l-indigo-500'
+                                                ? 'bg-brand-soft border-l-2 border-l-brand'
                                                 : 'hover:bg-slate-50'
                                         } ${cv.error ? 'bg-red-50/50' : ''}`}
                                         onClick={() => setSelectedId(cv.id)}
@@ -349,8 +406,8 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                                                 value={cv.name}
                                                 onChange={(e) => updateVar(cv.id, 'name', e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className={`h-7 text-xs font-bold font-mono w-28 bg-transparent border-transparent hover:border-slate-200 focus:border-indigo-400 ${
-                                                    isSelected ? 'text-indigo-700' : 'text-slate-800'
+                                                className={`h-7 text-xs font-bold font-mono w-28 bg-transparent border-transparent hover:border-slate-200 focus:border-brand/60 ${
+                                                    isSelected ? 'text-brand-dark' : 'text-slate-800'
                                                 }`}
                                             />
                                             {cv.description && (
@@ -362,7 +419,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                                                 value={cv.expression}
                                                 onChange={(e) => handleExpressionChange(cv.id, e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="h-7 text-xs font-mono bg-transparent border-transparent hover:border-slate-200 focus:border-indigo-400"
+                                                className="h-7 text-xs font-mono bg-transparent border-transparent hover:border-slate-200 focus:border-brand/60"
                                                 placeholder="ค่าคงที่หรือสูตร"
                                             />
                                         </td>
@@ -371,7 +428,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                                                 value={cv.unit || ''}
                                                 onChange={(e) => updateVar(cv.id, 'unit', e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="h-7 text-xs bg-transparent border-transparent hover:border-slate-200 focus:border-indigo-400"
+                                                className="h-7 text-xs bg-transparent border-transparent hover:border-slate-200 focus:border-brand/60"
                                                 placeholder="หน่วย"
                                             />
                                         </td>
@@ -410,7 +467,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                 </div>
 
                 <div className="p-2 border-t border-slate-100">
-                    <Button variant="ghost" size="sm" onClick={addVariable} className="w-full text-xs gap-1.5 text-slate-500 hover:text-indigo-600">
+                    <Button variant="ghost" size="sm" onClick={addVariable} className="w-full text-xs gap-1.5 text-slate-500 hover:text-brand">
                         <Plus className="h-3.5 w-3.5" /> เพิ่มแถวตัวแปร
                     </Button>
                 </div>
@@ -437,7 +494,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                 {computedList.filter(cv => cv.dependsOn.length === 0).map(cv => (
                                     <div key={cv.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
-                                        <div className="font-mono text-indigo-600 font-bold text-xs">{cv.name}</div>
+                                        <div className="font-mono text-brand font-bold text-xs">{cv.name}</div>
                                         <div className="text-lg font-bold text-slate-900 mt-0.5 flex items-center gap-1">
                                             <KaTeXDisplay formula={String(cv.computed ?? '?')} />
                                         </div>
@@ -502,7 +559,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                                                                     const depVar = computedMap.get(dep);
                                                                     return (
                                                                         <span key={dep} className="inline-flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded">
-                                                                            <span className="font-mono text-indigo-600">{dep}</span>
+                                                                            <span className="font-mono text-brand">{dep}</span>
                                                                             <span>=</span>
                                                                             <span className="font-bold text-slate-700">
                                                                                 {depVar?.computed !== null && depVar?.computed !== undefined
@@ -547,7 +604,7 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
 
                         {/* Final Result */}
                         {(() => {
-                            const last = computedList[computedList.length - 1];
+                            const last = resolvePrimaryResultFromVariables(variables, computedList);
                             if (!last) return null;
                             return (
                                 <div className="mt-4 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white">
@@ -573,6 +630,57 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                 </CardContent>
             </Card>
             )}
+
+            {/* Save Formula Dialog */}
+            <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>บันทึกเป็นสูตรสารเคมี</DialogTitle>
+                        <DialogDescription>
+                            สูตรนี้จะถูกบันทึกลงฐานข้อมูลและพร้อมใช้งานในหน้าคำนวณจริง
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="save-name">ชื่อสูตร <span className="text-red-500">*</span></Label>
+                            <Input
+                                id="save-name"
+                                placeholder="เช่น Eleksa 1:50"
+                                value={saveFormData.name}
+                                onChange={(e) => setSaveFormData({ ...saveFormData, name: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="save-description">คำอธิบาย</Label>
+                            <Input
+                                id="save-description"
+                                placeholder="เช่น สูตรสำหรับพ่นหมอกควัน Eleksa"
+                                value={saveFormData.description}
+                                onChange={(e) => setSaveFormData({ ...saveFormData, description: e.target.value })}
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setIsSaveDialogOpen(false)} disabled={isSaving}>
+                                ยกเลิก
+                            </Button>
+                            <Button type="button" onClick={saveFormulaToServer} disabled={isSaving} className="bg-brand hover:bg-brand-dark">
+                                {isSaving ? (
+                                    <>
+                                        <Save className="h-4 w-4 mr-2 animate-spin" />
+                                        กำลังบันทึก...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-4 w-4 mr-2" />
+                                        บันทึก
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

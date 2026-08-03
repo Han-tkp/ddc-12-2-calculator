@@ -8,11 +8,26 @@ import {
     buildFormulaDraftFromFile,
     buildFormulaDraftFromText,
     analyzeFormulaImage,
+    extractCalculationParams,
+    buildCalculationResponse,
     AIFormulaResult,
 } from '@/lib/ai-mcp';
-import { createProviders, AIProviderRouter, DEFAULT_ORDER, normalizeAISettings, AIProviderError } from '@/lib/ai';
+import { createProviders, AIProviderRouter, DEFAULT_ORDER, normalizeAISettings, AIProviderError, guardQuota } from '@/lib/ai';
 import { runChatAgent } from '@/lib/ai/agent';
 import type { AIProvider, AIProviderName } from '@/lib/ai/types';
+import { getSubscriptionStatus } from '@/lib/billing';
+import { supabaseAdmin } from '@/lib/supabase';
+import { AI_SETTINGS_KEY } from '@/lib/ai/settings';
+
+/** ตั้งใจอ่านจาก server (app_settings) เสมอ — ไม่เชื่อค่าที่ client ส่งมาในตัว request อีกต่อไป */
+async function loadAISettings() {
+    const { data } = await supabaseAdmin
+        .from('app_settings')
+        .select('value')
+        .eq('key', AI_SETTINGS_KEY)
+        .maybeSingle();
+    return normalizeAISettings(data?.value);
+}
 
 /**
  * POST /api/chat
@@ -29,7 +44,11 @@ function buildRouterFromSettings(normalized: ReturnType<typeof normalizeAISettin
     if (normalized) {
         order = normalized.order.filter(name => normalized.providers[name]?.enabled !== false);
     }
-    const router = new AIProviderRouter(map, order.length > 0 ? order : DEFAULT_ORDER);
+    // Wire the quota guard so AI_MAX_REQUESTS_PER_MINUTE / _PER_HOUR actually apply
+    // to this unauthenticated endpoint.
+    const router = new AIProviderRouter(map, order.length > 0 ? order : DEFAULT_ORDER, {
+        guard: (provider) => guardQuota(provider),
+    });
 
     if (normalized) {
         for (const name of Object.keys(normalized.providers) as AIProviderName[]) {
@@ -46,6 +65,25 @@ async function ruleBasedResponse(trimmed: string, opts: { note?: string } = {}):
     let result: { text: string; formula?: AIFormulaResult };
 
     switch (intent) {
+        case 'calculate': {
+            // Routed to the same deterministic engine the UI uses. No model is involved,
+            // so this works with no provider configured and no active subscription.
+            const params = extractCalculationParams(trimmed);
+            if (params.C === undefined || params.S === undefined || params.RA === undefined) {
+                result = {
+                    text: '🧮 ต้องการคำนวณให้ครับ แต่ยังได้ข้อมูลไม่ครบ กรุณาระบุ:\n\n'
+                        + '• **อัตราส่วนผสม** เช่น "500 มล. ต่อ 12.5 ลิตร"\n'
+                        + '• **อัตราการพ่น** เช่น "พ่น 1.25 ลิตรต่อ 10000 ตร.ม."\n'
+                        + '• **จำนวนหลัง** เช่น "20 หลัง"\n'
+                        + '• **พื้นที่** — บอกอย่างใดอย่างหนึ่ง: พื้นที่รวม ("พื้นที่รวม 2000 ตร.ม."), '
+                        + 'ขนาดบ้าน ("บ้านกว้าง 8 ยาว 12") หรือพื้นที่ต่อหลังตรงๆ ("บ้านละ 100 ตร.ม.")\n\n'
+                        + 'ℹ️ พื้นที่ต่อหลังไม่มีบนฉลากสารเคมี ระบบจึงคำนวณย้อนจากพื้นที่รวม ÷ จำนวนหลังให้แทน',
+                };
+                break;
+            }
+            result = buildCalculationResponse(params);
+            break;
+        }
         case 'query_chemical': {
             result = await buildFormulaFromSupabase(trimmed);
             break;
@@ -88,7 +126,7 @@ async function ruleBasedResponse(trimmed: string, opts: { note?: string } = {}):
 
 export async function POST(request: NextRequest) {
     try {
-        const { message, fileData, imageData, rawText, aiSettings } = await request.json();
+        const { message, fileData, imageData, rawText } = await request.json();
 
         if (!message || typeof message !== 'string' || !message.trim()) {
             return NextResponse.json(
@@ -117,11 +155,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(buildFileAnalysis(fileData.headers, fileData.rows, trimmed, fileData.fileName || 'ไฟล์ที่อัปโหลด'));
         }
 
-        const normalized = normalizeAISettings(aiSettings);
+        const normalized = await loadAISettings();
         const router = buildRouterFromSettings(normalized);
 
-        // 4) มี AI provider → ใช้ LLM tool-calling (ถ้าล้มเหลว → ตกกลับ rule-based)
-        if (router.isAnyConfigured()) {
+        // 4) มี AI provider ใช้งานได้ + หน่วยงานสมัครสมาชิกอยู่ → ใช้ LLM tool-calling
+        //    (ถ้าไม่ได้สมัครสมาชิก ให้ตกกลับ rule-based เหมือนกรณีไม่มี provider — ไม่ error)
+        const subscription = await getSubscriptionStatus();
+        if (router.isAnyConfigured() && subscription.active) {
             try {
                 const agentResult = await runChatAgent(router, trimmed, {
                     temperature: normalized?.temperature,
@@ -147,7 +187,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 5) ไม่มี provider → rule-based fallback เดิม
+        // 5) ไม่มี provider หรือหน่วยงานยังไม่ได้สมัครสมาชิก → rule-based fallback เดิม
         return NextResponse.json(await ruleBasedResponse(trimmed));
     } catch (error: any) {
         console.error('[AI/MCP] Chat error:', error);

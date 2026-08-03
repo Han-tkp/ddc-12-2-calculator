@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
-import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
 import { UserPublicPortal } from '@/components/user/user-public-portal';
 import Link from 'next/link';
 import { ArrowLeft, LayoutDashboard, Layers, Bot, Sparkles, MapPin, Calculator, CheckCircle2 } from 'lucide-react';
@@ -62,10 +61,6 @@ export default async function PublicUserPortalPage({
                                 ศูนย์ผู้ใช้งานทั่วไป & ปฏิบัติงานภาคสนาม
                             </h1>
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <PublicFormulaManager />
                     </div>
                 </div>
             </header>

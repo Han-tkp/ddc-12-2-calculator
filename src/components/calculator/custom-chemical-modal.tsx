@@ -100,7 +100,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                 }),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || 'ไม่สามารถบันทึกสูตร Custom ได้');
 
             // Record tracking entry (best-effort)
@@ -135,7 +135,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                 <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                            <FlaskConical className="h-6 w-6 text-indigo-600" />
+                            <FlaskConical className="h-6 w-6 text-brand" />
                             เพิ่มสูตรสารเคมี Custom (พร้อม Drag & Drop ฉลาก)
                         </DialogTitle>
                         <DialogDescription className="text-xs text-slate-500">
@@ -152,8 +152,8 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                         onClick={() => fileInputRef.current?.click()}
                         className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all ${
                             dragActive
-                                ? 'border-indigo-600 bg-indigo-50/80 scale-[1.01]'
-                                : 'border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-slate-100/80'
+                                ? 'border-brand bg-brand-soft/80 scale-[1.01]'
+                                : 'border-slate-200 bg-slate-50 hover:border-brand/40 hover:bg-slate-100/80'
                         }`}
                     >
                         <input
@@ -170,11 +170,11 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
+                                <div className="w-12 h-12 rounded-full bg-brand-soft text-brand flex items-center justify-center mx-auto">
                                     <Upload className="h-6 w-6" />
                                 </div>
                                 <p className="text-xs font-bold text-slate-700">
-                                    ลากและวางไฟล์ภาพฉลากสารเคมีลงที่นี่ หรือ <span className="text-indigo-600 underline">คลิกเพื่อเลือกไฟล์</span>
+                                    ลากและวางไฟล์ภาพฉลากสารเคมีลงที่นี่ หรือ <span className="text-brand underline">คลิกเพื่อเลือกไฟล์</span>
                                 </p>
                                 <p className="text-[10px] text-slate-400">รองรับไฟล์ PNG, JPG, WEBP, PDF (ไม่เกิน 10MB)</p>
                             </div>
@@ -241,7 +241,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                        <div className="grid grid-cols-3 gap-3 p-3 bg-brand-soft/50 rounded-xl border border-brand-soft">
                             <div className="space-y-1">
                                 <Label className="font-semibold text-slate-700">อัตราการพ่น (RA)</Label>
                                 <Input
@@ -289,7 +289,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                                 ยกเลิก
                             </Button>
-                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                            <Button type="submit" className="bg-brand hover:bg-brand-dark text-white gap-2">
                                 <CheckCircle2 className="h-4 w-4" /> ดำเนินการเพิ่มสูตร Custom
                             </Button>
                         </DialogFooter>
@@ -301,7 +301,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
                 <DialogContent className="max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-indigo-700 text-lg font-bold">
+                        <DialogTitle className="flex items-center gap-2 text-brand-dark text-lg font-bold">
                             <AlertTriangle className="h-5 w-5 text-amber-500" /> ยืนยันการเพิ่มสูตร Custom เข้าสู่ระบบ?
                         </DialogTitle>
                         <DialogDescription className="text-xs text-slate-600 pt-2 leading-relaxed">
@@ -316,7 +316,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                         </div>
                         <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                             <span className="text-slate-500">รูปแบบการผสม:</span>
-                            <span className="font-bold text-indigo-700">{mixType === 2 ? 'แบบผสมกับ - เติมสารทบน้ำมัน' : 'แบบผสมให้ได้ - รวมปริมาตรคงที่'}</span>
+                            <span className="font-bold text-brand-dark">{mixType === 2 ? 'แบบผสมกับ - เติมสารทบน้ำมัน' : 'แบบผสมให้ได้ - รวมปริมาตรคงที่'}</span>
                         </div>
                         <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                             <span className="text-slate-500">สัดส่วน (C:S):</span>
@@ -338,7 +338,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                             type="button"
                             onClick={handleConfirmSubmit}
                             disabled={isSubmitting}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+                            className="bg-brand hover:bg-brand-dark text-white gap-2"
                         >
                             {isSubmitting ? <Clock className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                             ยืนยันเพิ่มสูตร Custom

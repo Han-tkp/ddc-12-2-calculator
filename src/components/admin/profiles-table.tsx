@@ -106,7 +106,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             });
 
             if (!response.ok) {
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
                 throw new Error(data.error || 'เกิดข้อผิดพลาด');
             }
 
@@ -141,7 +141,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             });
 
             if (!response.ok) {
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
                 throw new Error(data.error || 'เกิดข้อผิดพลาดในการแก้ไข');
             }
 
@@ -194,7 +194,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             });
 
             if (!response.ok) {
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
                 throw new Error(data.error || 'ไม่สามารถเผยแพร่สูตรได้');
             }
 
@@ -233,7 +233,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                     type="button"
                     onClick={() => setIsCustomModalOpen(true)}
                     variant="outline"
-                    className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 font-semibold gap-2"
+                    className="bg-brand-soft text-brand-dark border-brand/20 hover:bg-brand-soft font-semibold gap-2"
                 >
                     <Upload className="h-4 w-4" />
                     เพิ่มสูตร Custom (Drag & Drop ฉลาก)
@@ -241,7 +241,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                        <Button className="bg-brand hover:bg-brand-dark text-white">
                             <Plus className="h-4 w-4 mr-2" />
                             เพิ่มสูตรใหม่
                         </Button>
@@ -374,7 +374,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                                     ยกเลิก
                                 </Button>
-                                <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">
+                                <Button type="submit" disabled={isLoading} className="bg-brand hover:bg-brand-dark">
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -517,7 +517,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                                     ยกเลิก
                                 </Button>
-                                <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">
+                                <Button type="submit" disabled={isLoading} className="bg-brand hover:bg-brand-dark">
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -566,7 +566,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                 {profile.description && (
                                                     <p className="text-sm text-slate-500">{profile.description}</p>
                                                 )}
-                                                <p className="text-xs text-indigo-500 mt-1">
+                                                <p className="text-xs text-brand mt-1">
                                                     {profile.mix_type === 2 ? '(แบบผสมกับ)' : '(แบบผสมให้ได้สุทธิ)'}
                                                 </p>
                                             </div>
@@ -607,7 +607,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 hover:text-indigo-600 hover:bg-indigo-50"
+                                                    className="h-8 w-8 hover:text-brand hover:bg-brand-soft"
                                                     onClick={() => openEditDialog(profile)}
                                                     title="แก้ไขสูตร"
                                                 >

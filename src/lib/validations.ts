@@ -57,6 +57,41 @@ export const registerSchema = z.object({
     path: ['confirmPassword'],
 });
 
+/**
+ * `/q/<id>` redirects to whatever `targetUrl` holds, which makes this table a redirector.
+ * Restricting the scheme to http/https is what stops a stored `javascript:` or `data:`
+ * URL from turning that redirect into a script-execution or phishing vector — so keep
+ * this check on the write path, not just in the UI.
+ */
+const httpUrl = z
+    .string({ message: 'กรุณาระบุลิงก์' })
+    .trim()
+    .min(1, 'กรุณาระบุลิงก์')
+    .max(2048, 'ลิงก์ยาวเกินไป')
+    .refine((value) => {
+        try {
+            const parsed = new URL(value);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }, 'ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https:// เท่านั้น');
+
+export const qrCodeCreateSchema = z.object({
+    label: z.string({ message: 'กรุณาระบุชื่อเรียก' }).trim().min(1, 'กรุณาระบุชื่อเรียก').max(120, 'ชื่อเรียกยาวเกินไป'),
+    targetUrl: httpUrl,
+});
+
+export const qrCodeUpdateSchema = z.object({
+    label: z.string().trim().min(1, 'กรุณาระบุชื่อเรียก').max(120, 'ชื่อเรียกยาวเกินไป').optional(),
+    targetUrl: httpUrl.optional(),
+}).refine((data) => data.label !== undefined || data.targetUrl !== undefined, {
+    message: 'ไม่มีข้อมูลที่ต้องการแก้ไข',
+});
+
+export type QrCodeCreateInput = z.infer<typeof qrCodeCreateSchema>;
+export type QrCodeUpdateInput = z.infer<typeof qrCodeUpdateSchema>;
+
 export type CalculationInput = z.infer<typeof calculationSchema>;
 export type ProfileInput = z.infer<typeof profileSchema>;
 export type ProfileMutationInput = z.infer<typeof profileMutationSchema>;

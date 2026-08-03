@@ -18,6 +18,32 @@ export function encrypt(text: string): string {
     return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
+/**
+ * Decrypts a stored name for display, never throwing and never leaking ciphertext.
+ *
+ * Use this anywhere a `users.name` is rendered. Two failure modes it exists to contain:
+ *
+ *  - `decrypt()` THROWS on bad padding when ENCRYPTION_KEY doesn't match the key a row
+ *    was written with, so calling it bare in a server component takes the whole page down.
+ *  - Falling back to the raw value prints the ciphertext into the UI — which is what put
+ *    "90742fcb…ece30052" in the admin calculation-log's user column. Ciphertext is not a
+ *    name; showing it is a bug, and it scatters encrypted PII into screenshots and exports.
+ *
+ * On failure the caller gets `fallback` instead.
+ */
+export function decryptName(value: string | null | undefined, fallback = 'ไม่ระบุชื่อ'): string {
+    if (!value) return fallback;
+    try {
+        const plain = decrypt(value);
+        // A value with no "iv:payload" shape comes back unchanged; if that still looks
+        // like hex ciphertext, it isn't a name worth showing.
+        if (!plain || /^[0-9a-f]{32,}$/i.test(plain)) return fallback;
+        return plain;
+    } catch {
+        return fallback;
+    }
+}
+
 export function decrypt(text: string): string {
     if (!text) return text;
 

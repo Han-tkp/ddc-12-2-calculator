@@ -29,7 +29,7 @@ export { buildFormulaDraftFromFile, buildFormulaDraftFromText } from './drafts';
 export { analyzeFormulaImage } from './vision';
 
 // fallback (rule-based)
-export { classifyIntent, extractFormulaParams, buildCustomFormula, buildFileAnalysis, buildCalculationResponse } from './fallback';
+export { classifyIntent, extractFormulaParams, extractCalculationParams, buildCustomFormula, buildFileAnalysis, buildCalculationResponse } from './fallback';
 export type { CalculationRequest } from './fallback';
 
 // queries (Supabase)

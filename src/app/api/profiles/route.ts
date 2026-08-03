@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { recordFormulaAudit } from '@/lib/formula-audit';
+import { deviceInfoFromRequest } from '@/lib/device-info';
 import { getGuestOwner, setGuestOwnerCookie } from '@/lib/guest-owner';
 import { supabaseAdmin } from '@/lib/supabase';
 import { profileMutationSchema } from '@/lib/validations';
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
                 location,
                 lat,
                 lng,
+                device: deviceInfoFromRequest(request),
                 afterData: profile,
             });
         } catch (auditError) {

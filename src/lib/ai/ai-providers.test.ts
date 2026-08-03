@@ -35,12 +35,20 @@ describe('GeminiProvider serialization', () => {
             expect(res.text).toBe('done');
 
             const body = getBody(fetchMock);
-            expect(body.contents[0].role).toBe('model');
-            expect(body.contents[0].parts[0].functionCall).toMatchObject({ name: 'query', args: { q: 'y' } });
-            expect(body.contents[1].role).toBe('user');
-            expect(body.contents[1].parts[0].functionResponse).toMatchObject({ name: 'query' });
+            // The question comes first, then the functionCall/functionResponse exchange
+            // that answered it. This test previously asserted the reverse, which encoded
+            // a real bug: with the prompt re-appended after the tool result, the model
+            // saw the original question again and re-called the tool every iteration
+            // until the agent loop gave up with "tool-calling เกิน N รอบ".
+            expect(body.contents[0].role).toBe('user');
+            expect(body.contents[0].parts[0].text).toBe('หาสูตร');
+            expect(body.contents[1].role).toBe('model');
+            expect(body.contents[1].parts[0].functionCall).toMatchObject({ name: 'query', args: { q: 'y' } });
             expect(body.contents[2].role).toBe('user');
-            expect(body.contents[2].parts[0].text).toBe('หาสูตร');
+            expect(body.contents[2].parts[0].functionResponse).toMatchObject({ name: 'query' });
+            // The prompt must appear exactly once — never repeated after the tool result.
+            expect(body.contents.filter((c: { parts: Array<{ text?: string }> }) =>
+                c.parts.some(p => p.text === 'หาสูตร'))).toHaveLength(1);
             expect(getUrl(fetchMock)).toContain('generativelanguage.googleapis.com');
         } finally {
             vi.unstubAllGlobals();

@@ -3,9 +3,24 @@ import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '@/lib/supabase';
 import { registerSchema } from '@/lib/validations';
 import { encrypt } from '@/lib/encryption';
+import { auth } from '@/lib/auth';
+import { isBootstrapAllowed } from '@/lib/bootstrap';
 
 export async function POST(request: NextRequest) {
     try {
+        // This endpoint creates ADMIN accounts, and ADMIN is the only role allowed to
+        // log in — so it must never be open. Only an existing ADMIN may create users,
+        // except on a fresh deployment that has no users at all yet.
+        const session = await auth();
+        const isAdmin = session?.user?.role === 'ADMIN';
+
+        if (!isAdmin && !(await isBootstrapAllowed())) {
+            return NextResponse.json(
+                { error: 'ไม่มีสิทธิ์สร้างบัญชี: เฉพาะผู้ดูแลระบบเท่านั้น' },
+                { status: 403 }
+            );
+        }
+
         const body = await request.json();
 
         // Validate input

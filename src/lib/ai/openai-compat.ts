@@ -54,6 +54,19 @@ export abstract class OpenAICompatProvider implements AIProvider {
     private buildMessages(input: AIRequest): OpenAIMessage[] {
         const messages: OpenAIMessage[] = [];
 
+        // The prompt is the user's question; `history` is the assistant/tool exchange that
+        // happened while answering it, so the prompt must come FIRST. Appending it after
+        // the history instead made every agent iteration end with the original question
+        // re-asked below the tool result — the model read that as a fresh request, called
+        // the tool again, and the loop ran until maxIterations with no final answer.
+        const current: string | OpenAIContentBlock[] = input.images && input.images.length > 0
+            ? [
+                { type: 'text', text: input.prompt },
+                ...getImageParts(input.images),
+            ]
+            : input.prompt;
+        messages.push({ role: 'user', content: current });
+
         for (const msg of input.history || []) {
             if (msg.role === 'assistant') {
                 messages.push({
@@ -84,15 +97,6 @@ export abstract class OpenAICompatProvider implements AIProvider {
                 messages.push({ role: 'user', content });
             }
         }
-
-        // Prompt ปัจจุบัน
-        const current: string | OpenAIContentBlock[] = input.images && input.images.length > 0
-            ? [
-                { type: 'text', text: input.prompt },
-                ...getImageParts(input.images),
-            ]
-            : input.prompt;
-        messages.push({ role: 'user', content: current });
 
         return messages;
     }
@@ -144,6 +148,22 @@ export abstract class OpenAICompatProvider implements AIProvider {
         const usage: AIUsage | undefined = payload.usage
             ? { inputTokens: payload.usage.prompt_tokens, outputTokens: payload.usage.completion_tokens, totalTokens: payload.usage.total_tokens }
             : undefined;
+
+        // A reply with neither text nor a tool call is not a usable answer. Reasoning
+        // models can spend their whole budget in `message.reasoning` and return an empty
+        // `content` — we deliberately never surface raw chain-of-thought to officers, so
+        // that arrives here as nothing at all. Treat it as a transient provider failure
+        // so the router moves to the next provider (or the caller degrades to the
+        // rule-based path) instead of showing the user an empty chat bubble.
+        if (!text.trim() && toolCalls.length === 0) {
+            throw new AIProviderError(
+                this.name,
+                'provider_unavailable',
+                `โมเดล ${input.model || this.defaultModel} ตอบกลับว่าง (ไม่มีข้อความและไม่เรียก tool)`
+                + (payload.choices?.[0]?.finish_reason ? ` — finish_reason: ${payload.choices[0].finish_reason}` : ''),
+                503
+            );
+        }
 
         return {
             text,

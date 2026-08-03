@@ -43,7 +43,9 @@ export default function LoginPage() {
                 toast.error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
             } else {
                 toast.success('เข้าสู่ระบบสำเร็จ!');
-                router.push('/');
+                // Only ADMINs can sign in at all (src/lib/auth.ts), so anyone who
+                // reaches here belongs in the back office, not the public landing page.
+                router.push('/admin/dashboard');
                 router.refresh();
             }
         } catch (error) {
@@ -62,7 +64,7 @@ export default function LoginPage() {
             <div className="w-full max-w-[400px] relative z-10">
                 {/* Logo & Header */}
                 <div className="text-center mb-10 animate-fade-up">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-6 shadow-xl shadow-indigo-200">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand mb-6 shadow-xl shadow-brand/20">
                         <span className="text-3xl">🧪</span>
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -87,12 +89,12 @@ export default function LoginPage() {
                                     อีเมลเจ้าหน้าที่
                                 </Label>
                                 <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-brand transition-colors" />
                                     <Input
                                         id="email"
                                         type="email"
                                         placeholder="user@example.com"
-                                        className="h-12 pl-12 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 bg-slate-50/50 transition-all font-medium"
+                                        className="h-12 pl-12 rounded-xl border-slate-200 focus:border-brand focus:ring-brand/10 bg-slate-50/50 transition-all font-medium"
                                         {...register('email')}
                                     />
                                 </div>
@@ -108,12 +110,12 @@ export default function LoginPage() {
                                     รหัสผ่าน
                                 </Label>
                                 <div className="relative group">
-                                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-brand transition-colors" />
                                     <Input
                                         id="password"
                                         type="password"
                                         placeholder="••••••••"
-                                        className="h-12 pl-12 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/10 bg-slate-50/50 transition-all font-medium"
+                                        className="h-12 pl-12 rounded-xl border-slate-200 focus:border-brand focus:ring-brand/10 bg-slate-50/50 transition-all font-medium"
                                         {...register('password')}
                                     />
                                 </div>
@@ -126,7 +128,7 @@ export default function LoginPage() {
 
                             <Button
                                 type="submit"
-                                className="w-full h-12 text-base font-bold rounded-xl bg-indigo-600 hover:bg-slate-900 text-white shadow-lg shadow-indigo-100 transition-all duration-300 animate-fade-up stagger-4"
+                                className="w-full h-12 text-base font-bold rounded-xl bg-brand hover:bg-slate-900 text-white shadow-lg shadow-brand-soft transition-all duration-300 animate-fade-up stagger-4"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
@@ -148,7 +150,7 @@ export default function LoginPage() {
                                 ติดต่อแจ้งปัญหาการใช้งานที่ผู้ดูแลระบบ
                             </p>
                             <Link href="/" className="w-full">
-                                <Button variant="ghost" className="w-full h-11 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 font-medium text-sm">
+                                <Button variant="ghost" className="w-full h-11 rounded-xl text-slate-500 hover:text-brand hover:bg-brand-soft/50 font-medium text-sm">
                                     กลับสู่หน้าหลัก
                                 </Button>
                             </Link>

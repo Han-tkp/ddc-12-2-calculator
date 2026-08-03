@@ -64,7 +64,7 @@ export function UserActions({ user, currentUserId }: UserActionsProps) {
                 method: 'DELETE',
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || 'Failed to delete user');
 
             toast.success('ลบบัญชีผู้ใช้สำเร็จ');
@@ -81,7 +81,7 @@ export function UserActions({ user, currentUserId }: UserActionsProps) {
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-indigo-600">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-brand">
                         <UserCog className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>

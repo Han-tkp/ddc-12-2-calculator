@@ -117,7 +117,7 @@ export function FeedbackDialog() {
                 <div className="fixed bottom-6 right-6 z-50 animate-fade-up">
                     <Button
                         size="lg"
-                        className="rounded-full shadow-lg h-14 w-14 p-0 bg-indigo-600 hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-all text-white border-none group"
+                        className="rounded-full shadow-lg h-14 w-14 p-0 bg-brand hover:bg-brand-dark hover:scale-110 active:scale-95 transition-all text-white border-none group"
                         title="ส่งข้อเสนอแนะ / แจ้งเพิ่มสูตร"
                     >
                         <MessageSquarePlus className="h-6 w-6 group-hover:rotate-12 transition-transform" />
@@ -126,7 +126,7 @@ export function FeedbackDialog() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-indigo-600">
+                    <DialogTitle className="flex items-center gap-2 text-brand">
                         <MessageSquarePlus className="h-5 w-5" />
                         ส่งข้อเสนอแนะ / ขอเพิ่มสูตร
                     </DialogTitle>
@@ -149,7 +149,7 @@ export function FeedbackDialog() {
                                             defaultValue={field.value}
                                             className="flex flex-col space-y-1 sm:flex-row sm:space-x-4 sm:space-y-0"
                                         >
-                                            <FormItem className="flex items-center space-x-2 space-y-0 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has(:checked)]:border-indigo-500 [&:has(:checked)]:bg-indigo-50">
+                                            <FormItem className="flex items-center space-x-2 space-y-0 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has(:checked)]:border-brand [&:has(:checked)]:bg-brand-soft">
                                                 <FormControl>
                                                     <RadioGroupItem value="GENERAL" />
                                                 </FormControl>
@@ -157,7 +157,7 @@ export function FeedbackDialog() {
                                                     👋 แนะนำ/ติชมทั่วไป
                                                 </FormLabel>
                                             </FormItem>
-                                            <FormItem className="flex items-center space-x-2 space-y-0 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has(:checked)]:border-indigo-500 [&:has(:checked)]:bg-indigo-50">
+                                            <FormItem className="flex items-center space-x-2 space-y-0 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has(:checked)]:border-brand [&:has(:checked)]:bg-brand-soft">
                                                 <FormControl>
                                                     <RadioGroupItem value="FORMULA_REQUEST" />
                                                 </FormControl>
@@ -313,7 +313,7 @@ export function FeedbackDialog() {
                         />
 
                         <div className="flex justify-end pt-2">
-                            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700">
+                            <Button type="submit" disabled={isSubmitting} className="bg-brand hover:bg-brand-dark">
                                 {isSubmitting ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

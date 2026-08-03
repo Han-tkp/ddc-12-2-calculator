@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Sarabun } from "next/font/google";
 import "./globals.css";
 import { FeedbackDialog } from '@/components/feedback-dialog';
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { BRAND } from "@/lib/theme";
 
 const sarabun = Sarabun({
   variable: "--font-sarabun",
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
   title: "ระบบคำนวณสารเคมีพ่นยุง",
   description: "เครื่องคำนวณสารเคมีสำหรับงานพ่นกำจัดยุง คำนวณจากอัตราส่วนผสมและอัตราการพ่นต่อพื้นที่",
   keywords: ["สารเคมี", "พ่นยุง", "คำนวณ", "ควบคุมยุง", "สาธารณสุข"],
+  manifest: "/site.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: BRAND.accent,
 };
 
 export default function RootLayout({

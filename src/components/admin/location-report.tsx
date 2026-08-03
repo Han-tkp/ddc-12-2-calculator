@@ -29,10 +29,10 @@ export function LocationReport({ locations }: LocationReportProps) {
                 {displayed.map((loc, i) => (
                     <div
                         key={loc.name + i}
-                        className="flex items-center justify-between p-3 rounded-xl bg-white/60 border border-slate-100 hover:bg-violet-50/50 transition-colors group"
+                        className="flex items-center justify-between p-3 rounded-xl bg-white/60 border border-slate-100 hover:bg-brand-soft/50 transition-colors group"
                     >
                         <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-violet-400 to-pink-400 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-brand/60 to-brand/60 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
                                 <MapPin className="h-4 w-4 text-white" />
                             </div>
                             <div className="min-w-0">
@@ -46,13 +46,13 @@ export function LocationReport({ locations }: LocationReportProps) {
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-2">
                             <div className="text-right">
-                                <span className="text-lg font-bold text-violet-600">{loc.count}</span>
+                                <span className="text-lg font-bold text-brand">{loc.count}</span>
                                 <span className="text-xs text-slate-400 ml-1">ครั้ง</span>
                             </div>
                             {/* Usage bar */}
                             <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-linear-to-r from-violet-400 to-pink-400 rounded-full transition-all"
+                                    className="h-full bg-linear-to-r from-brand/60 to-brand/60 rounded-full transition-all"
                                     style={{ width: `${Math.min((loc.count / (locations[0]?.count || 1)) * 100, 100)}%` }}
                                 />
                             </div>
@@ -65,7 +65,7 @@ export function LocationReport({ locations }: LocationReportProps) {
             {locations.length > 5 && (
                 <button
                     onClick={() => setShowAll(!showAll)}
-                    className="w-full flex items-center justify-center gap-1 text-sm text-violet-600 hover:text-violet-800 py-2 rounded-lg hover:bg-violet-50 transition-colors"
+                    className="w-full flex items-center justify-center gap-1 text-sm text-brand hover:text-brand-dark py-2 rounded-lg hover:bg-brand-soft transition-colors"
                 >
                     {showAll ? (
                         <>แสดงน้อยลง <ChevronUp className="h-4 w-4" /></>

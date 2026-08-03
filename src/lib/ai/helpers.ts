@@ -80,7 +80,3 @@ export function getImageParts(images?: AIImageInput[]): { type: 'image_url'; ima
         image_url: { url: `data:${img.mimeType};base64,${img.data}` },
     }));
 }
-
-export function validateProviderName(name: string): boolean {
-    return ['gemini', 'anthropic', 'openrouter', 'openai'].includes(name);
-}

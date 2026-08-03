@@ -82,7 +82,6 @@ export function guardQuota(provider: AIProviderName, limits: QuotaLimits = DEFAU
     bucket.hour = bucket.hour.filter(t => now - t < hourMs);
 
     if (bucket.minute.length >= limits.perMinute) {
-        const retryAfterMs = minuteMs - (now - (bucket.minute[0] ?? now));
         throw new AIProviderError(provider, 'rate_limit', `เกินโควตา ${limits.perMinute} ครั้ง/นาที ของ provider ${provider}`, 429);
     }
     if (bucket.hour.length >= limits.perHour) {

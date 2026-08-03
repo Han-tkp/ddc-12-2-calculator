@@ -47,6 +47,16 @@ export class GeminiProvider implements AIProvider {
     private buildContents(input: AIRequest): GeminiContent[] {
         const contents: GeminiContent[] = [];
 
+        // The prompt is the question; `history` is the functionCall/functionResponse
+        // exchange that followed it, so the prompt goes FIRST. Appending it afterwards
+        // re-asked the original question below the tool result on every agent iteration,
+        // which made the model call the tool again instead of answering.
+        const currentParts: GeminiPart[] = [{ text: input.prompt }];
+        for (const img of input.images || []) {
+            currentParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+        }
+        contents.push({ role: 'user', parts: currentParts });
+
         for (const msg of input.history || []) {
             if (msg.role === 'assistant') {
                 contents.push({
@@ -69,18 +79,6 @@ export class GeminiProvider implements AIProvider {
                 });
             }
         }
-
-        // Prompt ปัจจุบัน
-        const currentParts: GeminiPart[] = [];
-        if (input.images && input.images.length > 0) {
-            currentParts.push({ text: input.prompt });
-            for (const img of input.images) {
-                currentParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
-            }
-        } else {
-            currentParts.push({ text: input.prompt });
-        }
-        contents.push({ role: 'user', parts: currentParts });
 
         return contents;
     }
