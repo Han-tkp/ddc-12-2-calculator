@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, Upload, Image as ImageIcon, CheckCircle2, AlertTriangle, Clock, FlaskConical, FileText, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
+import { ResultHelpEditor } from './result-help-editor';
+import { FormulaTrialPreview } from './formula-trial-preview';
 
 interface CustomChemicalModalProps {
     isOpen: boolean;
@@ -24,8 +26,10 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
     const [RA, setRA] = useState<number>(75);
     const [RAUnit, setRAUnit] = useState<'L' | 'cc'>('cc');
     const [mixType, setMixType] = useState<number>(1); // 1 = แบบผสมให้ได้ - รวมปริมาตรคงที่, 2 = แบบผสมกับ - เติมสารทบน้ำมัน
+    const [A0, setA0] = useState<number>(1000);
     const [tankCapacity, setTankCapacity] = useState<number>(10);
     const [location, setLocation] = useState('');
+    const [resultHelp, setResultHelp] = useState<Record<string, string>>({});
 
     // Drag & drop file state
     const [dragActive, setDragActive] = useState(false);
@@ -93,10 +97,11 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                     RA: Number(RA),
                     RA_unit: RAUnit,
                     mix_type: Number(mixType),
-                    A0: 1000,
+                    A0: Number(A0),
                     tankCapacity: Number(tankCapacity),
                     isActive: true,
                     location: location.trim() || undefined,
+                    resultHelp: Object.keys(resultHelp).length > 0 ? resultHelp : undefined,
                 }),
             });
 
@@ -110,7 +115,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                 RA: Number(RA),
                 RA_unit: RAUnit,
                 mix_type: Number(mixType),
-                A0: 1000,
+                A0: Number(A0),
                 A_house: 100,
                 N: 10,
                 chemical: name.trim(),
@@ -241,7 +246,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3 p-3 bg-brand-soft/50 rounded-xl border border-brand-soft">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-brand-soft/50 rounded-xl border border-brand-soft">
                             <div className="space-y-1">
                                 <Label className="font-semibold text-slate-700">อัตราการพ่น (RA)</Label>
                                 <Input
@@ -265,6 +270,16 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                                 </Select>
                             </div>
                             <div className="space-y-1">
+                                <Label className="font-semibold text-slate-700">พื้นที่มาตรฐาน (A0) ตร.ม.</Label>
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    value={A0}
+                                    onChange={(e) => setA0(Number(e.target.value))}
+                                    className="bg-white"
+                                />
+                            </div>
+                            <div className="space-y-1">
                                 <Label className="font-semibold text-slate-700">ความจุถังพ่น (ลิตร)</Label>
                                 <Input
                                     type="number"
@@ -284,6 +299,15 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                                 onChange={(e) => setLocation(e.target.value)}
                             />
                         </div>
+
+                        <ResultHelpEditor value={resultHelp} onChange={setResultHelp} />
+
+                        <FormulaTrialPreview
+                            storageKey="custom-chemical"
+                            C={Number(C)} S={Number(S)} RA={Number(RA)} RAUnit={RAUnit}
+                            mixType={Number(mixType)} A0={Number(A0)} tankCapacity={Number(tankCapacity)}
+                            resultHelp={resultHelp}
+                        />
 
                         <DialogFooter className="pt-2">
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

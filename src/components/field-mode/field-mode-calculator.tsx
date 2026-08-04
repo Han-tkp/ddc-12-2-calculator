@@ -289,6 +289,7 @@ export function FieldModeCalculator() {
                             agency={watchedValues.agency}
                             location={watchedValues.location}
                             coords={coords}
+                            resultHelp={dbPresets.find((p) => String(p.id) === selectedPreset)?.resultHelp}
                         />
                     )}
                 </div>

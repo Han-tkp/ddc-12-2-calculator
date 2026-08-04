@@ -33,6 +33,9 @@ export const profileSchema = z.object({
     A0: z.number().positive('พื้นที่มาตรฐานต้องเป็นจำนวนบวก'),
     tankCapacity: z.number().positive('ขนาดถังพ่นต้องเป็นจำนวนบวก').optional().default(10),
     isActive: z.boolean().default(true),
+    // Optional per-field explanation shown alongside the result (e.g. why A0
+    // defaults to what it does for this formula). Additive only — see ResultsDisplay.
+    resultHelp: z.record(z.string(), z.string()).optional().nullable(),
 });
 
 export const profileMutationSchema = profileSchema.extend({

@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
 import type { FormulaVariable } from '@/lib/formula-engine';
 import { parseFile, fileToFormulaVariables, type ParsedFile } from '@/lib/file-import';
+import { ResultHelpEditor } from '@/components/calculator/result-help-editor';
 
 export function formulaSchemaToVariables(schema: FormulaSchema): FormulaVariable[] {
     const id = () => Math.random().toString(36).slice(2, 9);
@@ -100,6 +101,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
 
     const [selectedFormula, setSelectedFormula] = useState<FormulaSchema | null>(null);
     const [confirmLocation, setConfirmLocation] = useState('');
+    const [confirmResultHelp, setConfirmResultHelp] = useState<Record<string, string>>({});
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
@@ -193,6 +195,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
 
     const handleTriggerSave = (formula: FormulaSchema) => {
         setSelectedFormula(formula);
+        setConfirmResultHelp({});
         setShowConfirmModal(true);
     };
 
@@ -216,6 +219,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                     tankCapacity: Number(selectedFormula.tankCapacity),
                     isActive: true,
                     location: confirmLocation.trim() || undefined,
+                    resultHelp: Object.keys(confirmResultHelp).length > 0 ? confirmResultHelp : undefined,
                 }),
             });
 
@@ -535,6 +539,8 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                             </div>
                         </div>
                     )}
+
+                    <ResultHelpEditor value={confirmResultHelp} onChange={setConfirmResultHelp} />
 
                     <DialogFooter className="gap-2">
                         <Button variant="outline" onClick={() => setShowConfirmModal(false)} disabled={isSubmitting} className="text-xs">

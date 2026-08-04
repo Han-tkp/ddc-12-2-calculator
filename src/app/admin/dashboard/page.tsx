@@ -103,6 +103,8 @@ export default async function AdminDashboard({
         .limit(5));
 
     // 2.5 Map Points
+    // Capped at 2000 rather than the old 200 — the map now clusters/heatmaps
+    // instead of drawing one raw marker per point, so a low cap just hid data.
     const mapPointsPromise = withDimensions(supabaseAdmin.from('calculations')
         .select('id, lat, lng, chemical, location, V_total, createdAt')
         .gte('createdAt', dateFilterStr.gte)
@@ -110,7 +112,7 @@ export default async function AdminDashboard({
         .not('lat', 'is', null)
         .not('lng', 'is', null)
         .order('createdAt', { ascending: false })
-        .limit(200));
+        .limit(2000));
 
     // 2.6 History table (paginated, searchable)
     const currentPage = parseInt(page || '1', 10);

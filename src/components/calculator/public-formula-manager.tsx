@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
+import { ResultHelpEditor } from './result-help-editor';
+import { FormulaTrialPreview } from './formula-trial-preview';
 
 interface PublicFormulaManagerProps {
     onFormulaAdded?: (newFormulaName: string) => void;
@@ -34,6 +36,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
     const [location, setLocation] = useState('');
     const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [isGpsLoading, setIsGpsLoading] = useState(false);
+    const [resultHelp, setResultHelp] = useState<Record<string, string>>({});
 
     // Request GPS location on open
     const captureGps = () => {
@@ -91,6 +94,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                     location: location.trim() || undefined,
                     lat: coords?.lat ?? null,
                     lng: coords?.lng ?? null,
+                    resultHelp: Object.keys(resultHelp).length > 0 ? resultHelp : undefined,
                 }),
             });
 
@@ -283,6 +287,15 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                 onChange={(e) => setLocation(e.target.value)}
                             />
                         </div>
+
+                        <ResultHelpEditor value={resultHelp} onChange={setResultHelp} />
+
+                        <FormulaTrialPreview
+                            storageKey="public-formula"
+                            C={Number(C)} S={Number(S)} RA={Number(RA)} RAUnit={RAUnit}
+                            mixType={Number(mixType)} A0={Number(A0)} tankCapacity={Number(tankCapacity)}
+                            resultHelp={resultHelp}
+                        />
 
                         <DialogFooter className="pt-2">
                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>

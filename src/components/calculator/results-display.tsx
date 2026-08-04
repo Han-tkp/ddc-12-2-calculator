@@ -44,9 +44,12 @@ interface ResultsDisplayProps {
     agency?: string;
     location?: string;
     coords?: { lat: number; lng: number } | null;
+    /** Optional per-field explanations authored for this formula (e.g. why A0 is
+     *  what it is). Additive only — profiles without it render exactly as before. */
+    resultHelp?: Record<string, string> | null;
 }
 
-export function ResultsDisplay({ result, input, agency, location, coords }: ResultsDisplayProps) {
+export function ResultsDisplay({ result, input, agency, location, coords, resultHelp }: ResultsDisplayProps) {
     const chemicalName = input.chemical || 'ไม่ระบุสารเคมี';
     const sprayType = input.mix_type === 2 ? 'แบบผสมกับ' : 'แบบผสมให้ได้';
     const totalArea = input.N * input.A_house;
@@ -208,6 +211,9 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                         <div className="rounded-xl bg-brand-cloud border border-brand-line p-3">
                             <span className="block text-brand-muted text-xs mb-0.5">ประเภทการพ่น</span>
                             <span className="font-bold text-brand-ink text-sm sm:text-base leading-relaxed">{sprayType}</span>
+                            {resultHelp?.mix_type && (
+                                <p className="text-[11px] text-brand-muted mt-1 leading-relaxed">{resultHelp.mix_type}</p>
+                            )}
                         </div>
                         <div className="rounded-xl bg-brand-cloud border border-brand-line p-3">
                             <span className="block text-brand-muted text-xs mb-0.5">จำนวนบ้านที่ต้องพ่น</span>
@@ -220,6 +226,11 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                         <div className="rounded-xl bg-brand-cloud border border-brand-line p-3 lg:col-span-2">
                             <span className="block text-brand-muted text-xs mb-0.5">อัตราการฉีดพ่น (RA)</span>
                             <span className="font-bold text-brand-ink text-base leading-relaxed">{formatNumber(input.RA)} {input.RA_unit === 'L' ? 'ลิตร' : 'มล.'} ต่อพื้นที่ {input.A0.toLocaleString('th-TH')} ตร.ม.</span>
+                            {(resultHelp?.A0 || resultHelp?.RA) && (
+                                <p className="text-[11px] text-brand-muted mt-1 leading-relaxed">
+                                    {[resultHelp?.A0, resultHelp?.RA].filter(Boolean).join(' • ')}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -326,10 +337,7 @@ export function ResultsDisplay({ result, input, agency, location, coords }: Resu
                         {/* Box 3: Standard Tank Capacity Recommendation */}
                         <div className="p-4 sm:p-5 rounded-2xl border border-brand-line bg-white md:col-span-2">
                             <h4 className="font-bold text-brand-ink mb-3 border-b border-brand-line pb-2 flex flex-wrap justify-between items-center gap-2 text-sm sm:text-base leading-relaxed">
-                                <span>ข้อแนะนำสัดส่วนต่อ 1 ถังพ่นสะพายหลัง (Standard Tank Recipe)</span>
-                                <span className="bg-brand text-white text-[11px] sm:text-xs px-2.5 py-1 rounded-full font-semibold">
-                                    ถังละ {result.tankCapacity || 10} ลิตร (ต้องเตรียม {result.tanksCount || 1} ถัง)
-                                </span>
+                                <span>ข้อแนะนำสัดส่วนต่อ 1 ถังพ่นสะพายหลัง </span>
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm leading-relaxed">
                                 <div className="p-3 rounded-xl bg-brand-cloud border border-brand-line flex justify-between items-center gap-3">
