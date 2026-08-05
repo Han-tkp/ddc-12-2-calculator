@@ -78,7 +78,7 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">ประวัติการคำนวณ</h1>
-                    <p className="text-xs sm:text-sm text-slate-500">ดูประวัติการคำนวณทั้งหมดในระบบ ({count} รายการ)</p>
+                    <p className="text-xs sm:text-sm text-slate-500">ดูประวัติการคำนวณทั้งหมดในระบบ ({(count || 0).toLocaleString('th-TH')} รายการ)</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 w-full xl:w-auto">
                     <div className="w-full xl:w-52">

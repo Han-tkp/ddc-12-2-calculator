@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
-import { convertRA } from '@/lib/calculations';
+import { convertRA, formatRAUnit } from '@/lib/calculations';
 import { ResultHelpEditor } from './result-help-editor';
 import { FormulaTrialPreview } from './formula-trial-preview';
 
@@ -333,7 +333,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         </div>
                         <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                             <span className="text-slate-500">อัตราการพ่น (RA):</span>
-                            <span className="font-bold text-slate-900">{RA} {RAUnit} / {A0} ตร.ม.</span>
+                            <span className="font-bold text-slate-900">{RA} {formatRAUnit(RAUnit)} / {A0.toLocaleString('th-TH')} ตร.ม.</span>
                         </div>
                         <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                             <span className="text-slate-500">ความจุถังพ่นเคมี:</span>

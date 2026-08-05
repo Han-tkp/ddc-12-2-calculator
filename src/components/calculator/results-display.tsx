@@ -315,7 +315,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                             <h4 className="font-bold text-brand-ink mb-3 border-b border-brand-line pb-2 flex flex-wrap justify-between items-center gap-2 text-sm sm:text-base leading-relaxed">
                                 <span>ปริมาณสารเคมีสำหรับพ่นที่ต้องการ</span>
                                 <span className="bg-brand text-white text-[11px] sm:text-xs px-2.5 py-1 rounded-full font-semibold">
-                                    รวม {input.targetVolume} ลิตร
+                                    รวม {input.targetVolume.toLocaleString('th-TH')} ลิตร
                                 </span>
                             </h4>
                             <div className="space-y-3 text-xs sm:text-sm leading-relaxed">
@@ -381,7 +381,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                         </li>
                     </ol>
                     <p className="text-xs text-brand-muted mt-4 pt-3 border-t border-brand-line leading-relaxed">
-                        สูตร: {input.C}:{input.S} | พื้นที่หลังละ {input.A_house} ตร.ม. | จำนวน {input.N} หลัง
+                        สูตร: {input.C}:{input.S} | พื้นที่หลังละ {input.A_house.toLocaleString('th-TH')} ตร.ม. | จำนวน {input.N.toLocaleString('th-TH')} หลัง
                     </p>
                 </div>
 

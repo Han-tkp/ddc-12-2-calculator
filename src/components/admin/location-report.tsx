@@ -46,7 +46,7 @@ export function LocationReport({ locations }: LocationReportProps) {
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-2">
                             <div className="text-right">
-                                <span className="text-lg font-bold text-brand">{loc.count}</span>
+                                <span className="text-lg font-bold text-brand">{loc.count.toLocaleString('th-TH')}</span>
                                 <span className="text-xs text-slate-400 ml-1">ครั้ง</span>
                             </div>
                             {/* Usage bar */}

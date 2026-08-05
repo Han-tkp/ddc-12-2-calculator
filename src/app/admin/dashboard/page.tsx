@@ -317,7 +317,7 @@ export default async function AdminDashboard({
                 </div>
                 <div className="flex items-center gap-2 bg-brand-soft text-brand-dark px-3 py-1 rounded-full text-sm font-medium">
                     <CalendarRange className="h-4 w-4" />
-                    {totalCalculations} รายการในช่วงเวลานี้
+                    {(totalCalculations || 0).toLocaleString('th-TH')} รายการในช่วงเวลานี้
                 </div>
             </div>
 
@@ -352,7 +352,7 @@ export default async function AdminDashboard({
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-brand-ink tabular-nums">
-                                    {todayCount}
+                                    {todayCount.toLocaleString('th-TH')}
                                 </div>
                                 <TrendDelta current={todayCount} previous={yesterdayCount} unit="รายการ" periodLabel="จากเมื่อวาน" />
                             </CardContent>
@@ -463,7 +463,7 @@ export default async function AdminDashboard({
                                                 </div>
                                             </div>
                                             <div className="text-right whitespace-nowrap">
-                                                <p className="font-medium text-emerald-600">{calc.V_total.toFixed(2)} cc</p>
+                                                <p className="font-medium text-emerald-600">{calc.V_total.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} มล.</p>
                                                 <p className="text-xs text-slate-400">
                                                     {format(new Date(calc.createdAt), 'd MMM HH:mm', { locale: th })}
                                                 </p>
@@ -522,7 +522,7 @@ export default async function AdminDashboard({
                                 <Users className="h-4 w-4 text-blue-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-bold text-blue-700">{totalUsers} บัญชี</div>
+                                <div className="text-3xl font-bold text-blue-700">{(totalUsers || 0).toLocaleString('th-TH')} บัญชี</div>
                                 <p className="text-sm text-slate-500 mt-1">ผู้ปฏิบัติงานทั้งหมดในระบบที่ลงทะเบียน</p>
                             </CardContent>
                         </Card>
@@ -543,7 +543,7 @@ export default async function AdminDashboard({
                 <TabsContent value="history" className="space-y-4 m-0 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                         <p className="text-xs sm:text-sm text-slate-500">
-                            ประวัติการคำนวณทั้งหมดในรอบนี้ ({historyTotal} รายการ)
+                            ประวัติการคำนวณทั้งหมดในรอบนี้ ({historyTotal.toLocaleString('th-TH')} รายการ)
                         </p>
                         <div className="w-full sm:w-80">
                             <SearchInput placeholder="ค้นหา สารเคมี / สถานที่ / หน่วยงาน..." />

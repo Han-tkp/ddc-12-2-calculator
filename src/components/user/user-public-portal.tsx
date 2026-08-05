@@ -311,7 +311,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                                 {p.C} : {p.S}
                                             </td>
                                             <td className="p-3 text-center font-semibold text-brand-ink tabular-nums whitespace-nowrap">
-                                                {p.RA} {formatRAUnit(p.RA_unit)} / {p.A0 || 1000} ตร.ม.
+                                                {p.RA} {formatRAUnit(p.RA_unit)} / {(p.A0 || 1000).toLocaleString('th-TH')} ตร.ม.
                                             </td>
                                             <td className="p-3 text-center font-semibold text-brand-dark tabular-nums whitespace-nowrap">
                                                 {p.tankCapacity || 10} ลิตร
