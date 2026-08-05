@@ -209,7 +209,7 @@ export function QrCodeTool() {
             {/* Saved list */}
             <div className="rounded-xl border border-brand-line bg-white shadow-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-line bg-brand-cloud">
-                    <h2 className="text-sm font-bold text-brand-ink">QR Code ที่บันทึกไว้ ({codes.length} รายการ)</h2>
+                    <h2 className="text-sm font-bold text-brand-ink">QR Code ที่บันทึกไว้ ({codes.length.toLocaleString('th-TH')} รายการ)</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-250">
@@ -305,7 +305,7 @@ export function QrCodeTool() {
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-brand-line text-xs text-brand-muted">
                         <span>
-                            แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, codes.length)} จาก {codes.length} รายการ
+                            แสดง {((page - 1) * PAGE_SIZE + 1).toLocaleString('th-TH')}–{Math.min(page * PAGE_SIZE, codes.length).toLocaleString('th-TH')} จาก {codes.length.toLocaleString('th-TH')} รายการ
                         </span>
                         <div className="flex items-center gap-2">
                             <button

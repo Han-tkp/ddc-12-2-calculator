@@ -380,9 +380,10 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                                                 <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
                                                     <span className="text-slate-500">เคมี/ถัง</span>
                                                     <span className="font-semibold text-amber-700">
-                                                        {msg.formula.mix_type === 2
-                                                            ? `${(10000 * msg.formula.C / msg.formula.S).toFixed(0)}`
-                                                            : `${(10000 * msg.formula.C / (msg.formula.C + msg.formula.S)).toFixed(0)}`} มล.
+                                                        {(msg.formula.mix_type === 2
+                                                            ? (10000 * msg.formula.C / msg.formula.S)
+                                                            : (10000 * msg.formula.C / (msg.formula.C + msg.formula.S))
+                                                        ).toLocaleString('th-TH', { maximumFractionDigits: 0 })} มล.
                                                     </span>
                                                 </div>
                                             </div>

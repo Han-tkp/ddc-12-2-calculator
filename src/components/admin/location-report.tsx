@@ -70,7 +70,7 @@ export function LocationReport({ locations }: LocationReportProps) {
                     {showAll ? (
                         <>แสดงน้อยลง <ChevronUp className="h-4 w-4" /></>
                     ) : (
-                        <>ดูทั้งหมด ({locations.length} สถานที่) <ChevronDown className="h-4 w-4" /></>
+                        <>ดูทั้งหมด ({locations.length.toLocaleString('th-TH')} สถานที่) <ChevronDown className="h-4 w-4" /></>
                     )}
                 </button>
             )}

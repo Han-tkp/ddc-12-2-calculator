@@ -188,7 +188,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                             </CardDescription>
                             <CardTitle className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
                                 <Activity className="h-6 w-6 text-brand" />
-                                {initialCalcData.length} รายการ
+                                {initialCalcData.length.toLocaleString('th-TH')} รายการ
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -203,7 +203,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                             </CardDescription>
                             <CardTitle className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
                                 <Droplets className="h-6 w-6 text-brand" />
-                                {(initialCalcData.reduce((acc, c) => acc + (Number(c.V_total) || 0), 0) / 1000).toFixed(2)} ลิตร
+                                {(initialCalcData.reduce((acc, c) => acc + (Number(c.V_total) || 0), 0) / 1000).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ลิตร
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -218,7 +218,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                             </CardDescription>
                             <CardTitle className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
                                 <FlaskConical className="h-6 w-6 text-brand" />
-                                {profiles.length} สูตร
+                                {profiles.length.toLocaleString('th-TH')} สูตร
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -337,8 +337,8 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                         {catalogTotalPages > 1 && (
                             <div className="flex items-center justify-between gap-3 text-xs text-brand-muted">
                                 <span>
-                                    แสดง {(catalogPage - 1) * CATALOG_PAGE_SIZE + 1}–
-                                    {Math.min(catalogPage * CATALOG_PAGE_SIZE, filteredProfiles.length)} จาก {filteredProfiles.length} สูตร
+                                    แสดง {((catalogPage - 1) * CATALOG_PAGE_SIZE + 1).toLocaleString('th-TH')}–
+                                    {Math.min(catalogPage * CATALOG_PAGE_SIZE, filteredProfiles.length).toLocaleString('th-TH')} จาก {filteredProfiles.length.toLocaleString('th-TH')} สูตร
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button

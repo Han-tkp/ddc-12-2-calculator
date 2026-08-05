@@ -210,8 +210,8 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                             <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
                                                 {formatNumber(log.V_total)} มล.
                                             </span>
-                                            <div className="text-xs text-slate-500 font-medium">({(log.V_total / 1000).toFixed(2)} ลิตร)</div>
-                                            <div className="text-[11px] text-slate-400">พ่น {log.N} หลัง</div>
+                                            <div className="text-xs text-slate-500 font-medium">({(log.V_total / 1000).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ลิตร)</div>
+                                            <div className="text-[11px] text-slate-400">พ่น {Number(log.N).toLocaleString('th-TH')} หลัง</div>
                                         </td>
                                     </tr>
                                 );
