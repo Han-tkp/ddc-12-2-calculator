@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
+import { formatRAUnit } from '@/lib/calculations';
 import type { FormulaVariable } from '@/lib/formula-engine';
 import { parseFile, fileToFormulaVariables, type ParsedFile } from '@/lib/file-import';
 import { ResultHelpEditor } from '@/components/calculator/result-help-editor';
@@ -370,7 +371,7 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                                                 </div>
                                                 <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
                                                     <span className="text-slate-500">RA</span>
-                                                    <span className="font-semibold text-emerald-700">{msg.formula.RA} {msg.formula.RA_unit}</span>
+                                                    <span className="font-semibold text-emerald-700">{msg.formula.RA} {formatRAUnit(msg.formula.RA_unit)}</span>
                                                 </div>
                                                 <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
                                                     <span className="text-slate-500">ถัง</span>

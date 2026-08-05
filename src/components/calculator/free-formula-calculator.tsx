@@ -344,6 +344,17 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
                     </div>
                 </div>
             )}
+            {selectedVar && (
+                <div className="flex items-center gap-2 -mt-2">
+                    <span className="text-xs text-slate-400 shrink-0 min-w-[80px] text-right pr-1">คำอธิบาย:</span>
+                    <Input
+                        value={selectedVar.description || ''}
+                        onChange={(e) => updateVar(selectedVar.id, 'description', e.target.value)}
+                        className="flex-1 h-8 text-xs bg-white border-slate-200 focus:border-brand/60"
+                        placeholder="อธิบายว่าตัวแปรนี้คืออะไร/ใช้ทำอะไร (ไม่บังคับ)"
+                    />
+                </div>
+            )}
 
             {/* Functions reference */}
             {showFunctions && (

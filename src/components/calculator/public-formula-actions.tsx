@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { convertRA } from '@/lib/calculations';
 
 interface PublicProfile {
     id: string;
@@ -112,7 +113,7 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                             <div className="space-y-1"><Label>สารออกฤทธิ์ (C)</Label><Input type="number" min="0.0001" step="any" value={form.C} onChange={(event) => setForm({ ...form, C: Number(event.target.value) })} required /></div>
                             <div className="space-y-1"><Label>ตัวทำละลาย (S)</Label><Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required /></div>
                             <div className="space-y-1"><Label>อัตราพ่น</Label><Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>หน่วย</Label><Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA_unit: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
+                            <div className="space-y-1"><Label>หน่วย</Label><Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1"><Label>รูปแบบการผสม</Label><Select value={String(form.mix_type)} onValueChange={(value) => setForm({ ...form, mix_type: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">แบบผสมให้ได้</SelectItem><SelectItem value="2">แบบผสมกับ</SelectItem></SelectContent></Select></div>

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, Upload, Image as ImageIcon, CheckCircle2, AlertTriangle, Clock, FlaskConical, FileText, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
+import { convertRA } from '@/lib/calculations';
 import { ResultHelpEditor } from './result-help-editor';
 import { FormulaTrialPreview } from './formula-trial-preview';
 
@@ -259,13 +260,13 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                             </div>
                             <div className="space-y-1">
                                 <Label className="font-semibold text-slate-700">หน่วยอัตราพ่น</Label>
-                                <Select value={RAUnit} onValueChange={(val: any) => setRAUnit(val)}>
+                                <Select value={RAUnit} onValueChange={(val: 'L' | 'cc') => { setRA(prev => convertRA(prev, RAUnit, val)); setRAUnit(val); }}>
                                     <SelectTrigger className="bg-white">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="L">ลิตร (L)</SelectItem>
-                                        <SelectItem value="cc">มิลลิลิตร / มล. (cc)</SelectItem>
+                                        <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

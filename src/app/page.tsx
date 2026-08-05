@@ -8,6 +8,7 @@ import { Calculator, LogIn, LayoutDashboard, LogOut, User, Plus, Zap } from 'luc
 import Image from 'next/image';
 
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
+import { AutoScrollToCalculator } from '@/components/auto-scroll-to-calculator';
 
 export default async function Home() {
   const session = await auth();
@@ -123,9 +124,10 @@ export default async function Home() {
           </div>
 
           {/* Calculator Card */}
-          <div className="max-w-4xl mx-auto relative z-10 perspective-1000">
+          <div id="calculator-card" className="max-w-4xl mx-auto relative z-10 perspective-1000 scroll-mt-20">
             <CalculatorForm />
           </div>
+          <AutoScrollToCalculator />
         </div>
       </div>
 

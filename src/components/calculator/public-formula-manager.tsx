@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
+import { convertRA } from '@/lib/calculations';
 import { ResultHelpEditor } from './result-help-editor';
 import { FormulaTrialPreview } from './formula-trial-preview';
 
@@ -28,7 +29,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
     const [C, setC] = useState<number>(1);
     const [S, setS] = useState<number>(79);
     const [RA, setRA] = useState<number>(1);
-    const [RAUnit, setRAUnit] = useState<'L' | 'cc'>('L');
+    const [RAUnit, setRAUnit] = useState<'L' | 'cc'>('cc');
     const [mixType, setMixType] = useState<number>(2); // 1 = ผสมให้ได้, 2 = ผสมกับ
     const [A0, setA0] = useState<number>(1000);
     const [tankCapacity, setTankCapacity] = useState<number>(10);
@@ -244,13 +245,13 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
 
                             <div className="space-y-1">
                                 <Label className="font-semibold text-slate-700">หน่วยอัตราพ่น</Label>
-                                <Select value={RAUnit} onValueChange={(val: any) => setRAUnit(val)}>
+                                <Select value={RAUnit} onValueChange={(val: 'L' | 'cc') => { setRA(prev => convertRA(prev, RAUnit, val)); setRAUnit(val); }}>
                                     <SelectTrigger className="bg-white">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="L">ลิตร (L)</SelectItem>
-                                        <SelectItem value="cc">มิลลิลิตร / มล. (cc)</SelectItem>
+                                        <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

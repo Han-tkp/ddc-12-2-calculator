@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { calculationSchema } from '@/lib/validations';
-import { calculate, CalculationInput, CalculationResult } from '@/lib/calculations';
+import { calculate, convertRA, CalculationInput, CalculationResult } from '@/lib/calculations';
 import { runFormula, computeGenericFormula } from '@/lib/formula-interpreter';
 import { parseFormulaDefinition, type FormulaDefinition } from '@/lib/formula-schema';
 import type { ComputedVariable } from '@/lib/formula-engine';
@@ -40,7 +40,7 @@ export function useCalculatorEngine() {
             C: 0,
             S: 0,
             RA: 0,
-            RA_unit: 'L',
+            RA_unit: 'cc',
             A0: 1000,
             A_house: 100,
             N: 0,
@@ -116,6 +116,15 @@ export function useCalculatorEngine() {
     useEffect(() => {
         loadProfiles();
     }, [loadProfiles]);
+
+    // Switching L <-> cc should convert the already-typed RA value, not leave it
+    // stale in the wrong unit (1 would silently mean 1 cc instead of 1 L).
+    const handleRAUnitChange = (unit: 'L' | 'cc') => {
+        const currentUnit = getValues('RA_unit') as 'L' | 'cc';
+        const currentRA = getValues('RA');
+        setValue('RA', convertRA(currentRA, currentUnit, unit));
+        setValue('RA_unit', unit);
+    };
 
     const handlePresetChange = (presetId: string) => {
         setSelectedPreset(presetId);
@@ -267,6 +276,6 @@ export function useCalculatorEngine() {
         genericFormValues, setGenericFormValues, isCalculating, gpsStatus, coords,
         dbPresets, isGenericSelected,
         // handlers
-        requestGPS, handleLocationChange, handlePresetChange, handleCalculateAndSave, handleReset,
+        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCalculateAndSave, handleReset,
     };
 }

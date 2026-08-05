@@ -12,6 +12,7 @@ import { AiMcpChatbot, formulaSchemaToVariables } from '@/components/ai/ai-mcp-c
 import type { FormulaSchema } from '@/components/ai/ai-mcp-chatbot';
 import type { FormulaVariable } from '@/lib/formula-engine';
 import { FreeFormulaCalculator } from '@/components/calculator/free-formula-calculator';
+import { formatRAUnit } from '@/lib/calculations';
 import {
     LayoutDashboard,
     Layers,
@@ -310,7 +311,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                                 {p.C} : {p.S}
                                             </td>
                                             <td className="p-3 text-center font-semibold text-brand-ink tabular-nums whitespace-nowrap">
-                                                {p.RA} {p.RA_unit} / {p.A0 || 1000} ตร.ม.
+                                                {p.RA} {formatRAUnit(p.RA_unit)} / {p.A0 || 1000} ตร.ม.
                                             </td>
                                             <td className="p-3 text-center font-semibold text-brand-dark tabular-nums whitespace-nowrap">
                                                 {p.tankCapacity || 10} ลิตร

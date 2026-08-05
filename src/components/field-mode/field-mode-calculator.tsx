@@ -52,7 +52,7 @@ export function FieldModeCalculator() {
         result, calculatedInput, genericResult, selectedPreset, selectedFormula,
         genericFormValues, setGenericFormValues, isCalculating, gpsStatus, coords,
         dbPresets, isGenericSelected,
-        requestGPS, handleLocationChange, handlePresetChange, handleCalculateAndSave, handleReset,
+        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCalculateAndSave, handleReset,
     } = useCalculatorEngine();
 
     const [mapOpen, setMapOpen] = useState(false);
@@ -250,7 +250,7 @@ export function FieldModeCalculator() {
                                 <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>อัตราพ่น</label>
                                 <div className="flex gap-1">
                                     <Input type="number" step="0.01" {...register('RA', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
-                                    <Select onValueChange={(val) => setValue('RA_unit', val as 'L' | 'cc')} value={watchedValues.RA_unit}>
+                                    <Select onValueChange={(val) => handleRAUnitChange(val as 'L' | 'cc')} value={watchedValues.RA_unit}>
                                         <SelectTrigger className="w-16 h-10 text-xs bg-white shrink-0">
                                             <SelectValue />
                                         </SelectTrigger>

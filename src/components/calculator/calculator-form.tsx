@@ -16,6 +16,7 @@ import { GenericFormulaResults } from './generic-formula-results';
 import { LabelGuide } from './label-guide';
 import { LocationPickerWrapper } from './location-picker-wrapper';
 import { useCalculatorEngine } from './use-calculator-engine';
+import { PresetCombobox } from './preset-combobox';
 import type { FormulaDefinition } from '@/lib/formula-schema';
 
 export function CalculatorForm() {
@@ -24,7 +25,7 @@ export function CalculatorForm() {
         result, calculatedInput, genericResult, selectedPreset, selectedFormula,
         genericFormValues, setGenericFormValues, isCalculating, gpsStatus, coords,
         dbPresets, isGenericSelected,
-        requestGPS, handleLocationChange, handlePresetChange, handleCalculateAndSave, handleReset,
+        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCalculateAndSave, handleReset,
     } = useCalculatorEngine();
 
     return (
@@ -58,23 +59,7 @@ export function CalculatorForm() {
                                 </Label>
                                 <LabelGuide />
                             </div>
-                            <Select onValueChange={handlePresetChange} value={selectedPreset}>
-                                <SelectTrigger className="glass-input h-11 sm:h-12 bg-white/50 backdrop-blur-sm border-slate-200/50 focus:ring-brand/20 hover:bg-white/80 transition-all text-xs sm:text-sm">
-                                    <SelectValue placeholder="เลือกสูตร..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {dbPresets.map((preset) => (
-                                        <SelectItem key={preset.id} value={String(preset.id)}>
-                                            <span className="font-medium text-xs sm:text-sm">{preset.name}</span>
-                                            {preset.id !== 'other' && (
-                                                <span className="text-[11px] text-slate-400 ml-2">
-                                                    ({preset.C}:{preset.S})
-                                                </span>
-                                            )}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <PresetCombobox presets={dbPresets} value={selectedPreset} onValueChange={handlePresetChange} />
                         </div>
 
                         {/* Agency Input (Point 15) */}
@@ -244,7 +229,7 @@ export function CalculatorForm() {
                                     className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
                                 />
                                 <Select
-                                    onValueChange={(val) => setValue('RA_unit', val as 'L' | 'cc')}
+                                    onValueChange={(val) => handleRAUnitChange(val as 'L' | 'cc')}
                                     value={watchedValues.RA_unit}
                                 >
                                     <SelectTrigger className="w-20 bg-white/60 h-11 sm:h-12 text-xs sm:text-sm">

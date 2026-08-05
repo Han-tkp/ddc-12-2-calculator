@@ -121,7 +121,7 @@ export function CalculationMap({ points }: CalculationMapProps) {
                         </div>
                         <div style="font-size: 12px; color: #64748b;">
                             ${point.location || 'ไม่ระบุสถานที่'}<br/>
-                            ปริมาณรวม: <strong>${point.V_total.toFixed(2)} cc</strong><br/>
+                            ปริมาณรวม: <strong>${point.V_total.toFixed(2)} มล.</strong><br/>
                             ${date}
                         </div>
                     </div>

@@ -27,6 +27,7 @@ import { CheckCircle2, Plus, Pencil, Trash2, Loader2, Save, Upload } from 'lucid
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { CustomChemicalModal } from '@/components/calculator/custom-chemical-modal';
+import { convertRA } from '@/lib/calculations';
 
 interface Profile {
     id: string;
@@ -316,7 +317,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                     <Label htmlFor="add-RA_unit">หน่วย</Label>
                                     <Select
                                         value={formData.RA_unit}
-                                        onValueChange={(value) => setFormData({ ...formData, RA_unit: value })}
+                                        onValueChange={(value: 'L' | 'cc') => setFormData({ ...formData, RA: convertRA(formData.RA, formData.RA_unit as 'L' | 'cc', value), RA_unit: value })}
                                     >
                                         <SelectTrigger id="add-RA_unit">
                                             <SelectValue />
@@ -459,7 +460,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                     <Label htmlFor="edit-RA_unit">หน่วย</Label>
                                     <Select
                                         value={editData.RA_unit}
-                                        onValueChange={(value) => setEditData({ ...editData, RA_unit: value })}
+                                        onValueChange={(value: 'L' | 'cc') => setEditData({ ...editData, RA: convertRA(editData.RA, editData.RA_unit as 'L' | 'cc', value), RA_unit: value })}
                                     >
                                         <SelectTrigger id="edit-RA_unit">
                                             <SelectValue />

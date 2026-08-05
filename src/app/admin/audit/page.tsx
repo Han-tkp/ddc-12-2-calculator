@@ -9,7 +9,7 @@ import { DateRangeFilter } from '@/components/admin/date-range-filter';
 import { RoleFilter } from '@/components/admin/role-filter';
 import { SearchInput } from '@/components/admin/search-input';
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 20;
 
 async function getFormulaAuditLogs(pageStr: string | undefined, fromDateStr?: string, toDateStr?: string, role?: string, q?: string) {
     const currentPage = parseInt(pageStr || '1', 10);

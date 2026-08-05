@@ -10,20 +10,31 @@ import { UserPlus, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { UserActions } from '@/components/admin/user-actions';
+import { SearchInput } from '@/components/admin/search-input';
 
-export default async function UsersPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
     const session = await auth();
-    const { page } = await searchParams;
+    const { page, q } = await searchParams;
     const currentPage = parseInt(page || '1', 10);
-    const pageSize = 100;
+    const pageSize = 20;
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data: users, count, error } = await supabaseAdmin
+    let query = supabaseAdmin
         .from('users')
         .select('*', { count: 'exact' })
-        .order('createdAt', { ascending: false })
-        .range(from, to);
+        .order('createdAt', { ascending: false });
+
+    // Dev-only account, kept out of the admin-facing list — still logs in normally.
+    if (process.env.SUPER_ADMIN_EMAIL) {
+        query = query.neq('email', process.env.SUPER_ADMIN_EMAIL);
+    }
+
+    if (q && q.trim()) {
+        query = query.ilike('email', `%${q.trim()}%`);
+    }
+
+    const { data: users, count, error } = await query.range(from, to);
 
     if (error) {
         console.error('Error fetching users:', error);
@@ -44,6 +55,10 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                         เพิ่มผู้ใช้งาน
                     </Button>
                 </Link>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full sm:w-96">
+                <SearchInput placeholder="ค้นหาอีเมล..." />
             </div>
 
             <div className="glass-card rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6 w-full">

@@ -11,7 +11,7 @@ import { SearchInput } from '@/components/admin/search-input';
 
 async function getProfiles(pageStr: string | undefined, q?: string) {
     const currentPage = parseInt(pageStr || '1', 10);
-    const pageSize = 100;
+    const pageSize = 20;
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
 

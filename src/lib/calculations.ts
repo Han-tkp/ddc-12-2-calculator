@@ -30,6 +30,24 @@ export interface CalculationResult {
 }
 
 /**
+ * แปลงค่า RA ระหว่างหน่วยลิตร/มล. ให้ตัวเลขที่ผู้ใช้พิมพ์ไว้ตรงกับหน่วยใหม่เสมอ
+ * เมื่อสลับ dropdown หน่วย (แทนที่จะปล่อยค่าเดิมค้างไว้ผิดหน่วย)
+ */
+export function convertRA(value: number, from: 'L' | 'cc', to: 'L' | 'cc'): number {
+    if (from === to || !Number.isFinite(value)) return value;
+    const converted = from === 'L' ? value * 1000 : value / 1000;
+    return Math.round(converted * 1e6) / 1e6;
+}
+
+/**
+ * แปลงหน่วย RA ('L'/'cc' ที่เก็บในฐานข้อมูล) เป็นคำไทยที่ผู้ใช้อ่านได้ — จุดกลางจุดเดียว
+ * กันไม่ให้ค่าดิบอย่าง "cc" หลุดออกไปแสดงตรงๆ ในหน้าจอต่างๆ
+ */
+export function formatRAUnit(unit: string): string {
+    return unit === 'L' ? 'ลิตร' : 'มล.';
+}
+
+/**
  * คำนวณปริมาณสารเคมีและตัวทำละลาย
  */
 export function calculate(input: CalculationInput): CalculationResult {

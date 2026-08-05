@@ -5,22 +5,29 @@ import { Pagination } from '@/components/ui/pagination';
 import { Inbox, MessageSquareText, FlaskConical, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { SearchInput } from '@/components/admin/search-input';
 
 export const dynamic = 'force-dynamic';
 
-export default async function InboxPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-    const { page } = await searchParams;
+export default async function InboxPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
+    const { page, q } = await searchParams;
     const currentPage = parseInt(page || '1', 10);
-    const pageSize = 50;
+    const pageSize = 20;
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
 
     // Fetch feedbacks
-    const { data: feedbacks, count, error } = await supabase
+    let query = supabase
         .from('feedbacks')
         .select('*', { count: 'exact' })
-        .order('createdAt', { ascending: false })
-        .range(from, to);
+        .order('createdAt', { ascending: false });
+
+    if (q && q.trim()) {
+        const keyword = `%${q.trim()}%`;
+        query = query.or(`organization.ilike.${keyword},contact.ilike.${keyword},reason.ilike.${keyword}`);
+    }
+
+    const { data: feedbacks, count, error } = await query.range(from, to);
 
     if (error) {
         console.error('Error fetching feedbacks:', error);
@@ -38,6 +45,10 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                     <h1 className="text-2xl font-bold tracking-tight text-slate-800">กล่องข้อความ</h1>
                     <p className="text-slate-500">ข้อเสนอแนะและคำขอเพิ่มสูตรจากผู้ใช้งาน</p>
                 </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full sm:w-96">
+                <SearchInput placeholder="ค้นหาหน่วยงาน ผู้ติดต่อ หรือเหตุผล..." />
             </div>
 
             <div className="glass-card rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6 w-full">
