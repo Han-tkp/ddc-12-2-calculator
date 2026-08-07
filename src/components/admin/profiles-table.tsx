@@ -289,7 +289,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="add-S">น้ำมัน/น้ำ (S)</Label>
+                                    <Label htmlFor="add-S">น้ำมัน/น้ำ (S) (ลิตร)</Label>
                                     <Input
                                         id="add-S"
                                         type="number"
@@ -432,7 +432,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-S">น้ำมัน/น้ำ (S)</Label>
+                                    <Label htmlFor="edit-S">น้ำมัน/น้ำ (S) (ลิตร)</Label>
                                     <Input
                                         id="edit-S"
                                         type="number"

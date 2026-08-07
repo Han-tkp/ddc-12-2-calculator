@@ -218,7 +218,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ (S)</Label>
+                                    <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ (S) (ลิตร)</Label>
                                     <Input
                                         type="number"
                                         step="any"

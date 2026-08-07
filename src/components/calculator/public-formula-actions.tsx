@@ -111,7 +111,7 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                         <div className="space-y-1"><Label>คำอธิบาย</Label><Input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1"><Label>สารออกฤทธิ์ (C)</Label><Input type="number" min="0.0001" step="any" value={form.C} onChange={(event) => setForm({ ...form, C: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>ตัวทำละลาย (S)</Label><Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required /></div>
+                            <div className="space-y-1"><Label>ตัวทำละลาย (S) (ลิตร)</Label><Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required /></div>
                             <div className="space-y-1"><Label>อัตราพ่น</Label><Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required /></div>
                             <div className="space-y-1"><Label>หน่วย</Label><Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
                         </div>
