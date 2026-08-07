@@ -154,7 +154,7 @@ export function CalculatorForm() {
                         <div className="bento-item bento-item-large bg-linear-to-br from-brand/5 to-brand/5 border-brand/20 p-4 sm:p-5">
                             <Label className="flex items-center gap-2 text-base sm:text-lg font-semibold text-slate-700 mb-3 sm:mb-4 leading-relaxed">
                                 <HomeIcon className="h-5 w-5 text-brand shrink-0" />
-                                จำนวนบ้านที่พ่น (N)
+                                จำนวนบ้านที่พ่น
                             </Label>
                             <Input
                                 type="number"

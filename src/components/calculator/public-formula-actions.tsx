@@ -45,6 +45,8 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
         tankCapacity: profile.tankCapacity || 10,
         location: '',
     });
+    // ตัวช่วยเลือกหน่วยของ C/S เฉพาะฝั่ง UI เท่านั้น (S ไม่มีคอลัมน์หน่วยใน DB — ไม่ส่งไปกับ payload)
+    const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
 
     if (!profile.canManage) return null;
 
@@ -109,11 +111,14 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                     <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); setConfirmation('update'); }}>
                         <div className="space-y-1"><Label>ชื่อสูตร</Label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></div>
                         <div className="space-y-1"><Label>คำอธิบาย</Label><Input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1"><Label>สารออกฤทธิ์ (C)</Label><Input type="number" min="0.0001" step="any" value={form.C} onChange={(event) => setForm({ ...form, C: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>ตัวทำละลาย (S) (ลิตร)</Label><Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required /></div>
+                            <div className="space-y-1"><Label>ตัวทำละลาย (S)</Label><Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required /></div>
+                            <div className="space-y-1"><Label>หน่วย S</Label><Select value={SUnit} onValueChange={(value: 'L' | 'cc') => { setForm({ ...form, C: convertRA(form.C, SUnit, value), S: convertRA(form.S, SUnit, value) }); setSUnit(value); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1"><Label>อัตราพ่น</Label><Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>หน่วย</Label><Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
+                            <div className="space-y-1"><Label>หน่วยอัตราพ่น</Label><Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1"><Label>รูปแบบการผสม</Label><Select value={String(form.mix_type)} onValueChange={(value) => setForm({ ...form, mix_type: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">แบบผสมให้ได้</SelectItem><SelectItem value="2">แบบผสมกับ</SelectItem></SelectContent></Select></div>

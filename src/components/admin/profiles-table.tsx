@@ -74,6 +74,9 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
     const [formData, setFormData] = useState(initialFormData);
     const [editData, setEditData] = useState(initialFormData);
+    // ตัวช่วยเลือกหน่วยของ C/S เฉพาะฝั่ง UI เท่านั้น (S ไม่มีคอลัมน์หน่วยใน DB — ไม่ส่งไปกับ payload)
+    const [addSUnit, setAddSUnit] = useState<'L' | 'cc'>('L');
+    const [editSUnit, setEditSUnit] = useState<'L' | 'cc'>('L');
 
     const openEditDialog = (profile: Profile) => {
         setEditingProfileId(profile.id);
@@ -276,7 +279,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="add-C">ยาฆ่ายุง (C)</Label>
                                     <Input
@@ -289,7 +292,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="add-S">น้ำมัน/น้ำ (S) (ลิตร)</Label>
+                                    <Label htmlFor="add-S">น้ำมัน/น้ำ (S)</Label>
                                     <Input
                                         id="add-S"
                                         type="number"
@@ -298,6 +301,25 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         onChange={(e) => setFormData({ ...formData, S: parseFloat(e.target.value) || 0 })}
                                         required
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="add-S-unit">หน่วย S</Label>
+                                    <Select
+                                        value={addSUnit}
+                                        onValueChange={(val: 'L' | 'cc') => {
+                                            // แปลง C พร้อม S ตอนสลับหน่วย เพื่อให้สัดส่วน C:S ไม่เปลี่ยน
+                                            setFormData({ ...formData, C: convertRA(formData.C, addSUnit, val), S: convertRA(formData.S, addSUnit, val) });
+                                            setAddSUnit(val);
+                                        }}
+                                    >
+                                        <SelectTrigger id="add-S-unit">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร (L)</SelectItem>
+                                            <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
@@ -419,7 +441,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-C">ยาฆ่ายุง (C)</Label>
                                     <Input
@@ -432,7 +454,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-S">น้ำมัน/น้ำ (S) (ลิตร)</Label>
+                                    <Label htmlFor="edit-S">น้ำมัน/น้ำ (S)</Label>
                                     <Input
                                         id="edit-S"
                                         type="number"
@@ -441,6 +463,24 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         onChange={(e) => setEditData({ ...editData, S: parseFloat(e.target.value) || 0 })}
                                         required
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-S-unit">หน่วย S</Label>
+                                    <Select
+                                        value={editSUnit}
+                                        onValueChange={(val: 'L' | 'cc') => {
+                                            setEditData({ ...editData, C: convertRA(editData.C, editSUnit, val), S: convertRA(editData.S, editSUnit, val) });
+                                            setEditSUnit(val);
+                                        }}
+                                    >
+                                        <SelectTrigger id="edit-S-unit">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร (L)</SelectItem>
+                                            <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 

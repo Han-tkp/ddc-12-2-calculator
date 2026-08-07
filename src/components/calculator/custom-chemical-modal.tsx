@@ -24,6 +24,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
     const [description, setDescription] = useState('');
     const [C, setC] = useState<number>(1);
     const [S, setS] = useState<number>(4);
+    const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
     const [RA, setRA] = useState<number>(75);
     const [RAUnit, setRAUnit] = useState<'L' | 'cc'>('cc');
     const [mixType, setMixType] = useState<number>(1); // 1 = แบบผสมให้ได้ - รวมปริมาตรคงที่, 2 = แบบผสมกับ - เติมสารทบน้ำมัน
@@ -223,7 +224,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                                 </Select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div className="space-y-1">
                                     <Label className="font-semibold text-slate-700">สารเคมีออกฤทธิ์ (C)</Label>
                                     <Input
@@ -235,7 +236,7 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ (S) (ลิตร)</Label>
+                                    <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ (S)</Label>
                                     <Input
                                         type="number"
                                         step="any"
@@ -243,6 +244,26 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                                         onChange={(e) => setS(Number(e.target.value))}
                                         className="bg-white"
                                     />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="font-semibold text-slate-700">หน่วย S</Label>
+                                    <Select
+                                        value={SUnit}
+                                        onValueChange={(val: 'L' | 'cc') => {
+                                            // แปลง C พร้อม S ตอนสลับหน่วย เพื่อให้สัดส่วน C:S ไม่เปลี่ยน
+                                            setC(prev => convertRA(prev, SUnit, val));
+                                            setS(prev => convertRA(prev, SUnit, val));
+                                            setSUnit(val);
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-white">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร (L)</SelectItem>
+                                            <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </div>

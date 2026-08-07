@@ -8,15 +8,11 @@ import { DashboardCharts } from '@/components/admin/dashboard-charts';
 import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
-import { AiMcpChatbot, formulaSchemaToVariables } from '@/components/ai/ai-mcp-chatbot';
-import type { FormulaSchema } from '@/components/ai/ai-mcp-chatbot';
-import type { FormulaVariable } from '@/lib/formula-engine';
 import { FreeFormulaCalculator } from '@/components/calculator/free-formula-calculator';
 import { formatRAUnit } from '@/lib/calculations';
 import {
     LayoutDashboard,
     Layers,
-    Bot,
     MapPin,
     Calculator,
     FlaskConical,
@@ -39,22 +35,6 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
     const [activeTab, setActiveTab] = useState(tabParam || 'overview');
-
-    // Calculator state — receives formulas from chatbot
-    const [calcVars, setCalcVars] = useState<FormulaVariable[] | null>(null);
-    const [calcKey, setCalcKey] = useState(0);
-
-    const handleSendToCalculator = (formula: FormulaSchema) => {
-        setCalcVars(formulaSchemaToVariables(formula));
-        setCalcKey((k) => k + 1);
-        setActiveTab('playground');
-    };
-
-    const handleSendFileToCalculator = (vars: FormulaVariable[]) => {
-        setCalcVars(vars);
-        setCalcKey((k) => k + 1);
-        setActiveTab('playground');
-    };
 
     // Formula List State
     const [profiles, setProfiles] = useState<any[]>(initialProfiles);
@@ -160,13 +140,9 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                             <Layers className="h-4 w-4" />
                             3. คลังสูตร
                         </TabsTrigger>
-                        <TabsTrigger value="ai-assistant" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand shadow-xs">
-                            <Bot className="h-4 w-4" />
-                            4. เพิ่มสารเคมีด้วย AI (Beta)
-                        </TabsTrigger>
                         <TabsTrigger value="playground" className="rounded-xl gap-2 text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand shadow-xs">
                             <FlaskConical className="h-4 w-4" />
-                            5. เพิ่มสูตรสารเคมี
+                            4. เพิ่มสูตรสารเคมี
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -365,13 +341,6 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                 </Card>
             </TabsContent>
 
-            {/* TAB 3: เพิ่มสารเคมีด้วย AI (MCP Chatbot) */}
-            <TabsContent value="ai-assistant" className="space-y-6 mt-0">
-                <AiMcpChatbot onFormulaSaved={async () => {
-                    await refreshProfiles();
-                }} onSendToCalculator={handleSendToCalculator} onSendFileToCalculator={handleSendFileToCalculator} />
-            </TabsContent>
-
             {/* TAB 4: Playground ทดสอบสูตรอิสระ */}
             <TabsContent value="playground" className="space-y-6 mt-0">
                 <div className="flex items-center gap-2 p-4 bg-linear-to-r from-brand-soft to-brand-soft rounded-xl border border-brand/20">
@@ -381,7 +350,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                         <p className="text-xs text-brand-dark">กำหนดตัวแปร เขียนสูตรเอง คำนวณได้ทุกอย่าง เหมือนใช้ Excel</p>
                     </div>
                 </div>
-                <FreeFormulaCalculator key={calcKey} initialVariables={calcVars ?? undefined} />
+                <FreeFormulaCalculator />
             </TabsContent>
 
         </Tabs>

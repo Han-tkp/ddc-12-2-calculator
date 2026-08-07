@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical, Bot } from 'lucide-react';
+import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
 import { convertRA, formatRAUnit } from '@/lib/calculations';
@@ -28,6 +27,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
     const [description, setDescription] = useState('');
     const [C, setC] = useState<number>(1);
     const [S, setS] = useState<number>(79);
+    const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
     const [RA, setRA] = useState<number>(1);
     const [RAUnit, setRAUnit] = useState<'L' | 'cc'>('cc');
     const [mixType, setMixType] = useState<number>(2); // 1 = ผสมให้ได้, 2 = ผสมกับ
@@ -151,25 +151,34 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
                             <FlaskConical className="h-6 w-6 text-brand" />
-                            เพิ่มสูตรสารเคมีใหม่ (Public Catalog)
+                            เพิ่มสูตรสารเคมีใหม่ 
                         </DialogTitle>
                         <DialogDescription className="text-xs text-slate-500">
                             ระบบจะบันทึกประวัติการเพิ่มพร้อมพิกัดและเวลาที่ทำรายการอัตโนมัติ
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* AI Generator Button — opens chatbot page */}
-                    <Link href="/user?tab=ai-assistant" onClick={() => setIsOpen(false)}>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full bg-gradient-to-r from-brand/10 via-brand/10 to-brand/10 hover:from-brand/20 hover:via-brand/20 hover:to-brand/20 border-brand/20 text-brand-dark font-semibold text-xs gap-2 h-10 rounded-xl"
-                        >
-                            <Bot className="h-4 w-4 text-brand" />
-                            เพิ่มสูตรด้วย AI
-                        </Button>
-                    </Link>
+                    {/* Tracking metadata */}
+                        <div className="space-y-1">
+                            <Label className="font-semibold text-slate-700">ชื่อผู้ทำรายการ</Label>
+                            <Input
+                                placeholder="ระบุชื่อเพื่อให้ผู้ดูแลตรวจสอบย้อนหลัง"
+                                value={actorLabel}
+                                onChange={(e) => setActorLabel(e.target.value)}
+                            />
+                        </div>
 
+                        <div className="space-y-1">
+                            <Label className="font-semibold text-slate-700 flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5 text-red-500" /> สถานที่ปฏิบัติงาน / พื้นที่อ้างอิง
+                            </Label>
+                            <Input
+                                placeholder="เช่น อ.เมือง สงขลา (เพื่อการ Tracking ประวัติ)"
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                            />
+                        </div>
+    
                     <form onSubmit={handlePreSubmit} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1">
@@ -194,7 +203,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         {/* Mix Type & Dilution Ratios */}
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                             <div className="space-y-1">
-                                <Label className="font-semibold text-slate-700">รูปแบบการผสมยา *</Label>
+                                <Label className="font-semibold text-slate-700">รูปแบบการผสมยา</Label>
                                 <Select value={String(mixType)} onValueChange={(val) => setMixType(Number(val))}>
                                     <SelectTrigger className="bg-white">
                                         <SelectValue />
@@ -206,9 +215,9 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                 </Select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div className="space-y-1">
-                                    <Label className="font-semibold text-slate-700">สารเคมีออกฤทธิ์ (C)</Label>
+                                    <Label className="font-semibold text-slate-700">สารเคมีออกฤทธิ์</Label>
                                     <Input
                                         type="number"
                                         step="any"
@@ -218,7 +227,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ (S) (ลิตร)</Label>
+                                    <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ</Label>
                                     <Input
                                         type="number"
                                         step="any"
@@ -227,13 +236,32 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                         className="bg-white"
                                     />
                                 </div>
+                                <div className="space-y-1">
+                                    <Label className="font-semibold text-slate-700">หน่วย</Label>
+                                    <Select
+                                        value={SUnit}
+                                        onValueChange={(val: 'L' | 'cc') => {
+                                            setC(prev => convertRA(prev, SUnit, val));
+                                            setS(prev => convertRA(prev, SUnit, val));
+                                            setSUnit(val);
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-white">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร</SelectItem>
+                                            <SelectItem value="cc">มิลลิลิตร</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         </div>
 
                         {/* Spray Coverage & Tank Capacity */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-brand-soft/50 rounded-xl border border-brand-soft">
                             <div className="space-y-1">
-                                <Label className="font-semibold text-slate-700">อัตราการพ่น (RA)</Label>
+                                <Label className="font-semibold text-slate-700">อัตราการพ่น</Label>
                                 <Input
                                     type="number"
                                     step="any"
@@ -250,8 +278,8 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="L">ลิตร (L)</SelectItem>
-                                        <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
+                                        <SelectItem value="L">ลิตร</SelectItem>
+                                        <SelectItem value="cc">มิลลิลิตร</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -268,26 +296,6 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                             </div>
                         </div>
 
-                        {/* Tracking metadata */}
-                        <div className="space-y-1">
-                            <Label className="font-semibold text-slate-700">ชื่อผู้ทำรายการ</Label>
-                            <Input
-                                placeholder="ระบุชื่อเพื่อให้ผู้ดูแลตรวจสอบย้อนหลัง"
-                                value={actorLabel}
-                                onChange={(e) => setActorLabel(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <Label className="font-semibold text-slate-700 flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5 text-red-500" /> สถานที่ปฏิบัติงาน / พื้นที่อ้างอิง
-                            </Label>
-                            <Input
-                                placeholder="เช่น อ.เมือง สงขลา (เพื่อการ Tracking ประวัติ)"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                            />
-                        </div>
 
                         <ResultHelpEditor value={resultHelp} onChange={setResultHelp} />
 

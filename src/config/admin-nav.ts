@@ -1,34 +1,23 @@
 import {
     LayoutDashboard,
-    Bot,
     Settings,
     FileText,
     ClipboardList,
     Inbox,
-    Cpu,
     Users,
-    CreditCard,
     QrCode,
 } from 'lucide-react';
 
+// ซ่อนชั่วคราวจากเมนู (ไม่ได้ลบ route หรือ feature — เข้าตรงผ่าน URL ได้ตามปกติ):
+// - /admin/mcp   "ผู้ช่วยสร้างสูตร (AI)"
+// - /admin/ai    "ตั้งค่า AI Provider"
+// - /admin/billing "การเรียกเก็บเงิน"
+// อยากเปิดกลับมาเมื่อไหร่ก็เพิ่ม entry กลับเข้า array นี้ (ดู git history ของไฟล์นี้สำหรับโครงเดิม)
 export const adminNavItems = [
     {
         href: '/admin/dashboard',
         label: 'ภาพรวม',
         icon: LayoutDashboard
-    },
-    {
-        // Was "ระบบ AI / MCP" (misleading — this isn't MCP server config, that's /admin/ai).
-        // Absorbed the former /admin/playground (deleted): this page embeds the same
-        // FreeFormulaCalculator plus an AI chat, so it's the one place to build/test a formula.
-        href: '/admin/mcp',
-        label: 'ผู้ช่วยสร้างสูตร (AI)',
-        icon: Bot
-    },
-    {
-        href: '/admin/ai',
-        label: 'ตั้งค่า AI Provider',
-        icon: Cpu
     },
     {
         href: '/admin/profiles',
@@ -54,11 +43,6 @@ export const adminNavItems = [
         href: '/admin/users',
         label: 'จัดการผู้ใช้งาน',
         icon: Users
-    },
-    {
-        href: '/admin/billing',
-        label: 'การเรียกเก็บเงิน',
-        icon: CreditCard
     },
     {
         href: '/admin/qr-code',
