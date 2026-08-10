@@ -303,7 +303,7 @@ export function QrCodeTool() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-brand-line text-xs text-brand-muted">
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-brand-line text-xs text-brand-muted">
                         <span>
                             แสดง {((page - 1) * PAGE_SIZE + 1).toLocaleString('th-TH')}–{Math.min(page * PAGE_SIZE, codes.length).toLocaleString('th-TH')} จาก {codes.length.toLocaleString('th-TH')} รายการ
                         </span>

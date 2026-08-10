@@ -157,33 +157,33 @@ export function BulkEditProfilesModal({ profiles, open, onOpenChange, onDone }: 
                                 />
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 min-w-0">
                                     <Input
                                         type="number" step="any" value={row.C}
                                         onChange={(e) => updateRow(row.id, { C: parseFloat(e.target.value) || 0 })}
-                                        className="bg-white h-8 text-xs" title="สารเคมีออกฤทธิ์ (C)"
+                                        className="bg-white h-8 text-xs flex-1 min-w-0" title="สารเคมีออกฤทธิ์ (C)"
                                     />
                                     <Select value={row.CUnit} onValueChange={(v: 'L' | 'cc') => updateRow(row.id, { C: convertRA(row.C, row.CUnit, v), CUnit: v })}>
                                         <SelectTrigger className="w-16 h-8 text-xs bg-white shrink-0"><SelectValue /></SelectTrigger>
                                         <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
                                     </Select>
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 min-w-0">
                                     <Input
                                         type="number" step="any" value={row.S}
                                         onChange={(e) => updateRow(row.id, { S: parseFloat(e.target.value) || 0 })}
-                                        className="bg-white h-8 text-xs" title="ตัวทำละลาย (S)"
+                                        className="bg-white h-8 text-xs flex-1 min-w-0" title="ตัวทำละลาย (S)"
                                     />
                                     <Select value={row.SUnit} onValueChange={(v: 'L' | 'cc') => updateRow(row.id, { S: convertRA(row.S, row.SUnit, v), SUnit: v })}>
                                         <SelectTrigger className="w-16 h-8 text-xs bg-white shrink-0"><SelectValue /></SelectTrigger>
                                         <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
                                     </Select>
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 min-w-0">
                                     <Input
                                         type="number" step="any" value={row.RA}
                                         onChange={(e) => updateRow(row.id, { RA: parseFloat(e.target.value) || 0 })}
-                                        className="bg-white h-8 text-xs" title="อัตราการพ่น (RA)"
+                                        className="bg-white h-8 text-xs flex-1 min-w-0" title="อัตราการพ่น (RA)"
                                     />
                                     <Select value={row.RA_unit} onValueChange={(v: 'L' | 'cc') => updateRow(row.id, { RA: convertRA(row.RA, row.RA_unit, v), RA_unit: v })}>
                                         <SelectTrigger className="w-16 h-8 text-xs bg-white shrink-0"><SelectValue /></SelectTrigger>
@@ -193,10 +193,10 @@ export function BulkEditProfilesModal({ profiles, open, onOpenChange, onDone }: 
                                 <Input
                                     type="number" step="1" value={row.A0}
                                     onChange={(e) => updateRow(row.id, { A0: parseFloat(e.target.value) || 0 })}
-                                    className="bg-white h-8 text-xs" title="พื้นที่มาตรฐาน (A0)"
+                                    className="bg-white h-8 text-xs min-w-0" title="พื้นที่มาตรฐาน (A0)"
                                 />
                                 <Select value={String(row.mix_type)} onValueChange={(v) => updateRow(row.id, { mix_type: parseInt(v) })}>
-                                    <SelectTrigger className="h-8 text-xs bg-white"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 text-xs bg-white min-w-0"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="1">ผสมให้ได้</SelectItem>
                                         <SelectItem value="2">ผสมกับ</SelectItem>
@@ -206,7 +206,7 @@ export function BulkEditProfilesModal({ profiles, open, onOpenChange, onDone }: 
                                     value={row.description}
                                     onChange={(e) => updateRow(row.id, { description: e.target.value })}
                                     placeholder="คำอธิบาย"
-                                    className="bg-white h-8 text-xs"
+                                    className="bg-white h-8 text-xs min-w-0"
                                 />
                             </div>
                         </div>

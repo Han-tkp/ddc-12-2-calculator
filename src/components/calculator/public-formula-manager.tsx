@@ -284,13 +284,13 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         {/* Spray rate per area — replaces the removed tank-capacity field */}
                         <div className="p-3 bg-brand-soft/50 rounded-xl border border-brand-soft space-y-1">
                             <Label className="font-semibold text-slate-700">อัตราการพ่นต่อพื้นที่</Label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <Input
                                     type="number"
                                     step="any"
                                     value={RA}
                                     onChange={(e) => setRA(Number(e.target.value))}
-                                    className="bg-white flex-1"
+                                    className="bg-white flex-1 min-w-20"
                                 />
                                 <Select value={RAUnit} onValueChange={(val: 'L' | 'cc') => { setRA(prev => convertRA(prev, RAUnit, val)); setRAUnit(val); }}>
                                     <SelectTrigger className="bg-white w-24 shrink-0">
@@ -307,7 +307,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                                     step="1"
                                     value={A0}
                                     onChange={(e) => setA0(Number(e.target.value))}
-                                    className="bg-white flex-1"
+                                    className="bg-white flex-1 min-w-20"
                                 />
                                 <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                             </div>

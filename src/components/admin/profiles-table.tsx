@@ -15,12 +15,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Plus, Pencil, Trash2, Loader2, Save, Upload } from 'lucide-react';
+import { CheckCircle2, Plus, Pencil, Trash2, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { CustomChemicalModal } from '@/components/calculator/custom-chemical-modal';
 import { BulkEditProfilesModal } from './bulk-edit-profiles-modal';
 import { convertRA } from '@/lib/calculations';
 import { simplifyRatio, formatCSUnitLabel } from '@/lib/quantity';
@@ -245,7 +244,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         setPendingAction(null);
     };
 
-    const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
     const selectedProfiles = profiles.filter((p) => selectedIds.has(p.id));
@@ -253,7 +251,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
     return (
         <div className="space-y-4">
             {selectedIds.size > 0 && (
-                <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-brand-soft/60 border border-brand/20">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-brand-soft/60 border border-brand/20">
                     <span className="text-sm font-medium text-brand-dark">เลือกแล้ว {selectedIds.size} รายการ</span>
                     <div className="flex gap-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
@@ -266,18 +264,8 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                 </div>
             )}
 
-            {/* Add Buttons */}
-            <div className="flex items-center justify-end gap-2">
-                <Button
-                    type="button"
-                    onClick={() => setIsCustomModalOpen(true)}
-                    variant="outline"
-                    className="bg-brand-soft text-brand-dark border-brand/20 hover:bg-brand-soft font-semibold gap-2"
-                >
-                    <Upload className="h-4 w-4" />
-                    เพิ่มสูตร Custom (Drag & Drop ฉลาก)
-                </Button>
-
+            {/* Add Button */}
+            <div className="flex items-center justify-end">
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                         <Button className="bg-brand hover:bg-brand-dark text-white">
@@ -376,7 +364,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
                             <div className="space-y-2">
                                 <Label htmlFor="add-RA">อัตราการพ่นต่อพื้นที่</Label>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     <Input
                                         id="add-RA"
                                         type="number"
@@ -384,7 +372,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         value={formData.RA}
                                         onChange={(e) => setFormData({ ...formData, RA: parseFloat(e.target.value) || 0 })}
                                         required
-                                        className="flex-1"
+                                        className="flex-1 min-w-20"
                                     />
                                     <Select
                                         value={formData.RA_unit}
@@ -406,7 +394,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         value={formData.A0}
                                         onChange={(e) => setFormData({ ...formData, A0: parseFloat(e.target.value) || 0 })}
                                         required
-                                        className="flex-1"
+                                        className="flex-1 min-w-20"
                                     />
                                     <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                                 </div>
@@ -537,7 +525,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
                             <div className="space-y-2">
                                 <Label htmlFor="edit-RA">อัตราการพ่นต่อพื้นที่</Label>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     <Input
                                         id="edit-RA"
                                         type="number"
@@ -545,7 +533,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         value={editData.RA}
                                         onChange={(e) => setEditData({ ...editData, RA: parseFloat(e.target.value) || 0 })}
                                         required
-                                        className="flex-1"
+                                        className="flex-1 min-w-20"
                                     />
                                     <Select
                                         value={editData.RA_unit}
@@ -567,7 +555,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         value={editData.A0}
                                         onChange={(e) => setEditData({ ...editData, A0: parseFloat(e.target.value) || 0 })}
                                         required
-                                        className="flex-1"
+                                        className="flex-1 min-w-20"
                                     />
                                     <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                                 </div>
@@ -758,12 +746,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                     </table>
                 </div>
             </div>
-
-            <CustomChemicalModal
-                isOpen={isCustomModalOpen}
-                onOpenChange={setIsCustomModalOpen}
-                onSuccess={() => router.refresh()}
-            />
 
             <BulkEditProfilesModal
                 profiles={selectedProfiles}

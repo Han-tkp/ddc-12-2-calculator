@@ -7,11 +7,10 @@ import {
     Menu,
     LogOut,
     Home,
-    X,
     Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { adminNavItems } from '@/config/admin-nav';
 
@@ -35,14 +34,8 @@ export function MobileNav() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[85vw] max-w-[400px] p-0 flex flex-col">
-                    <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="p-4 border-b border-slate-100">
                         <SheetTitle className="font-bold text-lg m-0">เมนู</SheetTitle>
-                        <SheetClose asChild>
-                            <Button variant="ghost" size="icon">
-                                <X className="h-5 w-5" />
-                                <span className="sr-only">Close</span>
-                            </Button>
-                        </SheetClose>
                     </div>
 
                     <nav className="flex-1 p-4 space-y-2 overflow-y-auto">

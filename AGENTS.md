@@ -8,12 +8,13 @@ npm run build        # Next.js standalone output (for Docker)
 npm run start        # Production server on port 3000
 npm run lint         # ESLint (next/core-web-vitals + next/typescript only)
 npm run typecheck    # tsc --noEmit
-npm test             # vitest run (uses vitest.config.ts; unit + legacy projects)
+npm test             # vitest run (uses vitest.config.ts)
 ```
 
-- `vitest.config.ts` registers the `@/*` alias and splits `unit` (most suites) vs `legacy` (ai-mcp / ai) projects. All 7 suites pass (59 tests).
-- Tests importing modules that chain to `@/lib/auth` (→ next-auth → `next/server`, unresolvable outside Next runtime) must `vi.mock('@/lib/auth')` etc. — see `src/lib/ai/ai.test.ts` and `src/lib/ai-mcp/crud.test.ts`.
+- `vitest.config.ts` registers the `@/*` alias.
+- Tests importing modules that chain to `@/lib/auth` (→ next-auth → `next/server`, unresolvable outside Next runtime) must `vi.mock('@/lib/auth')`.
 - CI: `.github/workflows/ci.yml` runs lint + typecheck + test + build on push/PR.
+- The AI/MCP chatbot subsystem (`src/lib/ai/`, `src/lib/ai-mcp/`, `src/components/ai/`, `/admin/mcp`, `/admin/ai`, `/api/chat`, `/api/ai/*`) was removed entirely — replaced with nothing, since no non-AI code depended on it. Don't recreate references to it.
 
 ## Supabase Client Quirks
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VBDC 12.2 Chemical Calculator** — a Next.js 16 web app for the Songkhla Vector-Borne Disease Control Center (DDC 12.2) that helps field officers compute chemical mixing ratios (Deltacide, Submarine, etc.) for dengue-vector fogging/ULV spraying. Deployed to Vercel, backed by Supabase (Postgres), authenticated via NextAuth, with an optional multi-provider AI chatbot that acts as an MCP intermediary against Supabase data.
+**VBDC 12.2 Chemical Calculator** — a Next.js 16 web app for the Songkhla Vector-Borne Disease Control Center (DDC 12.2) that helps field officers compute chemical mixing ratios (Deltacide, Submarine, etc.) for dengue-vector fogging/ULV spraying. Deployed to Vercel, backed by Supabase (Postgres), authenticated via NextAuth.
 
 All user-facing strings are Thai (`lang="th"`) — do not translate UI labels to English. Domain vocabulary: สารออกฤทธิ์ = active ingredient (`C`), ตัวทำละลาย = solvent/carrier (`S`), หลังบ้าน = houses, ถัง = tank, หมอกควัน = thermal fogging.
 
@@ -20,7 +20,6 @@ npm test             # vitest run
 npm run test:watch   # vitest watch
 
 npx vitest run src/lib/calculations.test.ts        # single test file
-npx vitest run --project unit                      # single project (unit | legacy)
 npx vitest run -t "mix_type 2"                     # single test by name
 ```
 
@@ -33,10 +32,10 @@ Docker: `docker compose up --build -d` (port 3000, reads `.env`). CI (`.github/w
 Three concentric rings of features:
 
 1. **Public calculator** (`/`) — anonymous users run calculations, browse chemical presets, and manage their own custom formulas via a `guestOwnerToken` UUID cookie.
-2. **User portal** (`/user`) — analytics, public formula catalog manager, AI chatbot.
-3. **Admin panel** (`/admin/*`) — ADMIN-only, enforced in `src/app/admin/layout.tsx` via NextAuth + role check. Dashboard, AI assistant (`/admin/mcp`), AI provider settings, profiles CRUD, calculation logs, formula audit, inbox, users, billing, QR-code tool. Sidebar entries come from `src/config/admin-nav.ts`.
+2. **User portal** (`/user`) — analytics, public formula catalog manager.
+3. **Admin panel** (`/admin/*`) — ADMIN-only, enforced in `src/app/admin/layout.tsx` via NextAuth + role check. Dashboard, profiles CRUD, calculation logs, formula audit, inbox, users, billing, QR-code tool. Sidebar entries come from `src/config/admin-nav.ts`.
 
-   Deleted on purpose (don't recreate): `/admin/credentials` (stored a Supabase service-role key in plaintext localStorage) and `/admin/playground` (duplicated the `FreeFormulaCalculator` that `/admin/mcp` already embeds).
+   Deleted on purpose (don't recreate): `/admin/credentials` (stored a Supabase service-role key in plaintext localStorage), `/admin/playground` (duplicated `FreeFormulaCalculator`, which is embedded directly in the user portal instead), and the entire AI/MCP subsystem — `/admin/mcp`, `/admin/ai`, `/api/chat`, `/api/ai/*`, `/api/admin/ai-settings`, `src/lib/ai/`, `src/lib/ai-mcp/`, `src/components/ai/` — removed to cut LLM token cost; nothing else in the app depended on it (see git history around the removal commit if any of this needs resurrecting).
 
 ### Calculation flow (the core domain)
 
@@ -59,7 +58,7 @@ Profiles without a `formula` column fall back to the legacy scalar columns (`C`,
 
 `src/lib/formula-engine.ts` is an Excel-like expression evaluator: variables have `name` + `expression` and may reference other variable names. Supported functions: `SUM`, `AVG`, `MIN`, `MAX`, `ROUND`, `CEIL`, `FLOOR`, `ABS`, `IF`, `POW`, `SQRT`, `LOG`, `LOG10`, `PI`, `SIN`, `COS`, `TAN`. Cycles are caught by topological sort. `DEFAULT_TEMPLATES` ships Deltacide ULV, Deltacide หมอกควัน, and Submarine หมอกควัน.
 
-`FreeFormulaCalculator` drives this engine — used publicly and embedded in `/admin/mcp`. Saving a formula does a **dry-run `computeAll()` on the server** and rejects any variable with an error before insert.
+`FreeFormulaCalculator` drives this engine — used on the public calculator and embedded in the user portal (`/user`). Saving a formula does a **dry-run `computeAll()` on the server** and rejects any variable with an error before insert.
 
 Expressions are parsed and evaluated by `src/lib/expr-parser.ts` (hand-rolled recursive-descent → AST → tree-walking interpreter). **Never reintroduce `eval`/`new Function` here** — identifiers resolve only against the caller-supplied scope, which is what keeps a stored formula from executing arbitrary code server-side or in other users' browsers.
 
@@ -88,19 +87,6 @@ Currently unreferenced by production code (kept, not wired): `src/lib/formula-va
 - Anonymous users get a stable UUID in the `ddc_guest_owner` httpOnly cookie (`src/lib/guest-owner.ts`) and can only edit/delete formulas carrying their own `guestOwnerToken`.
 - Every profile mutation is logged via `recordFormulaAudit()` (`src/lib/formula-audit.ts`) to `formula_audit_logs`, viewable at `/admin/audit`. That is distinct from calculation history at `/admin/logs`.
 
-### AI / MCP chatbot
-
-`src/lib/ai-mcp/` (a directory of modules — `index.ts` is the public surface; note `src/lib/ai-mcp.test.ts` is a sibling legacy test file, not a module) is the **MCP intermediary**: classify intent → query Supabase or call an RPC → return results.
-
-**The LLM never computes.** The `calculate_formula` tool (`src/lib/ai/tools.ts` → `buildCalculationResponse` in `src/lib/ai-mcp/fallback.ts`) routes to the same `calculate()` engine as the UI. The model's only job is mapping natural language to parameters (C, S, RA, RA_unit, N, mix_type).
-
-- `src/lib/ai/router.ts` — multi-provider fallback, `DEFAULT_ORDER = ['gemini', 'anthropic', 'openrouter', 'openai']`. Retries only on transient errors (429, timeout, network); never falls back on auth/key/invalid-request errors.
-- `src/lib/ai/agent.ts` — the tool-calling loop. `src/lib/ai/settings.ts` reads per-provider config (model override, enabled, order) persisted from `/admin/ai`.
-- `src/lib/ai-mcp/drafts.ts` — deterministic label extraction from uploaded files/text, no LLM. `vision.ts` is the LLM fallback when deterministic extraction fails.
-- With no provider configured, the rule-based `classifyIntent` path handles requests.
-- The quota guard **is** wired: both `buildRouterFromSettings` (`api/chat/route.ts`) and `createRouter` (`ai/index.ts`) pass `guard: guardQuota`, so `AI_MAX_REQUESTS_PER_MINUTE` / `AI_MAX_REQUESTS_PER_HOUR` apply. `/api/chat` itself is still unauthenticated by design (public chatbot) — the quota guard and the subscription gate are what throttle it.
-- AI features are gated on an active Stripe subscription (`src/lib/billing.ts`). When inactive, `/api/chat` degrades to the existing rule-based path instead of erroring.
-
 ## Stack & Conventions
 
 - **Next.js 16 App Router**, `output: 'standalone'` for Docker. **API route and page props are `params: Promise<>` / `searchParams: Promise<>`.**
@@ -126,17 +112,12 @@ Copy `.env.example` → `.env`. Missing vars warn rather than crash (fall back t
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | (or `_PUBLISHABLE_KEY`) public client key |
 | `SUPABASE_SERVICE_ROLE_KEY` | admin key, bypasses RLS. Note `src/lib/supabase.ts:11` prefers `SUPABASE_MANAGEMENT_SECRET` over this — a Management API token is *not* a valid PostgREST key, so setting both breaks every `supabaseAdmin` call |
 | `API_SECRET_KEY` | shared secret with the C# Avalonia desktop app |
-| `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENROUTER_API_KEY` / `OPENAI_API_KEY` | AI providers (any subset) |
-| `AI_MAX_REQUESTS_PER_MINUTE` / `AI_MAX_REQUESTS_PER_HOUR` | optional quota guard |
 
 ## Testing
 
-Vitest, config in `vitest.config.ts`. Tests sit next to their source as `*.test.ts`. Two projects exist because of a Vitest 4 + Next 16 resolution incompatibility:
+Vitest, config in `vitest.config.ts`. Tests sit next to their source as `*.test.ts`.
 
-- `unit` — everything except the AI suites.
-- `legacy` — `src/lib/ai-mcp.test.ts` and `src/lib/ai/**/*.test.ts`.
-
-Any test whose import chain reaches `@/lib/auth` (→ next-auth → `next/server`, unresolvable outside the Next runtime) must hoist `vi.mock('@/lib/auth')`. Copy the pattern from `src/lib/ai/ai.test.ts` or `src/lib/ai-mcp/crud.test.ts`.
+Any test whose import chain reaches `@/lib/auth` (→ next-auth → `next/server`, unresolvable outside the Next runtime) must hoist `vi.mock('@/lib/auth')`.
 
 ## Database / Migrations
 

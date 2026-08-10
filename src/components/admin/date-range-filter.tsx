@@ -36,8 +36,8 @@ export function DateRangeFilter() {
 
     return (
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-end gap-2 w-full sm:w-auto">
-            <div className="flex flex-row items-end gap-2 w-full">
-                <div className="grid gap-1 flex-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 w-full">
+                <div className="grid gap-1 flex-1 min-w-0">
                     <label className="text-[10px] sm:text-xs font-medium text-slate-500 ml-1">ตั้งแต่วันที่</label>
                     <div className="relative">
                         <Calendar className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -49,7 +49,7 @@ export function DateRangeFilter() {
                         />
                     </div>
                 </div>
-                <div className="grid gap-1 flex-1">
+                <div className="grid gap-1 flex-1 min-w-0">
                     <label className="text-[10px] sm:text-xs font-medium text-slate-500 ml-1">ถึงวันที่</label>
                     <div className="relative">
                         <Calendar className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -61,12 +61,12 @@ export function DateRangeFilter() {
                         />
                     </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                     <Button type="submit" size="icon" className="h-9 w-9 bg-brand hover:bg-brand-dark shrink-0 shadow-sm">
                         <Search className="h-4 w-4" />
                     </Button>
                     {(fromDate || toDate) && (
-                        <Button type="button" variant="outline" onClick={clearFilter} className="h-9 px-2 text-xs text-slate-500">
+                        <Button type="button" variant="outline" onClick={clearFilter} className="h-9 px-2 text-xs text-slate-500 shrink-0">
                             รีเซ็ต
                         </Button>
                     )}

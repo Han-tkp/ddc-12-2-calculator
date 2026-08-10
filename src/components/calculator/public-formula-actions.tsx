@@ -141,14 +141,14 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                         </div>
                         <div className="space-y-1">
                             <Label>อัตราการพ่นต่อพื้นที่</Label>
-                            <div className="flex items-center gap-2">
-                                <Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required className="flex-1" />
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required className="flex-1 min-w-20" />
                                 <Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}>
                                     <SelectTrigger className="w-24 shrink-0"><SelectValue /></SelectTrigger>
                                     <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
                                 </Select>
                                 <span className="text-sm text-slate-500 shrink-0">ต่อ</span>
-                                <Input type="number" min="1" value={form.A0} onChange={(event) => setForm({ ...form, A0: Number(event.target.value) })} required className="flex-1" />
+                                <Input type="number" min="1" value={form.A0} onChange={(event) => setForm({ ...form, A0: Number(event.target.value) })} required className="flex-1 min-w-20" />
                                 <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                             </div>
                         </div>

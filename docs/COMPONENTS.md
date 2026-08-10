@@ -14,10 +14,9 @@
 | `generic-formula-results.tsx` | แสดงผลลัพธ์สำหรับสูตร "แบบ Excel" (generic-table/`FreeFormulaCalculator`) — คนละ layout จาก `results-display.tsx` |
 | `formula-trial-preview.tsx` | กล่อง "ทดลองคำนวณ" ในไดอะล็อกเพิ่มสูตร — คำนวณ preview ด้วย `calculate()` ตรงๆ ในเบราว์เซอร์ ไม่ยิง API ไม่บันทึกอะไรลง DB เก็บค่าชั่วคราวใน localStorage |
 | `result-help-editor.tsx` | ฟอร์มย่อยให้พิมพ์คำอธิบาย/help-text ต่อฟิลด์ (เช่น A0, mix_type) เก็บเป็น `resultHelp: Record<string,string>` แล้วส่งไปกับตัวสูตร |
-| `custom-chemical-modal.tsx` | ไดอะล็อก **"เพิ่มสูตรสารเคมี" แบบปกติ ฝั่งแอดมิน/MCP** — กรอก C/S/RA/A0 เอง มี `ResultHelpEditor` + `FormulaTrialPreview` ในตัว |
-| `public-formula-manager.tsx` | ไดอะล็อก **"เพิ่มสูตรสารเคมี" แบบปกติ ฝั่งสาธารณะ** (guest, ผูกกับ `guestOwnerToken`) — โครงเดียวกับ `custom-chemical-modal.tsx` แต่เป็นฟอร์มแยกคนละที่ |
+| `public-formula-manager.tsx` | ไดอะล็อก **"เพิ่มสูตรสารเคมี" แบบปกติ ฝั่งสาธารณะ** (guest, ผูกกับ `guestOwnerToken`) |
 | `public-formula-actions.tsx` | ปุ่ม แก้ไข/ลบ สูตรที่ผู้ใช้ทั่วไปสร้างเอง (เฉพาะเจ้าของ `guestOwnerToken`) — มีไดอะล็อกแก้ไขในตัว |
-| `free-formula-calculator.tsx` | **เครื่องคำนวณสูตร Excel-style** — ผู้ใช้พิมพ์ตัวแปร/สูตร (`SUM`, `IF`, ...) เอง ไม่มี A0/reference-area อัตโนมัติ เพราะทุกอย่างเป็นตัวแปรที่ผู้ใช้กำหนดเอง ใช้ทั้งในหน้า public (`user-public-portal.tsx`) และฝัง `/admin/mcp` |
+| `free-formula-calculator.tsx` | **เครื่องคำนวณสูตร Excel-style** — ผู้ใช้พิมพ์ตัวแปร/สูตร (`SUM`, `IF`, ...) เอง ไม่มี A0/reference-area อัตโนมัติ เพราะทุกอย่างเป็นตัวแปรที่ผู้ใช้กำหนดเอง ใช้ทั้งในหน้า public และฝังใน user portal (`user-public-portal.tsx`) |
 | `label-guide.tsx` | ปุ่ม/โมดัลอธิบายวิธีอ่านฉลากเคมี (help content เฉยๆ) |
 | `location-picker.tsx` | แผนที่ Leaflet เลือกพิกัด GPS ตอนบันทึกผลคำนวณ |
 | `location-picker-wrapper.tsx` | ตัวห่อ `location-picker.tsx` ด้วย `dynamic(..., { ssr:false })` (Leaflet ต้องรันฝั่ง client เท่านั้น) |
@@ -29,7 +28,9 @@
 | `admin-layout-wrapper.tsx` | โครง layout รอบเนื้อหาแอดมินทุกหน้า (sidebar + content area) |
 | `admin-sidebar.tsx` | เมนูด้านข้างของ `/admin/*` อ่านรายการจาก `src/config/admin-nav.ts` |
 | `mobile-nav.tsx` | เมนูแอดมินเวอร์ชันมือถือ (hamburger) |
-| `profiles-table.tsx` | ตาราง CRUD สูตรสารเคมีที่ `/admin/profiles` — มีไดอะล็อกเพิ่ม/แก้ไขสูตรของตัวเอง (ไม่ใช่ `custom-chemical-modal.tsx`) และฝัง `CustomChemicalModal` ไว้เป็นปุ่มลัดด้วย |
+| `profiles-table.tsx` | ตาราง CRUD สูตรสารเคมีที่ `/admin/profiles` — มีไดอะล็อกเพิ่ม/แก้ไขสูตรในตัว และ `BulkEditProfilesModal` สำหรับแก้หลายสูตรพร้อมกัน |
+| `bulk-edit-profiles-modal.tsx` | ไดอะล็อกแก้ไขหลายสูตรพร้อมกัน — เลือกได้หลายแถวจาก `profiles-table.tsx` แล้วแก้ค่าของแต่ละแถวแยกอิสระในหน้าต่างเดียว |
+| `profile-source-filter.tsx` | ตัวกรองแบบ toggle-group ตามแหล่งที่มาของสูตร (ค่าเริ่มต้น/แอดมิน/ผู้ใช้ทั่วไป/นำเข้าไฟล์) ใช้ใน `/admin/profiles` |
 | `user-actions.tsx` | เมนู แก้ไข/ลบ/เปลี่ยนสิทธิ์ ต่อแถวผู้ใช้ใน `/admin/users` |
 | `calculation-map.tsx` | แผนที่ Leaflet จริงที่ `/admin/dashboard` — คลัสเตอร์มาร์กเกอร์ (`leaflet.markercluster`) + heatmap (`leaflet.heat`) พร้อมปุ่มสลับมุมมอง |
 | `dashboard-map.tsx` | ตัวห่อ `calculation-map.tsx` ด้วย dynamic import (`ssr:false`) เหมือน `location-picker-wrapper.tsx` |
@@ -46,13 +47,6 @@
 | `qr-code-tool.tsx` | เครื่องมือสร้าง/จัดการ QR code ที่ `/admin/qr` |
 | `billing-actions.tsx` | ปุ่มจัดการ subscription (เปิด Stripe portal/checkout) ที่ `/admin/billing` |
 
-## `ai/` — Chatbot / ผู้ช่วย AI
-
-| ไฟล์ | คืออะไร |
-| --- | --- |
-| `ai-mcp-chatbot.tsx` | หน้าต่างแชท AI (ใช้ทั้งที่ `/admin/mcp` และฝังใน user portal) — ส่งข้อความไป `/api/chat`, แสดงผลลัพธ์คำนวณที่ AI เรียกผ่าน `calculate_formula` tool (ไม่เคยคำนวณเองใน component นี้), มีไดอะล็อกยืนยันก่อนบันทึกสูตรที่ AI แกะจากไฟล์/รูป (มี `ResultHelpEditor` ในนั้นด้วย) |
-| `mcp-settings-form.tsx` | ฟอร์มตั้งค่า AI provider (`/admin/ai`) — เลือก provider/model, ลำดับ fallback, เปิด-ปิดใช้งาน |
-
 ## `field-mode/` — โหมดภาคสนาม (`/app`)
 
 | ไฟล์ | คืออะไร |
@@ -64,7 +58,7 @@
 
 | ไฟล์ | คืออะไร |
 | --- | --- |
-| `user-public-portal.tsx` | หน้ารวมของ `/user` — คุม Tabs ทั้ง 5 แท็บ: ภาพรวมปฏิบัติงาน, วิเคราะห์, คลังสูตร (read-only catalog), เพิ่มสารเคมีด้วย AI (`ai-mcp-chatbot.tsx`), เพิ่มสูตรสารเคมี (`free-formula-calculator.tsx`) |
+| `user-public-portal.tsx` | หน้ารวมของ `/user` — คุม Tabs ทั้ง 4 แท็บ: ภาพรวมปฏิบัติงาน, วิเคราะห์, คลังสูตร (read-only catalog), เพิ่มสูตรสารเคมี (`free-formula-calculator.tsx`) |
 
 ## ระดับบนสุด (`src/components/*.tsx`)
 

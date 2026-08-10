@@ -9,10 +9,10 @@ import {
 } from 'lucide-react';
 
 // ซ่อนชั่วคราวจากเมนู (ไม่ได้ลบ route หรือ feature — เข้าตรงผ่าน URL ได้ตามปกติ):
-// - /admin/mcp   "ผู้ช่วยสร้างสูตร (AI)"
-// - /admin/ai    "ตั้งค่า AI Provider"
 // - /admin/billing "การเรียกเก็บเงิน"
 // อยากเปิดกลับมาเมื่อไหร่ก็เพิ่ม entry กลับเข้า array นี้ (ดู git history ของไฟล์นี้สำหรับโครงเดิม)
+// หมายเหตุ: /admin/mcp และ /admin/ai (ผู้ช่วยสร้างสูตรด้วย AI / ตั้งค่า AI Provider)
+// ถูกถอดออกจากระบบทั้งหมดแล้ว (ไม่ใช่แค่ซ่อน) — ดู git history ถ้าต้องการนำกลับมา
 export const adminNavItems = [
     {
         href: '/admin/dashboard',

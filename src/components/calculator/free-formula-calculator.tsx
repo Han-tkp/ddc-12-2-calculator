@@ -300,14 +300,14 @@ export function FreeFormulaCalculator({ initialVariables, onVariablesChange }: F
 
             {/* Formula Bar — shows selected variable's expression */}
             {selectedVar && (
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="flex flex-wrap items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <span className="text-xs font-bold text-brand shrink-0 min-w-[80px]">
                         {selectedVar.name} =
                     </span>
                     <Input
                         value={selectedVar.expression}
                         onChange={(e) => handleExpressionChange(selectedVar.id, e.target.value)}
-                        className="flex-1 h-8 text-xs font-mono bg-white border-slate-200 focus:border-brand/60"
+                        className="flex-1 min-w-20 h-8 text-xs font-mono bg-white border-slate-200 focus:border-brand/60"
                         placeholder="พิมพ์สูตร เช่น C + S หรือ A * B / 2"
                     />
                     <div className="flex items-center gap-2 shrink-0">
