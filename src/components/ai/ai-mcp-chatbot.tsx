@@ -35,19 +35,11 @@ export function formulaSchemaToVariables(schema: FormulaSchema): FormulaVariable
         { id: id(), name: 'C', expression: String(schema.C), unit: 'ส่วน', description: 'สัดส่วนสารออกฤทธิ์' },
         { id: id(), name: 'S', expression: String(schema.S), unit: 'ส่วน', description: 'สัดส่วนตัวทำละลาย' },
         { id: id(), name: 'RA', expression: String(schema.RA), unit: schema.RA_unit, description: 'อัตราการพ่น' },
-        { id: id(), name: 'tank', expression: String(schema.tankCapacity), unit: 'L', description: 'ขนาดถังพ่น' },
         { id: id(), name: 'A0', expression: String(schema.A0), unit: 'ml/L', description: 'ความเข้มข้นสารออกฤทธิ์' },
     ];
-    if (schema.mix_type === 2) {
-        vars.push(
-            { id: id(), name: 'chemical_per_tank', expression: 'tank * 1000 * C / S', unit: 'ml', description: 'ปริมาณสารเคมีต่อถัง' },
-            { id: id(), name: 'solvent_per_tank', expression: 'tank * 1000 - chemical_per_tank', unit: 'ml', description: 'ปริมาณตัวทำละลายต่อถัง' },
-        );
-    } else {
+    if (schema.mix_type !== 2) {
         vars.push(
             { id: id(), name: 'ratio_total', expression: 'C + S', unit: 'ส่วน', description: 'รวมสัดส่วนทั้งหมด' },
-            { id: id(), name: 'chemical_per_tank', expression: 'tank * 1000 * C / ratio_total', unit: 'ml', description: 'ปริมาณสารเคมีต่อถัง' },
-            { id: id(), name: 'solvent_per_tank', expression: 'tank * 1000 * S / ratio_total', unit: 'ml', description: 'ปริมาณตัวทำละลายต่อถัง' },
         );
     }
     return vars;
@@ -62,7 +54,6 @@ export interface FormulaSchema {
     RA_unit: 'L' | 'cc';
     mix_type: number;
     A0: number;
-    tankCapacity: number;
 }
 
 interface ChatMessage {
@@ -78,7 +69,7 @@ interface ChatMessage {
 const QUICK_PROMPTS = [
     { label: 'หมอกควัน Fogging', query: 'ช่วยคำนวณและสร้างสูตรพ่นหมอกควัน กำจัดยุงลาย' },
     { label: 'ULV ฝอยละเอียด', query: 'ช่วยสร้างสูตรผสมยาสำหรับพ่น ULV ฝอยละเอียด' },
-    { label: 'ถัง 10 ลิตร', query: 'ขอสูตรสัดส่วนตวงต่อถังพ่นเคมี 10 ลิตร' },
+    { label: 'คำนวณ 20 หลัง', query: 'ช่วยคำนวณปริมาณสารเคมีสำหรับพ่น 20 หลัง' },
     { label: 'เปรียบเทียบ', query: 'เปรียบเทียบข้อแตกต่าง Deltacide กับ Submarine' },
 ];
 
@@ -217,7 +208,6 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                     RA_unit: selectedFormula.RA_unit,
                     mix_type: Number(selectedFormula.mix_type),
                     A0: Number(selectedFormula.A0),
-                    tankCapacity: Number(selectedFormula.tankCapacity),
                     isActive: true,
                     location: confirmLocation.trim() || undefined,
                     resultHelp: Object.keys(confirmResultHelp).length > 0 ? confirmResultHelp : undefined,
@@ -374,11 +364,11 @@ export function AiMcpChatbot({ onFormulaSaved, onSendToCalculator, onSendFileToC
                                                     <span className="font-semibold text-emerald-700">{msg.formula.RA} {formatRAUnit(msg.formula.RA_unit)}</span>
                                                 </div>
                                                 <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
-                                                    <span className="text-slate-500">ถัง</span>
-                                                    <span className="font-semibold text-slate-800">{msg.formula.tankCapacity} L</span>
+                                                    <span className="text-slate-500">A0</span>
+                                                    <span className="font-semibold text-slate-800">{msg.formula.A0.toLocaleString('th-TH')} ตร.ม.</span>
                                                 </div>
                                                 <div className="bg-slate-50 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
-                                                    <span className="text-slate-500">เคมี/ถัง</span>
+                                                    <span className="text-slate-500">เคมี/10ลิตร</span>
                                                     <span className="font-semibold text-amber-700">
                                                         {(msg.formula.mix_type === 2
                                                             ? (10000 * msg.formula.C / msg.formula.S)

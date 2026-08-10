@@ -10,6 +10,7 @@ import { Plus, Upload, Image as ImageIcon, CheckCircle2, AlertTriangle, Clock, F
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
 import { convertRA } from '@/lib/calculations';
+import { simplifyRatio } from '@/lib/quantity';
 import { ResultHelpEditor } from './result-help-editor';
 import { FormulaTrialPreview } from './formula-trial-preview';
 
@@ -24,12 +25,14 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
     const [description, setDescription] = useState('');
     const [C, setC] = useState<number>(1);
     const [S, setS] = useState<number>(4);
+    // C และ S แยกหน่วยกันอิสระ (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน เช่น "500 มล." ต่อ "12.5 ลิตร") —
+    // แปลงเป็น มล. แล้วลดรูปสัดส่วนตอนบันทึก (normalizeCS) ไม่มีคอลัมน์หน่วยแยกใน DB
+    const [CUnit, setCUnit] = useState<'L' | 'cc'>('L');
     const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
     const [RA, setRA] = useState<number>(75);
     const [RAUnit, setRAUnit] = useState<'L' | 'cc'>('cc');
     const [mixType, setMixType] = useState<number>(1); // 1 = แบบผสมให้ได้ - รวมปริมาตรคงที่, 2 = แบบผสมกับ - เติมสารทบน้ำมัน
     const [A0, setA0] = useState<number>(1000);
-    const [tankCapacity, setTankCapacity] = useState<number>(10);
     const [location, setLocation] = useState('');
     const [resultHelp, setResultHelp] = useState<Record<string, string>>({});
 
@@ -88,19 +91,25 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                 ? `${description.trim()} [แนบไฟล์ฉลาก: ${uploadedFile.name}]`
                 : description.trim();
 
+            // C และ S อาจกรอกกันคนละหน่วย — แปลงเป็น มล. แล้วลดรูปสัดส่วนก่อนส่งเสมอ
+            const C_ml = CUnit === 'L' ? Number(C) * 1000 : Number(C);
+            const S_ml = SUnit === 'L' ? Number(S) * 1000 : Number(S);
+            const { C: C_norm, S: S_norm } = simplifyRatio(C_ml, S_ml);
+
             const res = await fetch('/api/profiles', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: name.trim(),
                     description: descWithFile || 'สูตร Custom สารเคมีเพิ่มโดยผู้ใช้',
-                    C: Number(C),
-                    S: Number(S),
+                    C: C_norm,
+                    S: S_norm,
+                    C_unit: CUnit,
+                    S_unit: SUnit,
                     RA: Number(RA),
                     RA_unit: RAUnit,
                     mix_type: Number(mixType),
                     A0: Number(A0),
-                    tankCapacity: Number(tankCapacity),
                     isActive: true,
                     location: location.trim() || undefined,
                     resultHelp: Object.keys(resultHelp).length > 0 ? resultHelp : undefined,
@@ -112,8 +121,8 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
 
             // Record tracking entry (best-effort)
             await recordTrackingCalculation({
-                C: Number(C),
-                S: Number(S),
+                C: C_norm,
+                S: S_norm,
                 RA: Number(RA),
                 RA_unit: RAUnit,
                 mix_type: Number(mixType),
@@ -224,92 +233,93 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
                                 </Select>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label className="font-semibold text-slate-700">สารเคมีออกฤทธิ์ (C)</Label>
-                                    <Input
-                                        type="number"
-                                        step="any"
-                                        value={C}
-                                        onChange={(e) => setC(Number(e.target.value))}
-                                        className="bg-white"
-                                    />
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="number"
+                                            step="any"
+                                            value={C}
+                                            onChange={(e) => setC(Number(e.target.value))}
+                                            className="bg-white"
+                                        />
+                                        <Select
+                                            value={CUnit}
+                                            onValueChange={(val: 'L' | 'cc') => {
+                                                // หน่วยของ C แยกอิสระจาก S — สลับแล้วแปลงแค่ค่า C ให้ยังหมายถึงปริมาณเท่าเดิม
+                                                setC(prev => convertRA(prev, CUnit, val));
+                                                setCUnit(val);
+                                            }}
+                                        >
+                                            <SelectTrigger className="bg-white w-24 shrink-0">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="L">ลิตร</SelectItem>
+                                                <SelectItem value="cc">มล.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="font-semibold text-slate-700">ตัวทำละลาย น้ำมัน/น้ำ (S)</Label>
-                                    <Input
-                                        type="number"
-                                        step="any"
-                                        value={S}
-                                        onChange={(e) => setS(Number(e.target.value))}
-                                        className="bg-white"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="font-semibold text-slate-700">หน่วย S</Label>
-                                    <Select
-                                        value={SUnit}
-                                        onValueChange={(val: 'L' | 'cc') => {
-                                            // แปลง C พร้อม S ตอนสลับหน่วย เพื่อให้สัดส่วน C:S ไม่เปลี่ยน
-                                            setC(prev => convertRA(prev, SUnit, val));
-                                            setS(prev => convertRA(prev, SUnit, val));
-                                            setSUnit(val);
-                                        }}
-                                    >
-                                        <SelectTrigger className="bg-white">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="L">ลิตร (L)</SelectItem>
-                                            <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="number"
+                                            step="any"
+                                            value={S}
+                                            onChange={(e) => setS(Number(e.target.value))}
+                                            className="bg-white"
+                                        />
+                                        <Select
+                                            value={SUnit}
+                                            onValueChange={(val: 'L' | 'cc') => {
+                                                setS(prev => convertRA(prev, SUnit, val));
+                                                setSUnit(val);
+                                            }}
+                                        >
+                                            <SelectTrigger className="bg-white w-24 shrink-0">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="L">ลิตร</SelectItem>
+                                                <SelectItem value="cc">มล.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-brand-soft/50 rounded-xl border border-brand-soft">
-                            <div className="space-y-1">
-                                <Label className="font-semibold text-slate-700">อัตราการพ่น (RA)</Label>
+                        <div className="p-3 bg-brand-soft/50 rounded-xl border border-brand-soft space-y-1">
+                            <Label className="font-semibold text-slate-700">อัตราการพ่นต่อพื้นที่</Label>
+                            <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
                                     step="any"
                                     value={RA}
                                     onChange={(e) => setRA(Number(e.target.value))}
-                                    className="bg-white"
+                                    className="bg-white flex-1"
                                 />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="font-semibold text-slate-700">หน่วยอัตราพ่น</Label>
                                 <Select value={RAUnit} onValueChange={(val: 'L' | 'cc') => { setRA(prev => convertRA(prev, RAUnit, val)); setRAUnit(val); }}>
-                                    <SelectTrigger className="bg-white">
+                                    <SelectTrigger className="bg-white w-24 shrink-0">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="L">ลิตร (L)</SelectItem>
-                                        <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
+                                        <SelectItem value="L">ลิตร</SelectItem>
+                                        <SelectItem value="cc">มล.</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="font-semibold text-slate-700">พื้นที่มาตรฐาน (A0) ตร.ม.</Label>
+                                <span className="text-sm text-slate-500 shrink-0">ต่อ</span>
                                 <Input
                                     type="number"
                                     step="any"
                                     value={A0}
                                     onChange={(e) => setA0(Number(e.target.value))}
-                                    className="bg-white"
+                                    className="bg-white flex-1"
                                 />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="font-semibold text-slate-700">ความจุถังพ่น (ลิตร)</Label>
-                                <Input
-                                    type="number"
-                                    step="any"
-                                    value={tankCapacity}
-                                    onChange={(e) => setTankCapacity(Number(e.target.value))}
-                                    className="bg-white"
-                                />
+                                <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                             </div>
                         </div>
 
@@ -326,8 +336,9 @@ export function CustomChemicalModal({ isOpen, onOpenChange, onSuccess }: CustomC
 
                         <FormulaTrialPreview
                             storageKey="custom-chemical"
-                            C={Number(C)} S={Number(S)} RA={Number(RA)} RAUnit={RAUnit}
-                            mixType={Number(mixType)} A0={Number(A0)} tankCapacity={Number(tankCapacity)}
+                            {...simplifyRatio(CUnit === 'L' ? Number(C) * 1000 : Number(C), SUnit === 'L' ? Number(S) * 1000 : Number(S))}
+                            RA={Number(RA)} RAUnit={RAUnit}
+                            mixType={Number(mixType)} A0={Number(A0)}
                             resultHelp={resultHelp}
                         />
 

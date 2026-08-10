@@ -15,7 +15,6 @@ export interface FormulaDraft {
     RA_unit?: 'L' | 'cc';
     mix_type?: number | string;
     A0?: number | string;
-    tankCapacity?: number | string;
 }
 
 export interface FormulaIssue {
@@ -36,7 +35,6 @@ export interface FormulaValidationResult {
         RA_unit: 'L' | 'cc';
         mix_type: number;
         A0: number;
-        tankCapacity: number;
     };
 }
 
@@ -45,7 +43,6 @@ export const FORMULA_LIMITS = {
     maxS: 100000,
     maxRA: 100000,
     maxA0: 1000000,
-    maxTankCapacity: 100000,
     minPositive: 0,
 };
 
@@ -97,7 +94,6 @@ export function validateFormulaDraft(input: FormulaDraft = {}): FormulaValidatio
     const S = numberOr('S', 'S (สัดส่วนตัวทำละลาย)', 9, FORMULA_LIMITS.maxS);
     const RA = numberOr('RA', 'RA (อัตราการพ่น)', 50, FORMULA_LIMITS.maxRA);
     const A0 = numberOr('A0', 'พื้นที่มาตรฐาน', 1000, FORMULA_LIMITS.maxA0);
-    const tankCapacity = numberOr('tankCapacity', 'ขนาดถัง', 10, FORMULA_LIMITS.maxTankCapacity);
 
     let RA_unit: 'L' | 'cc' = input.RA_unit as 'L' | 'cc';
     if (RA_unit !== 'L' && RA_unit !== 'cc') {
@@ -130,7 +126,6 @@ export function validateFormulaDraft(input: FormulaDraft = {}): FormulaValidatio
             RA_unit,
             mix_type,
             A0,
-            tankCapacity,
         },
     };
 }

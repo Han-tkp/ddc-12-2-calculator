@@ -14,7 +14,7 @@ import type { AITool } from './types';
 export const AI_TOOLS: AITool[] = [
     {
         name: 'query_chemical_profiles',
-        description: 'ค้นหาสูตรสารเคมี (C:S, RA, วิธีผสม, ขนาดถัง) จากฐานข้อมูล label_profiles ใช้ชื่อสารเคมีหรือคำค้นหา',
+        description: 'ค้นหาสูตรสารเคมี (C:S, RA, วิธีผสม, พื้นที่มาตรฐาน) จากฐานข้อมูล label_profiles ใช้ชื่อสารเคมีหรือคำค้นหา',
         parameters: {
             search: { type: 'string', description: 'ชื่อสารเคมีหรือคำค้นหา เช่น Deltacide, Submarine' },
             limit: { type: 'integer', description: 'จำนวนผลลัพธ์สูงสุด (default 10, ไม่เกิน 50)' },
@@ -32,18 +32,18 @@ export const AI_TOOLS: AITool[] = [
     },
     {
         name: 'validate_formula',
-        description: 'ตรวจสอบสูตรฉบับร่าง (C, S, RA, RA_unit, mix_type, A0, tankCapacity, name) ว่าค่าครบถ้วนและอยู่ในช่วงที่ปลอดภัยหรือไม่ คืนผลตรวจและค่า default ที่แก้แล้ว ควรเรียกก่อนตอบสูตรให้ผู้ใช้ทุกครั้ง',
+        description: 'ตรวจสอบสูตรฉบับร่าง (C, S, RA, RA_unit, mix_type, A0, name) ว่าค่าครบถ้วนและอยู่ในช่วงที่ปลอดภัยหรือไม่ คืนผลตรวจและค่า default ที่แก้แล้ว ควรเรียกก่อนตอบสูตรให้ผู้ใช้ทุกครั้ง',
         parameters: {
             formula: {
                 type: 'object',
-                description: 'สูตรที่ต้องการตรวจสอบ: {"name"?:string,"C":number,"S":number,"RA":number,"RA_unit":"L"|"cc","mix_type":1|2,"A0"?:number,"tankCapacity"?:number}',
+                description: 'สูตรที่ต้องการตรวจสอบ: {"name"?:string,"C":number,"S":number,"RA":number,"RA_unit":"L"|"cc","mix_type":1|2,"A0"?:number}',
             },
         },
         required: ['formula'],
     },
     {
         name: 'calculate_formula',
-        description: 'คำนวณปริมาณสารเคมีจริงด้วย deterministic engine (ค่าถูกต้องเสมอ) — รับ C, S, RA, RA_unit, N (จำนวนหลัง), A0, A_house, mix_type และคืน V_total, V_C, V_S, ต่อหลัง, จำนวนถัง ควรเรียกเมื่อผู้ใช้ถาม "คำนวณ/เท่าไหร่/กี่ถัง/ต้องผสมเท่าไร" หรือต้องการตัวเลขปริมาณ (ห้าม AI คำนวณเอง — ให้ engine คำนวณ)',
+        description: 'คำนวณปริมาณสารเคมีจริงด้วย deterministic engine (ค่าถูกต้องเสมอ) — รับ C, S, RA, RA_unit, N (จำนวนหลัง), A0, A_house, mix_type และคืน V_total, V_C, V_S, ต่อหลัง ควรเรียกเมื่อผู้ใช้ถาม "คำนวณ/เท่าไหร่/ต้องผสมเท่าไร" หรือต้องการตัวเลขปริมาณ (ห้าม AI คำนวณเอง — ให้ engine คำนวณ)',
         parameters: {
             C: { type: 'number', description: 'สัดส่วนสารออกฤทธิ์ (จาก query_chemical_profiles หรือที่ผู้ใช้ให้)' },
             S: { type: 'number', description: 'สัดส่วนตัวทำละลาย' },
@@ -57,7 +57,6 @@ export const AI_TOOLS: AITool[] = [
             houseWidth: { type: 'number', optional: true, description: 'ความกว้างบ้าน (เมตร) เช่น "บ้านกว้าง 8 ยาว 12"' },
             houseLength: { type: 'number', optional: true, description: 'ความยาวบ้าน (เมตร) — ใช้คู่กับ houseWidth ระบบจะคูณให้เอง' },
             targetVolume: { type: 'number', default: 1, description: 'ปริมาณ target (ลิตร) สำหรับ V_C_target/V_S_target' },
-            tankCapacity: { type: 'number', default: 10, description: 'ขนาดถังพ่น (ลิตร)' },
             chemicalName: { type: 'string', optional: true, description: 'ชื่อสารเคมีเพื่อแสดงในผลลัพธ์' },
         },
         required: ['C', 'S', 'RA', 'RA_unit'],
@@ -74,7 +73,6 @@ export const AI_TOOLS: AITool[] = [
             RA_unit: { type: 'string', enum: ['L', 'cc'] },
             mix_type: { type: 'number', enum: [1, 2], default: 2 },
             A0: { type: 'number', default: 1000 },
-            tankCapacity: { type: 'number', default: 10 },
             isActive: { type: 'boolean', default: true },
             actorLabel: { type: 'string', optional: true },
             location: { type: 'string', optional: true },
@@ -96,7 +94,6 @@ export const AI_TOOLS: AITool[] = [
             RA_unit: { type: 'string', enum: ['L', 'cc'], optional: true },
             mix_type: { type: 'number', enum: [1, 2], optional: true },
             A0: { type: 'number', optional: true },
-            tankCapacity: { type: 'number', optional: true },
             isActive: { type: 'boolean', optional: true },
             location: { type: 'string', optional: true },
             lat: { type: 'number', optional: true },

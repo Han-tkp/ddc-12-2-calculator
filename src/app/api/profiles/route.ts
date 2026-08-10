@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
             .from('label_profiles')
             .insert({
                 ...profileInput,
+                // tankCapacity is a retired concept, no longer surfaced anywhere in the
+                // app — this fixed value only exists to satisfy the DB column's constraint.
+                tankCapacity: 10,
                 isActive: true,
                 createdById: isAdmin ? session.user.id : null,
                 guestOwnerToken: guestOwner?.token ?? null,

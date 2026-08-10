@@ -100,7 +100,6 @@ function draftFromRow(headers: string[], row: unknown[], fileName: string): AIFo
         RA_unit,
         mix_type: parseMixType(find('ประเภทการผสม', 'mix_type')) ?? 2,
         A0,
-        tankCapacity: asNumber(find('tankcapacity', 'ขนาดถัง', 'ถัง')) ?? 10,
     };
 }
 
@@ -154,7 +153,6 @@ export function buildFormulaDraftFromText(rawText: string, fileName: string): { 
     );
     const raMatch = rawText.match(/(?:RA|อัตราพ่น|อัตราการพ่น)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(ลิตร|liter|litre|L|มล\.?|ml|cc)/i);
     const area = value([/(?:พื้นที่มาตรฐาน|พื้นที่|A0)\s*[:=]?\s*([\d,]+)/i]);
-    const tank = value([/(?:ขนาดถัง|ถัง|tank)\s*[:=]?\s*([\d,.]+)\s*(?:ลิตร|L|liter)?/i]);
     if (!ratioMatch || !raMatch) return null;
 
     const ratio = ratioFromQuantities(ratioMatch[1], ratioMatch[2]);
@@ -172,7 +170,6 @@ export function buildFormulaDraftFromText(rawText: string, fileName: string): { 
         RA_unit,
         mix_type: /ผสมให้ได้|รวม|ได้สุทธิ|fixed/i.test(rawText) ? 1 : 2,
         A0: Number((area || '1000').replace(/,/g, '')) || 1000,
-        tankCapacity: Number((tank || '10').replace(/,/g, '')) || 10,
     };
     return {
         text: `📄 อ่านข้อความในไฟล์ "${fileName}" แล้ว และสร้างสูตรฉบับร่างให้ตรวจสอบ\n\n`

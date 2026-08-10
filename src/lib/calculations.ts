@@ -10,7 +10,6 @@ export interface CalculationInput {
     A_house: number;     // พื้นที่ต่อหลังบ้าน (ตร.ม.)
     N: number;           // จำนวนหลังบ้าน
     targetVolume?: number; // ปริมาณที่ต้องการเตรียมรวม (ลิตร)
-    tankCapacity?: number; // ขนาดถังพ่นเคมีมาตรฐาน (ลิตร) ค่าเริ่มต้น 10
 }
 
 export interface CalculationResult {
@@ -22,11 +21,6 @@ export interface CalculationResult {
     V_S_1L: number;      // ตัวทำละลาย (cc) - ดูตามบริบท mix_type
     V_C_target: number;  // สารเคมีที่ต้องใช้ตามเป้าหมาย (cc)
     V_S_target: number;  // ตัวทำละลายที่ต้องใช้ตามเป้าหมาย (cc)
-    tankCapacity: number;// ความจุถังพ่นมาตรฐาน (ลิตร)
-    tanksCount: number;  // จำนวนถังพ่นที่ต้องเตรียม (ถัง)
-    V_per_tank: number;  // ปริมาตรผสมต่อ 1 ถังพ่นเต็ม (cc)
-    V_C_per_tank: number;// สารออกฤทธิ์ต่อ 1 ถังพ่นเต็ม (cc)
-    V_S_per_tank: number;// ตัวทำละลายต่อ 1 ถังพ่นเต็ม (cc)
 }
 
 /**
@@ -54,7 +48,7 @@ export function calculate(input: CalculationInput): CalculationResult {
     // Validate input
     validateCalculationInput(input);
 
-    const { C, S, RA, RA_unit, mix_type = 1, A0, A_house, N, targetVolume = 1, tankCapacity = 10 } = input;
+    const { C, S, RA, RA_unit, mix_type = 1, A0, A_house, N, targetVolume = 1 } = input;
 
     // 1. แปลง RA เป็น cc
     const RA_cc = RA_unit === 'L' ? RA * 1000 : RA;
@@ -97,13 +91,6 @@ export function calculate(input: CalculationInput): CalculationResult {
     const V_C_target = V_C_1L * targetVolume;
     const V_S_target = V_S_1L * targetVolume;
 
-    // คำนวณถังพ่นเคมีมาตรฐาน
-    const tankCapacityCc = tankCapacity * 1000;
-    const tanksCount = Math.ceil(V_total / tankCapacityCc);
-    const V_per_tank = Math.min(V_total, tankCapacityCc);
-    const V_C_per_tank = V_C_1L * (V_per_tank / 1000);
-    const V_S_per_tank = V_S_1L * (V_per_tank / 1000);
-
     return {
         V_per_house: roundTo(V_per_house, 2),
         V_total: roundTo(V_total, 2),
@@ -113,11 +100,6 @@ export function calculate(input: CalculationInput): CalculationResult {
         V_S_1L: roundTo(V_S_1L, 2),
         V_C_target: roundTo(V_C_target, 2),
         V_S_target: roundTo(V_S_target, 2),
-        tankCapacity,
-        tanksCount,
-        V_per_tank: roundTo(V_per_tank, 2),
-        V_C_per_tank: roundTo(V_C_per_tank, 2),
-        V_S_per_tank: roundTo(V_S_per_tank, 2),
     };
 }
 

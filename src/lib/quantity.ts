@@ -109,6 +109,17 @@ export function simplifyRatio(C: number, S: number): { C: number; S: number } {
     return { C: ci / g, S: si / g };
 }
 
+/**
+ * Labels the unit an admin picked for C or S at entry time (C_unit/S_unit columns,
+ * migration 20260810120000_add_cs_units.sql). "ส่วน" covers rows saved before that
+ * migration existed — the stored ratio is still valid, the literal unit just wasn't recorded.
+ */
+export function formatCSUnitLabel(unit: 'L' | 'cc' | null | undefined): string {
+    if (unit === 'L') return 'ลิตร';
+    if (unit === 'cc') return 'มล.';
+    return 'ส่วน';
+}
+
 /** Parses "10,000 ตารางเมตร" → 10000. Returns null when absent or unparseable. */
 export function parseArea(raw: unknown): number | null {
     const text = String(raw ?? '').trim();

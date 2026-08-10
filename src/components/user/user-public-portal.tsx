@@ -10,6 +10,10 @@ import { LocationReport } from '@/components/admin/location-report';
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
 import { FreeFormulaCalculator } from '@/components/calculator/free-formula-calculator';
 import { formatRAUnit } from '@/lib/calculations';
+import { inferProfileSource } from '@/lib/profile-source';
+import { formatCSUnitLabel } from '@/lib/quantity';
+import { format } from 'date-fns';
+import { th } from 'date-fns/locale';
 import {
     LayoutDashboard,
     Layers,
@@ -52,12 +56,17 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
     // component drives server searchParams, which doesn't apply here — this list is
     // already fully in memory from /api/profiles.
     const [catalogQuery, setCatalogQuery] = useState('');
+    // 'guest' never appears here — guestOwnerToken is stripped from the public
+    // /api/profiles response, so inferProfileSource always falls back to 'admin'
+    // (labelled "เพิ่มโดยผู้ใช้งาน" below, since we can't tell admin vs guest client-side).
+    const [catalogSource, setCatalogSource] = useState<'all' | 'default' | 'file-import' | 'admin'>('all');
     const [catalogPage, setCatalogPage] = useState(1);
 
     const filteredProfiles = profiles.filter((p: any) => {
         const q = catalogQuery.trim().toLowerCase();
-        if (!q) return true;
-        return `${p.name ?? ''} ${p.description ?? ''}`.toLowerCase().includes(q);
+        if (q && !`${p.name ?? ''} ${p.description ?? ''}`.toLowerCase().includes(q)) return false;
+        if (catalogSource !== 'all' && inferProfileSource(p).source !== catalogSource) return false;
+        return true;
     });
     const catalogTotalPages = Math.max(1, Math.ceil(filteredProfiles.length / CATALOG_PAGE_SIZE));
     const pagedProfiles = filteredProfiles.slice(
@@ -257,20 +266,45 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                     </CardHeader>
 
                     <CardContent className="p-4 sm:p-6 space-y-4">
+                        <div className="flex items-center gap-1 bg-brand-cloud rounded-xl p-0.5 w-fit overflow-x-auto">
+                            {([
+                                { value: 'all', label: 'ทั้งหมด' },
+                                { value: 'default', label: 'ค่าเริ่มต้น' },
+                                { value: 'admin', label: 'เพิ่มโดยผู้ใช้งาน' },
+                                { value: 'file-import', label: 'นำเข้าไฟล์' },
+                            ] as const).map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => { setCatalogSource(opt.value); setCatalogPage(1); }}
+                                    className={`h-8 px-3 text-xs rounded-lg whitespace-nowrap transition-all ${
+                                        catalogSource === opt.value
+                                            ? 'bg-white text-brand font-semibold shadow-xs'
+                                            : 'text-brand-muted hover:text-brand-dark'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
                         <div className="overflow-x-auto rounded-xl border border-brand-line">
-                            <table className="w-full text-left text-xs sm:text-sm min-w-200">
+                            <table className="w-full text-left text-xs sm:text-sm min-w-275">
                                 <thead className="bg-brand-cloud text-brand-muted font-semibold border-b border-brand-line">
                                     <tr>
                                         <th className="p-3">ชื่อสูตรสารเคมี</th>
-                                        <th className="p-3">ประเภทการผสม</th>
-                                        <th className="p-3 text-center">สัดส่วน</th>
+                                        <th className="p-3 text-center">สารเคมีออกฤทธิ์</th>
+                                        <th className="p-3 text-center">ตัวทำละลาย</th>
+                                        <th className="p-3">ประเภทผสม</th>
                                         <th className="p-3 text-center">อัตราพ่น</th>
-                                        <th className="p-3 text-center">ถังมาตรฐาน</th>
+                                        <th className="p-3 text-center">เพิ่มรูปแบบ</th>
+                                        <th className="p-3">เวลาเพิ่ม</th>
                                         <th className="p-3">คำอธิบาย</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-brand-line">
-                                    {pagedProfiles.map((p: any) => (
+                                    {pagedProfiles.map((p: any) => {
+                                        const sourceInfo = inferProfileSource(p);
+                                        return (
                                         <tr key={p.id} className="hover:bg-brand-soft/40">
                                             <td className="p-3 font-bold text-brand-ink max-w-56">
                                                 <div className="flex items-center gap-2">
@@ -278,19 +312,33 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                                     <span className="truncate" title={p.name}>{p.name}</span>
                                                 </div>
                                             </td>
+                                            <td className="p-3 text-center font-mono font-bold text-brand-ink tabular-nums whitespace-nowrap">
+                                                {p.C}
+                                                <span className="block font-sans font-normal text-[10px] text-brand-muted/70">{formatCSUnitLabel(p.C_unit)}</span>
+                                            </td>
+                                            <td className="p-3 text-center font-mono font-bold text-brand-ink tabular-nums whitespace-nowrap">
+                                                {p.S}
+                                                <span className="block font-sans font-normal text-[10px] text-brand-muted/70">{formatCSUnitLabel(p.S_unit)}</span>
+                                            </td>
                                             <td className="p-3">
                                                 <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap bg-brand-soft text-brand-dark">
                                                     {p.mix_type === 2 ? 'แบบผสมกับ' : 'แบบผสมให้ได้'}
                                                 </span>
                                             </td>
-                                            <td className="p-3 text-center font-mono font-bold text-brand-ink tabular-nums whitespace-nowrap">
-                                                {p.C} : {p.S}
-                                            </td>
                                             <td className="p-3 text-center font-semibold text-brand-ink tabular-nums whitespace-nowrap">
                                                 {p.RA} {formatRAUnit(p.RA_unit)} / {(p.A0 || 1000).toLocaleString('th-TH')} ตร.ม.
                                             </td>
-                                            <td className="p-3 text-center font-semibold text-brand-dark tabular-nums whitespace-nowrap">
-                                                {p.tankCapacity || 10} ลิตร
+                                            <td className="p-3 text-center">
+                                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${
+                                                    sourceInfo.source === 'default' ? 'bg-slate-200 text-slate-700'
+                                                        : sourceInfo.source === 'file-import' ? 'bg-amber-100 text-amber-700'
+                                                            : 'bg-brand-soft text-brand-dark'
+                                                }`}>
+                                                    {sourceInfo.label}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 text-brand-muted whitespace-nowrap">
+                                                {p.createdAt ? format(new Date(p.createdAt), 'd MMM yy HH:mm', { locale: th }) : '-'}
                                             </td>
                                             <td className="p-3 text-brand-muted max-w-64">
                                                 <span className="block truncate" title={p.description || undefined}>
@@ -298,10 +346,11 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                                 </span>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                     {pagedProfiles.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="p-8 text-center text-brand-muted">
+                                            <td colSpan={8} className="p-8 text-center text-brand-muted">
                                                 ไม่พบสูตรที่ตรงกับคำค้นหา
                                             </td>
                                         </tr>

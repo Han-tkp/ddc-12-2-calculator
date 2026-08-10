@@ -13,7 +13,6 @@ const SUGGESTED_KEYS = [
     { value: 'A0', label: 'A0 — พื้นที่มาตรฐานอ้างอิง' },
     { value: 'mix_type', label: 'รูปแบบการผสม (mix_type)' },
     { value: 'RA', label: 'อัตราการพ่น (RA)' },
-    { value: 'tankCapacity', label: 'ความจุถังพ่น' },
 ];
 
 interface ResultHelpEditorProps {

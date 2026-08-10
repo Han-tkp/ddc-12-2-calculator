@@ -12,7 +12,6 @@ export interface AIFormulaResult {
     RA_unit: 'L' | 'cc';
     mix_type: number;
     A0: number;
-    tankCapacity: number;
 }
 
 export interface ChatResponse {
@@ -39,7 +38,6 @@ export interface ExtractedFormulaParams {
     S?: number;
     RA?: number;
     RA_unit?: 'L' | 'cc';
-    tankCapacity?: number;
     method?: 'ULV' | 'fogging';
     A0?: number;
 }

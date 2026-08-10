@@ -51,8 +51,8 @@ export function FieldModeCalculator() {
         register, setValue, watchedValues, errors,
         result, calculatedInput, genericResult, selectedPreset, selectedFormula,
         genericFormValues, setGenericFormValues, isCalculating, gpsStatus, coords,
-        dbPresets, isGenericSelected,
-        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCalculateAndSave, handleReset,
+        dbPresets, isGenericSelected, CUnit, SUnit,
+        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCUnitChange, handleSUnitChange, handleCalculateAndSave, handleReset,
     } = useCalculatorEngine();
 
     const [mapOpen, setMapOpen] = useState(false);
@@ -224,12 +224,34 @@ export function FieldModeCalculator() {
                                 {errors.N && <p className="text-[11px] mt-1" style={{ color: '#b42318' }}>{errors.N.message}</p>}
                             </div>
                             <div className="rounded-lg p-3" style={{ background: CLOUD, border: `1px solid ${LINE}` }}>
-                                <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>สารเคมี (มล.)</label>
-                                <Input type="number" step="0.1" {...register('C', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
+                                <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>สารเคมี</label>
+                                <div className="flex gap-1">
+                                    <Input type="number" step="0.1" {...register('C', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
+                                    <Select onValueChange={(val) => handleCUnitChange(val as 'L' | 'cc')} value={CUnit}>
+                                        <SelectTrigger className="w-16 h-10 text-xs bg-white shrink-0">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร</SelectItem>
+                                            <SelectItem value="cc">มล.</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                             <div className="rounded-lg p-3" style={{ background: CLOUD, border: `1px solid ${LINE}` }}>
-                                <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>ตัวทำละลาย (ลิตร)</label>
-                                <Input type="number" step="0.1" {...register('S', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
+                                <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>ตัวทำละลาย</label>
+                                <div className="flex gap-1">
+                                    <Input type="number" step="0.1" {...register('S', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
+                                    <Select onValueChange={(val) => handleSUnitChange(val as 'L' | 'cc')} value={SUnit}>
+                                        <SelectTrigger className="w-16 h-10 text-xs bg-white shrink-0">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="L">ลิตร</SelectItem>
+                                            <SelectItem value="cc">มล.</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                             <div className="rounded-lg p-3" style={{ background: CLOUD, border: `1px solid ${LINE}` }}>
                                 <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>ประเภทการผสม</label>

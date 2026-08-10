@@ -53,10 +53,5 @@ function mapToGenericResult(
     V_S_1L: get('V_S_1L'),
     V_C_target: get('V_C_target'),
     V_S_target: get('V_S_target'),
-    tankCapacity: get('tankCapacity') || 10,
-    tanksCount: Math.ceil(get('V_total') / (get('tankCapacity') * 1000 || 10000)),
-    V_per_tank: get('V_per_tank'),
-    V_C_per_tank: get('V_C_per_tank'),
-    V_S_per_tank: get('V_S_per_tank'),
   };
 }

@@ -35,7 +35,6 @@ describe('buildCalculationResponse', () => {
         expect(res.result!.V_C).toBe(25.32); // 2000 * (1/79)
         expect(res.result!.V_total).toBe(2025.32);
         expect(res.result!.V_C_1L).toBe(12.66);
-        expect(res.result!.tanksCount).toBe(1);
         expect(res.text).toContain('Deltacide');
         expect(res.text).toContain('2025.32');
     });

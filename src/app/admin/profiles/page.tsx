@@ -8,12 +8,15 @@ import Link from 'next/link';
 import { ArrowLeft, Settings, FlaskConical, Sparkles, Shield } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { SearchInput } from '@/components/admin/search-input';
+import { ProfileSourceFilter } from '@/components/admin/profile-source-filter';
+import { DateRangeFilter } from '@/components/admin/date-range-filter';
+import { startOfDay, endOfDay, parseISO } from 'date-fns';
 
-async function getProfiles(pageStr: string | undefined, q?: string) {
+async function getProfiles(pageStr: string | undefined, q?: string, source?: string, fromDateStr?: string, toDateStr?: string) {
     const currentPage = parseInt(pageStr || '1', 10);
     const pageSize = 20;
-    const from = (currentPage - 1) * pageSize;
-    const to = from + pageSize - 1;
+    const rangeFrom = (currentPage - 1) * pageSize;
+    const rangeTo = rangeFrom + pageSize - 1;
 
     let query = supabase
         .from('label_profiles')
@@ -25,7 +28,26 @@ async function getProfiles(pageStr: string | undefined, q?: string) {
         query = query.or(`name.ilike.${keyword},description.ilike.${keyword}`);
     }
 
-    const { data: profiles, count, error } = await query.range(from, to);
+    // Mirrors the inference in src/lib/profile-source.ts — there's no dedicated
+    // "source" column, so this reconstructs the same signals server-side.
+    if (source === 'default') {
+        query = query.eq('isDefault', true);
+    } else if (source === 'admin') {
+        query = query.eq('isDefault', false).is('guestOwnerToken', null);
+    } else if (source === 'guest') {
+        query = query.eq('isDefault', false).not('guestOwnerToken', 'is', null);
+    } else if (source === 'file-import') {
+        query = query.eq('isDefault', false).or('description.ilike.%นำเข้าจากไฟล์%,description.ilike.%แนบไฟล์ฉลาก%,description.ilike.%วิเคราะห์ฉลาก%');
+    }
+
+    if (fromDateStr) {
+        query = query.gte('createdAt', startOfDay(parseISO(fromDateStr)).toISOString());
+    }
+    if (toDateStr) {
+        query = query.lte('createdAt', endOfDay(parseISO(toDateStr)).toISOString());
+    }
+
+    const { data: profiles, count, error } = await query.range(rangeFrom, rangeTo);
 
     if (error) {
         console.error('Error fetching profiles:', error);
@@ -40,23 +62,25 @@ async function getProfiles(pageStr: string | undefined, q?: string) {
     };
 }
 
-export default async function AdminProfilesPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
+export default async function AdminProfilesPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string; source?: string; from?: string; to?: string }> }) {
     const session = await auth();
-    const { page, q } = await searchParams;
+    const { page, q, source, from, to } = await searchParams;
 
     // Check if user is admin
     if (!session?.user || session.user.role !== 'ADMIN') {
         redirect('/login');
     }
 
-    const { profiles, count, currentPage, totalPages } = await getProfiles(page, q);
+    const { profiles, count, currentPage, totalPages } = await getProfiles(page, q, source, from, to);
 
     return (
         <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">จัดการสูตรสารเคมี</h1>
-                    <p className="text-xs sm:text-sm text-slate-500">จัดการสูตรที่ผู้ใช้เลือกได้ในหน้าคำนวณ</p>
+                    <p className="text-xs sm:text-sm text-slate-500">
+                        จัดการสูตรที่ผู้ใช้เลือกได้ในหน้าคำนวณ ({(count || 0).toLocaleString('th-TH')} รายการ)
+                    </p>
                 </div>
                 <Link href="/admin/audit" className="w-full sm:w-auto">
                     <Button variant="outline" className="w-full sm:w-auto gap-2 h-10 bg-white shadow-sm border-slate-200">
@@ -66,8 +90,16 @@ export default async function AdminProfilesPage({ searchParams }: { searchParams
                 </Link>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full sm:w-96">
-                <SearchInput placeholder="ค้นหาชื่อสูตร หรือคำอธิบาย..." />
+            <div className="flex flex-col xl:flex-row items-stretch xl:items-end gap-2 w-full">
+                <div className="w-full sm:w-64">
+                    <SearchInput placeholder="ค้นหาชื่อสูตร หรือคำอธิบาย..." />
+                </div>
+                <div className="w-full xl:w-auto overflow-x-auto">
+                    <ProfileSourceFilter />
+                </div>
+                <div className="flex-1 w-full">
+                    <DateRangeFilter />
+                </div>
             </div>
 
             <div className="p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 shadow-sm mb-6">

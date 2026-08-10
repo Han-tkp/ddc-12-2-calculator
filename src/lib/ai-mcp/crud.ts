@@ -50,7 +50,6 @@ interface ProfileRow {
     RA_unit: string;
     mix_type: number;
     A0: number;
-    tankCapacity: number;
     isActive: boolean;
     guestOwnerToken?: string | null;
     updatedAt?: string;
@@ -105,6 +104,9 @@ export async function createChemicalProfile(args: Record<string, unknown>): Prom
         .from('label_profiles')
         .insert({
             ...profileInput,
+            // tankCapacity is a retired concept, no longer surfaced anywhere in the
+            // app — this fixed value only exists to satisfy the DB column's constraint.
+            tankCapacity: 10,
             // Guest ไม่สามารถตั้ง isActive = false ได้ตอนสร้าง — admin เท่านั้น
             isActive: ctx.isAdmin ? profileInput.isActive : true,
             createdById: ctx.userId,
@@ -143,7 +145,7 @@ export async function createChemicalProfile(args: Record<string, unknown>): Prom
  * ───────────────────────────────────────────────────────────────── */
 const ALLOWED_UPDATE_FIELDS = [
     'name', 'description', 'C', 'S', 'RA', 'RA_unit', 'mix_type',
-    'A0', 'tankCapacity', 'isActive',
+    'A0', 'isActive',
 ] as const;
 
 const updateArgsSchema = z.object({
@@ -156,7 +158,6 @@ const updateArgsSchema = z.object({
     RA_unit: z.enum(['L', 'cc']).optional(),
     mix_type: z.number().int().min(1).max(2).optional(),
     A0: z.number().positive().optional(),
-    tankCapacity: z.number().positive().optional(),
     isActive: z.boolean().optional(),
     location: z.string().trim().max(200).optional(),
     lat: z.number().min(-90).max(90).optional().nullable(),

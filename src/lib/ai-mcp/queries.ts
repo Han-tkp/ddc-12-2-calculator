@@ -41,7 +41,7 @@ export async function queryCalculations(args: { chemical?: string; limit?: numbe
 
 interface ProfileRow {
     name: string; description?: string; C: number; S: number;
-    RA: number; RA_unit: string; mix_type: number; A0: number; tankCapacity: number;
+    RA: number; RA_unit: string; mix_type: number; A0: number;
 }
 
 /** Fetch chemical profiles from Supabase and build formula response */
@@ -64,7 +64,6 @@ export async function buildFormulaFromSupabase(searchTerm: string): Promise<{ te
 📋 **รายละเอียด:**
 • อัตราส่วนผสม: ${profile.C} : ${profile.S} (${mixLabel})
 • อัตราการพ่น (RA): ${profile.RA} ${profile.RA_unit} / ${profile.A0.toLocaleString()} ตร.ม.
-• ขนาดถังพ่น: ${profile.tankCapacity} ลิตร
 
 📝 ${profile.description || ''}
 
@@ -81,7 +80,6 @@ export async function buildFormulaFromSupabase(searchTerm: string): Promise<{ te
             RA_unit: profile.RA_unit as 'L' | 'cc',
             mix_type: profile.mix_type,
             A0: profile.A0,
-            tankCapacity: profile.tankCapacity,
         },
     };
 }
@@ -134,10 +132,9 @@ export async function buildNewFormulaRecommendation(userQuery: string): Promise<
 📋 สัดส่วนที่แนะนำตามมาตรฐาน DDC:
 • สัดส่วน (C:S) = ${profile.C} : ${profile.S} (${mixLabel})
 • อัตราพ่น = ${profile.RA} ${profile.RA_unit} ต่อ ${profile.A0.toLocaleString()} ตร.ม.
-• ขนาดถังพ่น = ${profile.tankCapacity} ลิตร
 • จำนวนบ้านประมาณ = ${Math.round(profile.A0 / 100)} หลัง (บ้านละ 100 ตร.ม.)
 
-💧 **วิธีผสมต่อถัง ${profile.tankCapacity} ลิตร:**
+💧 **วิธีผสมต่อน้ำยาผสม 10 ลิตร:**
 ${
     profile.mix_type === 2
         ? `• ตวงสารเคมี = ${(10000 * profile.C / profile.S).toFixed(0)} มล.
@@ -156,7 +153,6 @@ ${
                     RA_unit: profile.RA_unit as 'L' | 'cc',
                     mix_type: profile.mix_type,
                     A0: profile.A0,
-                    tankCapacity: profile.tankCapacity,
                 },
             };
         }
@@ -189,7 +185,6 @@ ${
             RA_unit: profile.RA_unit as 'L' | 'cc',
             mix_type: profile.mix_type,
             A0: profile.A0,
-            tankCapacity: profile.tankCapacity,
         },
     };
 }
@@ -259,7 +254,6 @@ export async function buildChemicalComparison(userQuery: string): Promise<{ text
 | สัดส่วน C:S | ${p1.C}:${p1.S} | ${p2.C}:${p2.S} |
 | อัตราพ่น | ${p1.RA} ${p1.RA_unit} | ${p2.RA} ${p2.RA_unit} |
 | พื้นที่มาตรฐาน | ${p1.A0.toLocaleString()} ตร.ม. | ${p2.A0.toLocaleString()} ตร.ม. |
-| ขนาดถัง | ${p1.tankCapacity} ลิตร | ${p2.tankCapacity} ลิตร |
 | ประเภทผสม | ${p1.mix_type === 2 ? 'ผสมกับ' : 'ผสมให้ได้'} | ${p2.mix_type === 2 ? 'ผสมกับ' : 'ผสมให้ได้'} |
 
 💡 **ข้อแนะนำ:** เลือก ${p1.name} สำหรับการพ่นในพื้นที่เปิด และ ${p2.name} สำหรับพื้นที่อับหรือต้องการการปกคลุมนาน`,

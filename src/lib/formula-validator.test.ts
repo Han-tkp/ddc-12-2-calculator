@@ -3,33 +3,32 @@ import { validateFormulaDraft, formatValidationIssues } from './formula-validato
 
 describe('validateFormulaDraft', () => {
     it('validates a complete valid formula with no issues', () => {
-        const result = validateFormulaDraft({ name: 'Test', C: 1, S: 9, RA: 50, RA_unit: 'cc', mix_type: 2, A0: 1000, tankCapacity: 10 });
+        const result = validateFormulaDraft({ name: 'Test', C: 1, S: 9, RA: 50, RA_unit: 'cc', mix_type: 2, A0: 1000 });
         expect(result.valid).toBe(true);
         expect(result.issues).toEqual([]);
-        expect(result.formula).toMatchObject({ C: 1, S: 9, RA: 50, RA_unit: 'cc', mix_type: 2, A0: 1000, tankCapacity: 10 });
+        expect(result.formula).toMatchObject({ C: 1, S: 9, RA: 50, RA_unit: 'cc', mix_type: 2, A0: 1000 });
     });
 
     it('fills defaults with warnings when values are missing', () => {
         const result = validateFormulaDraft({ C: 1, S: 9, RA: 50 });
         expect(result.valid).toBe(true);
-        expect(result.formula).toMatchObject({ C: 1, S: 9, RA: 50, RA_unit: 'cc', mix_type: 2, A0: 1000, tankCapacity: 10, name: 'สูตรใหม่' });
+        expect(result.formula).toMatchObject({ C: 1, S: 9, RA: 50, RA_unit: 'cc', mix_type: 2, A0: 1000, name: 'สูตรใหม่' });
         expect(result.issues.some(i => i.level === 'warning')).toBe(true);
     });
 
     it('coerces string numbers', () => {
-        const result = validateFormulaDraft({ C: '1', S: '79', RA: '1', RA_unit: 'L', mix_type: '2', A0: '1,000', tankCapacity: '5' });
+        const result = validateFormulaDraft({ C: '1', S: '79', RA: '1', RA_unit: 'L', mix_type: '2', A0: '1,000' });
         expect(result.valid).toBe(true);
-        expect(result.formula).toMatchObject({ C: 1, S: 79, RA: 1, RA_unit: 'L', mix_type: 2, A0: 1000, tankCapacity: 5 });
+        expect(result.formula).toMatchObject({ C: 1, S: 79, RA: 1, RA_unit: 'L', mix_type: 2, A0: 1000 });
     });
 
     it('rejects non-positive and out-of-range values as errors', () => {
-        const result = validateFormulaDraft({ C: 0, S: -5, RA: 999999999, tankCapacity: 0 });
+        const result = validateFormulaDraft({ C: 0, S: -5, RA: 999999999 });
         expect(result.valid).toBe(false);
         const fields = result.issues.filter(i => i.level === 'error').map(i => i.field);
         expect(fields).toContain('C');
         expect(fields).toContain('S');
         expect(fields).toContain('RA');
-        expect(fields).toContain('tankCapacity');
     });
 
     it('rejects invalid RA_unit and mix_type with warnings + defaults', () => {

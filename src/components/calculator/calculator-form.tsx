@@ -24,8 +24,8 @@ export function CalculatorForm() {
         register, setValue, watchedValues, errors,
         result, calculatedInput, genericResult, selectedPreset, selectedFormula,
         genericFormValues, setGenericFormValues, isCalculating, gpsStatus, coords,
-        dbPresets, isGenericSelected,
-        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCalculateAndSave, handleReset,
+        dbPresets, isGenericSelected, CUnit, SUnit,
+        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCUnitChange, handleSUnitChange, handleCalculateAndSave, handleReset,
     } = useCalculatorEngine();
 
     return (
@@ -169,28 +169,56 @@ export function CalculatorForm() {
                         <div className="bento-item bg-blue-50/50 border-blue-100 p-4 sm:p-5 flex flex-col justify-between">
                             <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
                                 <Droplets className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                                <span>ปริมาณสารเคมีที่ระบุข้างขวด (มิลลิลิตร)</span>
+                                <span>ปริมาณสารเคมีที่ระบุข้างขวด</span>
                             </Label>
-                            <Input
-                                type="number"
-                                step="0.1"
-                                {...register('C', { valueAsNumber: true })}
-                                className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    {...register('C', { valueAsNumber: true })}
+                                    className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
+                                />
+                                <Select
+                                    onValueChange={(val) => handleCUnitChange(val as 'L' | 'cc')}
+                                    value={CUnit}
+                                >
+                                    <SelectTrigger className="w-20 bg-white/60 h-11 sm:h-12 text-xs sm:text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="L">ลิตร</SelectItem>
+                                        <SelectItem value="cc">มล.</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
                         {/* Point 2: Ratio S */}
                         <div className="bento-item bg-sky-50/50 border-sky-100 p-4 sm:p-5 flex flex-col justify-between">
                             <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
                                 <Beaker className="h-4 w-4 text-sky-500 shrink-0 mt-0.5" />
-                                <span>ปริมาณตัวทำละลายที่ระบุข้างขวด (น้ำมัน/น้ำ) (ลิตร)</span>
+                                <span>ปริมาณตัวทำละลายที่ระบุข้างขวด (น้ำมัน/น้ำ)</span>
                             </Label>
-                            <Input
-                                type="number"
-                                step="0.1"
-                                {...register('S', { valueAsNumber: true })}
-                                className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    {...register('S', { valueAsNumber: true })}
+                                    className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
+                                />
+                                <Select
+                                    onValueChange={(val) => handleSUnitChange(val as 'L' | 'cc')}
+                                    value={SUnit}
+                                >
+                                    <SelectTrigger className="w-20 bg-white/60 h-11 sm:h-12 text-xs sm:text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="L">ลิตร</SelectItem>
+                                        <SelectItem value="cc">มล.</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
                         {/* Mix Type */}

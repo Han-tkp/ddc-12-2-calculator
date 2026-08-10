@@ -14,7 +14,6 @@ export const calculationSchema = z.object({
     A_house: z.number().positive('พื้นที่ต่อหลังบ้านต้องเป็นจำนวนบวก'),
     N: z.number().int('จำนวนหลังบ้านต้องเป็นจำนวนเต็ม').positive('จำนวนหลังบ้านต้องมากกว่า 0'),
     targetVolume: z.number().positive('ปริมาณน้ำยาพ่นต้องมากกว่า 0').optional().default(1),
-    tankCapacity: z.number().positive('ขนาดถังพ่นต้องมากกว่า 0').optional().default(10),
     location: z.string().optional(),
     agency: z.string().optional(),
     chemical: z.string().optional(),
@@ -31,8 +30,11 @@ export const profileSchema = z.object({
     RA_unit: z.enum(['L', 'cc']),
     mix_type: z.number().int().min(1).max(2).default(1),
     A0: z.number().positive('พื้นที่มาตรฐานต้องเป็นจำนวนบวก'),
-    tankCapacity: z.number().positive('ขนาดถังพ่นต้องเป็นจำนวนบวก').optional().default(10),
     isActive: z.boolean().default(true),
+    // Which unit (L/cc) the admin picked for C and S at entry time — informational
+    // only, never read by calculate(). C/S themselves stay the normalized ratio.
+    C_unit: z.enum(['L', 'cc']).optional().nullable(),
+    S_unit: z.enum(['L', 'cc']).optional().nullable(),
     // Optional per-field explanation shown alongside the result (e.g. why A0
     // defaults to what it does for this formula). Additive only — see ResultsDisplay.
     resultHelp: z.record(z.string(), z.string()).optional().nullable(),

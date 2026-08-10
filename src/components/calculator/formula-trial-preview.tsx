@@ -17,7 +17,6 @@ interface FormulaTrialPreviewProps {
     RAUnit: 'L' | 'cc';
     mixType: number;
     A0: number;
-    tankCapacity: number;
     /** The result-help draft being authored, so the preview shows it exactly as it will render. */
     resultHelp?: Record<string, string>;
 }
@@ -35,7 +34,7 @@ const DEFAULT_SCRATCH: TrialScratch = { A_house: 100, N: 10 };
  * localStorage as scratch state only, cleared by the reset button, and the
  * compute button just calls the pure `calculate()` engine directly.
  */
-export function FormulaTrialPreview({ storageKey, C, S, RA, RAUnit, mixType, A0, tankCapacity, resultHelp }: FormulaTrialPreviewProps) {
+export function FormulaTrialPreview({ storageKey, C, S, RA, RAUnit, mixType, A0, resultHelp }: FormulaTrialPreviewProps) {
     const fullKey = `ddc:trial-preview:${storageKey}`;
     const [scratch, setScratch] = useState<TrialScratch>(DEFAULT_SCRATCH);
     const [result, setResult] = useState<CalculationResult | null>(null);
@@ -62,7 +61,7 @@ export function FormulaTrialPreview({ storageKey, C, S, RA, RAUnit, mixType, A0,
         const input: CalculationInput = {
             C, S, RA, RA_unit: RAUnit,
             mix_type: mixType,
-            A0, tankCapacity,
+            A0,
             A_house: scratch.A_house,
             N: scratch.N,
         };

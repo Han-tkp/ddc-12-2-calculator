@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { convertRA } from '@/lib/calculations';
+import { simplifyRatio } from '@/lib/quantity';
 
 interface PublicProfile {
     id: string;
@@ -20,7 +21,8 @@ interface PublicProfile {
     RA_unit: 'L' | 'cc';
     mix_type: number;
     A0: number;
-    tankCapacity?: number;
+    C_unit?: 'L' | 'cc' | null;
+    S_unit?: 'L' | 'cc' | null;
     canManage?: boolean;
 }
 
@@ -42,11 +44,12 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
         RA_unit: profile.RA_unit,
         mix_type: profile.mix_type,
         A0: profile.A0,
-        tankCapacity: profile.tankCapacity || 10,
         location: '',
     });
-    // ตัวช่วยเลือกหน่วยของ C/S เฉพาะฝั่ง UI เท่านั้น (S ไม่มีคอลัมน์หน่วยใน DB — ไม่ส่งไปกับ payload)
-    const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
+    // C และ S แยกหน่วยกันอิสระ (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน) — แปลงเป็น มล. แล้วลดรูป
+    // สัดส่วนตอนบันทึก หน่วยที่เลือกไว้จะถูกบันทึกแยกไปที่ C_unit/S_unit เพื่อแสดงผลเท่านั้น
+    const [CUnit, setCUnit] = useState<'L' | 'cc'>(profile.C_unit || 'L');
+    const [SUnit, setSUnit] = useState<'L' | 'cc'>(profile.S_unit || 'L');
 
     if (!profile.canManage) return null;
 
@@ -68,12 +71,15 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
 
         try {
             const coordinates = await getCoordinates();
+            // C และ S อาจกรอกกันคนละหน่วย — แปลงเป็น มล. แล้วลดรูปสัดส่วนก่อนส่งเสมอ
+            const C_ml = CUnit === 'L' ? form.C * 1000 : form.C;
+            const S_ml = SUnit === 'L' ? form.S * 1000 : form.S;
             const response = await fetch(`/api/profiles/${profile.id}`, {
                 method: confirmation === 'update' ? 'PUT' : 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(
                     confirmation === 'update'
-                        ? { ...form, ...coordinates }
+                        ? { ...form, ...simplifyRatio(C_ml, S_ml), C_unit: CUnit, S_unit: SUnit, ...coordinates }
                         : { location: form.location, ...coordinates }
                 ),
             });
@@ -111,21 +117,45 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                     <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); setConfirmation('update'); }}>
                         <div className="space-y-1"><Label>ชื่อสูตร</Label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></div>
                         <div className="space-y-1"><Label>คำอธิบาย</Label><Input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></div>
-                        <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-1"><Label>สารออกฤทธิ์ (C)</Label><Input type="number" min="0.0001" step="any" value={form.C} onChange={(event) => setForm({ ...form, C: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>ตัวทำละลาย (S)</Label><Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>หน่วย S</Label><Select value={SUnit} onValueChange={(value: 'L' | 'cc') => { setForm({ ...form, C: convertRA(form.C, SUnit, value), S: convertRA(form.S, SUnit, value) }); setSUnit(value); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
-                        </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1"><Label>อัตราพ่น</Label><Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required /></div>
-                            <div className="space-y-1"><Label>หน่วยอัตราพ่น</Label><Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent></Select></div>
+                            <div className="space-y-1">
+                                <Label>สารออกฤทธิ์ (C)</Label>
+                                <div className="flex gap-2">
+                                    <Input type="number" min="0.0001" step="any" value={form.C} onChange={(event) => setForm({ ...form, C: Number(event.target.value) })} required />
+                                    <Select value={CUnit} onValueChange={(value: 'L' | 'cc') => { setForm({ ...form, C: convertRA(form.C, CUnit, value) }); setCUnit(value); }}>
+                                        <SelectTrigger className="w-24 shrink-0"><SelectValue /></SelectTrigger>
+                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <Label>ตัวทำละลาย (S)</Label>
+                                <div className="flex gap-2">
+                                    <Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required />
+                                    <Select value={SUnit} onValueChange={(value: 'L' | 'cc') => { setForm({ ...form, S: convertRA(form.S, SUnit, value) }); setSUnit(value); }}>
+                                        <SelectTrigger className="w-24 shrink-0"><SelectValue /></SelectTrigger>
+                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <Label>อัตราการพ่นต่อพื้นที่</Label>
+                            <div className="flex items-center gap-2">
+                                <Input type="number" min="0.0001" step="any" value={form.RA} onChange={(event) => setForm({ ...form, RA: Number(event.target.value) })} required className="flex-1" />
+                                <Select value={form.RA_unit} onValueChange={(value: 'L' | 'cc') => setForm({ ...form, RA: convertRA(form.RA, form.RA_unit, value), RA_unit: value })}>
+                                    <SelectTrigger className="w-24 shrink-0"><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                </Select>
+                                <span className="text-sm text-slate-500 shrink-0">ต่อ</span>
+                                <Input type="number" min="1" value={form.A0} onChange={(event) => setForm({ ...form, A0: Number(event.target.value) })} required className="flex-1" />
+                                <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1"><Label>รูปแบบการผสม</Label><Select value={String(form.mix_type)} onValueChange={(value) => setForm({ ...form, mix_type: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">แบบผสมให้ได้</SelectItem><SelectItem value="2">แบบผสมกับ</SelectItem></SelectContent></Select></div>
-                            <div className="space-y-1"><Label>พื้นที่มาตรฐาน (ตร.ม.)</Label><Input type="number" min="1" value={form.A0} onChange={(event) => setForm({ ...form, A0: Number(event.target.value) })} required /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1"><Label>ขนาดถัง (ลิตร)</Label><Input type="number" min="0.1" step="0.1" value={form.tankCapacity} onChange={(event) => setForm({ ...form, tankCapacity: Number(event.target.value) })} required /></div>
                             <div className="space-y-1"><Label>สถานที่ทำรายการ</Label><Input value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} placeholder="ระบุได้ถ้าต้องการ" /></div>
                         </div>
                         <DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>ยกเลิก</Button><Button type="submit">ตรวจสอบก่อนบันทึก</Button></DialogFooter>

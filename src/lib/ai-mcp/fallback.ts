@@ -28,7 +28,6 @@ export interface CalculationRequest {
     N?: number;
     targetVolume?: number;
     mix_type?: number;
-    tankCapacity?: number;
     chemicalName?: string;
 }
 
@@ -68,21 +67,19 @@ export function buildCalculationResponse(params: CalculationRequest): { text: st
     });
     const A_house = area.A_house;
     const targetVolume = params.targetVolume ?? 1;
-    const tankCapacity = params.tankCapacity ?? 10;
     const mix_type = method ?? (defaults.RA_unit === 'L' ? 1 : 2);
 
-    if (C <= 0 || S <= 0 || RA <= 0 || A0 <= 0 || A_house <= 0 || N <= 0 || targetVolume <= 0 || tankCapacity <= 0) {
+    if (C <= 0 || S <= 0 || RA <= 0 || A0 <= 0 || A_house <= 0 || N <= 0 || targetVolume <= 0) {
         return {
             text: '⚠️ ไม่สามารถคำนวณได้ เนื่องจากค่าสูตรไม่ถูกต้อง (ทุกค่าต้องเป็นจำนวนบวก) — กรุณาตรวจสอบ C, S, RA, พื้นที่ และจำนวนหลังบ้าน',
         };
     }
 
     try {
-        const res = calculate({ C, S, RA, RA_unit, A0, A_house, N, targetVolume, mix_type, tankCapacity });
+        const res = calculate({ C, S, RA, RA_unit, A0, A_house, N, targetVolume, mix_type });
 
         const chemicalName = params.chemicalName || 'สารเคมี';
         const mixLabel = mix_type === 2 ? 'แบบผสมกับ (เติมสารทบน้ำมัน)' : 'แบบผสมให้ได้ (รวมปริมาตรคงที่)';
-        const tanksCount = res.tanksCount;
 
         return {
             text: `🧪 **ผลการคำนวณ: ${chemicalName}** (${mixLabel})
@@ -96,7 +93,6 @@ export function buildCalculationResponse(params: CalculationRequest): { text: st
 • ตัวทำละลาย (S): ${res.V_S} cc
 • **ปริมาณผสมรวม (Total): ${res.V_total} cc** (${round(res.V_total / 1000, 3)} ลิตร)
 • ต่อ 1 หลัง: ${res.V_per_house} cc
-• จำนวนถัง ${tankCapacity} ลิตร: ${tanksCount} ถัง (ผสม ${res.V_per_tank} cc ต่อถัง)
 
 💡 ถ้าต้องการผสมแบบ target volume ${targetVolume} ลิตร: สาร ${res.V_C_target} cc + ตัวทำละลาย ${res.V_S_target} cc
 
@@ -110,9 +106,6 @@ export function buildCalculationResponse(params: CalculationRequest): { text: st
                 V_S_1L: res.V_S_1L,
                 V_C_target: res.V_C_target,
                 V_S_target: res.V_S_target,
-                tanksCount: res.tanksCount,
-                V_C_per_tank: res.V_C_per_tank,
-                V_S_per_tank: res.V_S_per_tank,
                 mix_type,
             },
         };
@@ -261,10 +254,6 @@ export function extractCalculationParams(userQuery: string): CalculationRequest 
     if (/ผสมให้ได้/.test(text)) params.mix_type = 1;
     else if (/ผสมกับ/.test(text)) params.mix_type = 2;
 
-    // Tank size.
-    const tankMatch = text.match(/ถัง\s*(\d+(?:\.\d+)?)\s*ลิตร/);
-    if (tankMatch) params.tankCapacity = Number(tankMatch[1]);
-
     // Chemical name, for the reply header only — never used in arithmetic.
     const nameMatch = text.match(/คำนวณ\s*([฀-๿a-zA-Z0-9\s-]{2,40}?)\s*(?:ULV|หมอกควัน|อัตราส่วน|สัดส่วน|$)/i);
     if (nameMatch?.[1]?.trim()) params.chemicalName = nameMatch[1].trim();
@@ -309,12 +298,6 @@ export function extractFormulaParams(userQuery: string): ExtractedFormulaParams 
         params.RA_unit = (unit === 'l' || unit === 'ลิตร') ? 'L' : 'cc';
     }
 
-    // ขนาดถัง
-    const tankMatch = lower.match(/(?:ถัง|tank)\s*(?:ขนาด)?\s*(\d+(?:\.\d+)?)\s*(?:ลิตร|l)\b/i);
-    if (tankMatch) {
-        params.tankCapacity = parseFloat(tankMatch[1]);
-    }
-
     // พื้นที่มาตรฐาน A0
     const a0Match = lower.match(/(?:พื้นที่|a0)\s*(?:มาตรฐาน)?\s*(?:=|คือ)?\s*(\d+(?:\.\d+)?)/i);
     if (a0Match) {
@@ -338,7 +321,6 @@ export function buildCustomFormula(params: ExtractedFormulaParams, source: 'quer
     const RA = params.RA ?? defaults.RA;
     const RA_unit = params.RA_unit ?? defaults.RA_unit;
     const A0 = params.A0 ?? defaults.A0;
-    const tankCapacity = params.tankCapacity ?? 10;
     // ULV → mix_type 2 (แบบผสมกับ — เติมสารทบน้ำมัน/ตัวทำละลาย)
     // Fogging → mix_type 1 (แบบผสมให้ได้ — รวมปริมาตรคงที่)
     const mix_type = isULV ? 2 : 1;
@@ -356,7 +338,6 @@ export function buildCustomFormula(params: ExtractedFormulaParams, source: 'quer
 📋 **${chemicalName}** — ${methodLabel}
 • อัตราส่วนผสม: ${C} : ${S} (${mixLabel})
 • อัตราการพ่น (RA): ${RA} ${RA_unit} / ${A0.toLocaleString()} ตร.ม.
-• ขนาดถังพ่น: ${tankCapacity} ลิตร
 
 💡 **หมายเหตุ:** สูตรนี้สร้างใหม่จากข้อมูลที่คุณให้ ยังไม่ได้บันทึกในฐานข้อมูล
 กด "ส่งไปคำนวณ" เพื่อดูรายละเอียด หรือ "บันทึกสูตรนี้" เพื่อเพิ่มเข้า database
@@ -371,7 +352,6 @@ export function buildCustomFormula(params: ExtractedFormulaParams, source: 'quer
             RA_unit,
             mix_type,
             A0,
-            tankCapacity,
         },
     };
 }

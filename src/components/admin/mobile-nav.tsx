@@ -39,6 +39,7 @@ export function MobileNav() {
                         <SheetTitle className="font-bold text-lg m-0">เมนู</SheetTitle>
                         <SheetClose asChild>
                             <Button variant="ghost" size="icon">
+                                <X className="h-5 w-5" />
                                 <span className="sr-only">Close</span>
                             </Button>
                         </SheetClose>

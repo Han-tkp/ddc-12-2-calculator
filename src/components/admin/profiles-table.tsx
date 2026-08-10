@@ -4,14 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -26,8 +18,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle2, Plus, Pencil, Trash2, Loader2, Save, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
+import { th } from 'date-fns/locale';
 import { CustomChemicalModal } from '@/components/calculator/custom-chemical-modal';
+import { BulkEditProfilesModal } from './bulk-edit-profiles-modal';
 import { convertRA } from '@/lib/calculations';
+import { simplifyRatio, formatCSUnitLabel } from '@/lib/quantity';
+import { inferProfileSource } from '@/lib/profile-source';
+
+/**
+ * C และ S บนฉลากจริงมักมาคนละหน่วยกัน (เช่น "500 มล." สารเคมี ต่อ "12.5 ลิตร" ตัวทำละลาย)
+ * แปลงทั้งคู่เป็น มล. ก่อนแล้วค่อยลดรูปสัดส่วน — อ่านค่าดิบตรงๆ โดยไม่แปลงหน่วยคือบั๊กพันเท่า
+ * (ดู src/lib/quantity.ts ที่ทำแบบเดียวกันสำหรับ pipeline แยกสูตรจากไฟล์)
+ */
+function normalizeCS(C: number, CUnit: 'L' | 'cc', S: number, SUnit: 'L' | 'cc') {
+    const C_ml = CUnit === 'L' ? C * 1000 : C;
+    const S_ml = SUnit === 'L' ? S * 1000 : S;
+    return simplifyRatio(C_ml, S_ml);
+}
 
 interface Profile {
     id: string;
@@ -39,10 +47,15 @@ interface Profile {
     RA_unit: string;
     mix_type: number;
     A0: number;
-    tankCapacity?: number;
     isActive: boolean;
     isDefault: boolean;
     createdBy: { name: string | null; email: string } | null;
+    guestOwnerToken?: string | null;
+    createdById?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    C_unit?: 'L' | 'cc' | null;
+    S_unit?: 'L' | 'cc' | null;
 }
 
 interface ProfilesTableProps {
@@ -69,17 +82,22 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
         RA_unit: 'L',
         mix_type: 1,
         A0: 1000,
-        tankCapacity: 10,
     };
 
     const [formData, setFormData] = useState(initialFormData);
     const [editData, setEditData] = useState(initialFormData);
-    // ตัวช่วยเลือกหน่วยของ C/S เฉพาะฝั่ง UI เท่านั้น (S ไม่มีคอลัมน์หน่วยใน DB — ไม่ส่งไปกับ payload)
+    // ตัวเลือกหน่วยของ C และ S แยกอิสระจากกัน (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน) — ค่า
+    // C/S ที่ส่งไปบันทึกจะถูกแปลง+ลดรูปเป็นสัดส่วนเดียวกันเสมอ (ดู normalizeCS) แต่หน่วย
+    // ที่เลือกไว้ตอนกรอกจะถูกบันทึกแยกไปที่ C_unit/S_unit เพื่อแสดงผลในตารางเท่านั้น
+    const [addCUnit, setAddCUnit] = useState<'L' | 'cc'>('L');
     const [addSUnit, setAddSUnit] = useState<'L' | 'cc'>('L');
+    const [editCUnit, setEditCUnit] = useState<'L' | 'cc'>('L');
     const [editSUnit, setEditSUnit] = useState<'L' | 'cc'>('L');
 
     const openEditDialog = (profile: Profile) => {
         setEditingProfileId(profile.id);
+        setEditCUnit(profile.C_unit || 'L');
+        setEditSUnit(profile.S_unit || 'L');
         setEditData({
             name: profile.name,
             description: profile.description || '',
@@ -89,7 +107,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             RA_unit: profile.RA_unit,
             mix_type: profile.mix_type || 1,
             A0: profile.A0,
-            tankCapacity: profile.tankCapacity || 10,
         });
         setIsEditDialogOpen(true);
     };
@@ -106,7 +123,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             const response = await fetch('/api/profiles', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, ...normalizeCS(formData.C, addCUnit, formData.S, addSUnit), C_unit: addCUnit, S_unit: addSUnit }),
             });
 
             if (!response.ok) {
@@ -117,6 +134,8 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             toast.success('เพิ่มสูตรสำเร็จ');
             setIsAddDialogOpen(false);
             setFormData(initialFormData);
+            setAddCUnit('L');
+            setAddSUnit('L');
             router.refresh();
         } catch (error) {
             if (error instanceof Error) {
@@ -141,7 +160,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             const response = await fetch(`/api/profiles/${editingProfileId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editData),
+                body: JSON.stringify({ ...editData, ...normalizeCS(editData.C, editCUnit, editData.S, editSUnit), C_unit: editCUnit, S_unit: editSUnit }),
             });
 
             if (!response.ok) {
@@ -192,7 +211,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                     RA_unit: profile.RA_unit,
                     mix_type: profile.mix_type,
                     A0: profile.A0,
-                    tankCapacity: profile.tankCapacity || 10,
                     isActive: true,
                 }),
             });
@@ -228,9 +246,26 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
     };
 
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+    const selectedProfiles = profiles.filter((p) => selectedIds.has(p.id));
 
     return (
         <div className="space-y-4">
+            {selectedIds.size > 0 && (
+                <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-brand-soft/60 border border-brand/20">
+                    <span className="text-sm font-medium text-brand-dark">เลือกแล้ว {selectedIds.size} รายการ</span>
+                    <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+                            ยกเลิกการเลือก
+                        </Button>
+                        <Button type="button" size="sm" onClick={() => setIsBulkEditOpen(true)} className="bg-brand hover:bg-brand-dark">
+                            แก้ไขหลายรายการ
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Add Buttons */}
             <div className="flex items-center justify-end gap-2">
                 <Button
@@ -279,53 +314,69 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="add-C">ยาฆ่ายุง (C)</Label>
-                                    <Input
-                                        id="add-C"
-                                        type="number"
-                                        step="any"
-                                        value={formData.C}
-                                        onChange={(e) => setFormData({ ...formData, C: parseFloat(e.target.value) || 0 })}
-                                        required
-                                    />
+                                    <Label htmlFor="add-C">สารเคมีออกฤทธิ์ (C)</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="add-C"
+                                            type="number"
+                                            step="any"
+                                            value={formData.C}
+                                            onChange={(e) => setFormData({ ...formData, C: parseFloat(e.target.value) || 0 })}
+                                            required
+                                        />
+                                        <Select
+                                            value={addCUnit}
+                                            onValueChange={(val: 'L' | 'cc') => {
+                                                // หน่วยของ C แยกอิสระจาก S — สลับแล้วแปลงแค่ค่า C ให้ยังหมายถึงปริมาณเท่าเดิม
+                                                setFormData({ ...formData, C: convertRA(formData.C, addCUnit, val) });
+                                                setAddCUnit(val);
+                                            }}
+                                        >
+                                            <SelectTrigger id="add-C-unit" className="w-24 shrink-0">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="L">ลิตร</SelectItem>
+                                                <SelectItem value="cc">มล.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="add-S">น้ำมัน/น้ำ (S)</Label>
-                                    <Input
-                                        id="add-S"
-                                        type="number"
-                                        step="any"
-                                        value={formData.S}
-                                        onChange={(e) => setFormData({ ...formData, S: parseFloat(e.target.value) || 0 })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="add-S-unit">หน่วย S</Label>
-                                    <Select
-                                        value={addSUnit}
-                                        onValueChange={(val: 'L' | 'cc') => {
-                                            // แปลง C พร้อม S ตอนสลับหน่วย เพื่อให้สัดส่วน C:S ไม่เปลี่ยน
-                                            setFormData({ ...formData, C: convertRA(formData.C, addSUnit, val), S: convertRA(formData.S, addSUnit, val) });
-                                            setAddSUnit(val);
-                                        }}
-                                    >
-                                        <SelectTrigger id="add-S-unit">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="L">ลิตร (L)</SelectItem>
-                                            <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="add-S"
+                                            type="number"
+                                            step="any"
+                                            value={formData.S}
+                                            onChange={(e) => setFormData({ ...formData, S: parseFloat(e.target.value) || 0 })}
+                                            required
+                                        />
+                                        <Select
+                                            value={addSUnit}
+                                            onValueChange={(val: 'L' | 'cc') => {
+                                                setFormData({ ...formData, S: convertRA(formData.S, addSUnit, val) });
+                                                setAddSUnit(val);
+                                            }}
+                                        >
+                                            <SelectTrigger id="add-S-unit" className="w-24 shrink-0">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="L">ลิตร</SelectItem>
+                                                <SelectItem value="cc">มล.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="add-RA">ปริมาณพ่น</Label>
+                            <div className="space-y-2">
+                                <Label htmlFor="add-RA">อัตราการพ่นต่อพื้นที่</Label>
+                                <div className="flex items-center gap-2">
                                     <Input
                                         id="add-RA"
                                         type="number"
@@ -333,15 +384,13 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         value={formData.RA}
                                         onChange={(e) => setFormData({ ...formData, RA: parseFloat(e.target.value) || 0 })}
                                         required
+                                        className="flex-1"
                                     />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="add-RA_unit">หน่วย</Label>
                                     <Select
                                         value={formData.RA_unit}
                                         onValueChange={(value: 'L' | 'cc') => setFormData({ ...formData, RA: convertRA(formData.RA, formData.RA_unit as 'L' | 'cc', value), RA_unit: value })}
                                     >
-                                        <SelectTrigger id="add-RA_unit">
+                                        <SelectTrigger id="add-RA_unit" className="w-24 shrink-0">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -349,20 +398,18 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             <SelectItem value="cc">มล.</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    <span className="text-sm text-slate-500 shrink-0">ต่อ</span>
+                                    <Input
+                                        id="add-A0"
+                                        type="number"
+                                        step="1"
+                                        value={formData.A0}
+                                        onChange={(e) => setFormData({ ...formData, A0: parseFloat(e.target.value) || 0 })}
+                                        required
+                                        className="flex-1"
+                                    />
+                                    <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="add-tank-capacity">ความจุถังมาตรฐาน (ลิตร)</Label>
-                                <Input
-                                    id="add-tank-capacity"
-                                    type="number"
-                                    min="0.1"
-                                    step="0.1"
-                                    value={formData.tankCapacity}
-                                    onChange={(e) => setFormData({ ...formData, tankCapacity: parseFloat(e.target.value) || 0 })}
-                                    required
-                                />
                             </div>
 
                             <div className="space-y-2">
@@ -379,18 +426,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         <SelectItem value="2">แบบผสมกับ - เติมสารทบน้ำมัน</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="add-A0">พื้นที่มาตรฐาน (ตร.ม.)</Label>
-                                <Input
-                                    id="add-A0"
-                                    type="number"
-                                    step="1"
-                                    value={formData.A0}
-                                    onChange={(e) => setFormData({ ...formData, A0: parseFloat(e.target.value) || 0 })}
-                                    required
-                                />
                             </div>
 
                             <DialogFooter>
@@ -441,52 +476,68 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-C">ยาฆ่ายุง (C)</Label>
-                                    <Input
-                                        id="edit-C"
-                                        type="number"
-                                        step="any"
-                                        value={editData.C}
-                                        onChange={(e) => setEditData({ ...editData, C: parseFloat(e.target.value) || 0 })}
-                                        required
-                                    />
+                                    <Label htmlFor="edit-C">สารเคมีออกฤทธิ์ (C)</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="edit-C"
+                                            type="number"
+                                            step="any"
+                                            value={editData.C}
+                                            onChange={(e) => setEditData({ ...editData, C: parseFloat(e.target.value) || 0 })}
+                                            required
+                                        />
+                                        <Select
+                                            value={editCUnit}
+                                            onValueChange={(val: 'L' | 'cc') => {
+                                                setEditData({ ...editData, C: convertRA(editData.C, editCUnit, val) });
+                                                setEditCUnit(val);
+                                            }}
+                                        >
+                                            <SelectTrigger id="edit-C-unit" className="w-24 shrink-0">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="L">ลิตร</SelectItem>
+                                                <SelectItem value="cc">มล.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-S">น้ำมัน/น้ำ (S)</Label>
-                                    <Input
-                                        id="edit-S"
-                                        type="number"
-                                        step="any"
-                                        value={editData.S}
-                                        onChange={(e) => setEditData({ ...editData, S: parseFloat(e.target.value) || 0 })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-S-unit">หน่วย S</Label>
-                                    <Select
-                                        value={editSUnit}
-                                        onValueChange={(val: 'L' | 'cc') => {
-                                            setEditData({ ...editData, C: convertRA(editData.C, editSUnit, val), S: convertRA(editData.S, editSUnit, val) });
-                                            setEditSUnit(val);
-                                        }}
-                                    >
-                                        <SelectTrigger id="edit-S-unit">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="L">ลิตร (L)</SelectItem>
-                                            <SelectItem value="cc">มิลลิลิตร / มล.</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="edit-S"
+                                            type="number"
+                                            step="any"
+                                            value={editData.S}
+                                            onChange={(e) => setEditData({ ...editData, S: parseFloat(e.target.value) || 0 })}
+                                            required
+                                        />
+                                        <Select
+                                            value={editSUnit}
+                                            onValueChange={(val: 'L' | 'cc') => {
+                                                setEditData({ ...editData, S: convertRA(editData.S, editSUnit, val) });
+                                                setEditSUnit(val);
+                                            }}
+                                        >
+                                            <SelectTrigger id="edit-S-unit" className="w-24 shrink-0">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="L">ลิตร</SelectItem>
+                                                <SelectItem value="cc">มล.</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-RA">ปริมาณพ่น</Label>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-RA">อัตราการพ่นต่อพื้นที่</Label>
+                                <div className="flex items-center gap-2">
                                     <Input
                                         id="edit-RA"
                                         type="number"
@@ -494,15 +545,13 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         value={editData.RA}
                                         onChange={(e) => setEditData({ ...editData, RA: parseFloat(e.target.value) || 0 })}
                                         required
+                                        className="flex-1"
                                     />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-RA_unit">หน่วย</Label>
                                     <Select
                                         value={editData.RA_unit}
                                         onValueChange={(value: 'L' | 'cc') => setEditData({ ...editData, RA: convertRA(editData.RA, editData.RA_unit as 'L' | 'cc', value), RA_unit: value })}
                                     >
-                                        <SelectTrigger id="edit-RA_unit">
+                                        <SelectTrigger id="edit-RA_unit" className="w-24 shrink-0">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -510,6 +559,17 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             <SelectItem value="cc">มล.</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    <span className="text-sm text-slate-500 shrink-0">ต่อ</span>
+                                    <Input
+                                        id="edit-A0"
+                                        type="number"
+                                        step="1"
+                                        value={editData.A0}
+                                        onChange={(e) => setEditData({ ...editData, A0: parseFloat(e.target.value) || 0 })}
+                                        required
+                                        className="flex-1"
+                                    />
+                                    <span className="text-sm text-slate-500 shrink-0">ตร.ม.</span>
                                 </div>
                             </div>
 
@@ -527,31 +587,6 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                         <SelectItem value="2">แบบผสมกับ</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-A0">พื้นที่มาตรฐาน (ตร.ม.)</Label>
-                                <Input
-                                    id="edit-A0"
-                                    type="number"
-                                    step="1"
-                                    value={editData.A0}
-                                    onChange={(e) => setEditData({ ...editData, A0: parseFloat(e.target.value) || 0 })}
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-tank-capacity">ความจุถังมาตรฐาน (ลิตร)</Label>
-                                <Input
-                                    id="edit-tank-capacity"
-                                    type="number"
-                                    min="0.1"
-                                    step="0.1"
-                                    value={editData.tankCapacity}
-                                    onChange={(e) => setEditData({ ...editData, tankCapacity: parseFloat(e.target.value) || 0 })}
-                                    required
-                                />
                             </div>
 
                             <DialogFooter>
@@ -577,99 +612,150 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                 </Dialog>
             </div>
 
-            {/* Table */}
-            <div className="rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6 w-full">
-                <div className="overflow-x-auto max-h-[70vh] md:max-h-150 overflow-y-auto w-full relative">
-                    <Table className="whitespace-nowrap md:whitespace-normal text-sm md:text-base">
-                        <TableHeader className="sticky top-0 z-10 bg-slate-50 border-b">
-                            <TableRow>
-                                <TableHead className="font-semibold text-slate-700 min-w-48">ชื่อสูตร</TableHead>
-                                <TableHead className="font-semibold text-slate-700 text-center min-w-24">อัตราส่วน</TableHead>
-                                <TableHead className="font-semibold text-slate-700 text-center min-w-28">ปริมาณพ่น</TableHead>
-                                <TableHead className="font-semibold text-slate-700 text-center min-w-32">พื้นที่ (ตร.ม.)</TableHead>
-                                <TableHead className="font-semibold text-slate-700 text-center min-w-24">สถานะ</TableHead>
-                                <TableHead className="font-semibold text-slate-700 text-right min-w-24">จัดการ</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
+            {/* Table — matches the history pages' (ประวัติคำนวณ / ประวัติจัดการสูตร) format */}
+            <div className="glass-card rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6 w-full">
+                <div className="overflow-x-auto max-h-[70vh] overflow-y-auto w-full relative">
+                    <table className="w-full text-left text-sm min-w-275">
+                        <thead className="bg-slate-50 text-slate-600 sticky top-0 z-10 border-b">
+                            <tr>
+                                <th className="p-3 w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-slate-300"
+                                        checked={profiles.length > 0 && selectedIds.size === profiles.length}
+                                        onChange={(e) => setSelectedIds(e.target.checked ? new Set(profiles.map((p) => p.id)) : new Set())}
+                                        aria-label="เลือกทั้งหมด"
+                                    />
+                                </th>
+                                <th className="p-3 font-semibold min-w-48">ชื่อสูตร</th>
+                                <th className="p-3 font-semibold text-center">สารเคมีออกฤทธิ์ (C)</th>
+                                <th className="p-3 font-semibold text-center">ตัวทำละลาย (S)</th>
+                                <th className="p-3 font-semibold text-center">รูปแบบการผสม</th>
+                                <th className="p-3 font-semibold text-center">ปริมาณพ่น</th>
+                                <th className="p-3 font-semibold text-center">พื้นที่ (ตร.ม.)</th>
+                                <th className="p-3 font-semibold text-center">เพิ่มมาในรูปแบบใด</th>
+                                <th className="p-3 font-semibold">เวลา CRUD</th>
+                                <th className="p-3 font-semibold text-center">สถานะ</th>
+                                <th className="p-3 font-semibold text-right">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
                             {profiles.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                                <tr>
+                                    <td colSpan={11} className="text-center py-8 text-slate-500">
                                         ยังไม่มีสูตรสารเคมี
-                                    </TableCell>
-                                </TableRow>
+                                    </td>
+                                </tr>
                             ) : (
-                                profiles.map((profile) => (
-                                    <TableRow key={profile.id} className="hover:bg-slate-50/50">
-                                        <TableCell>
-                                            <div>
+                                profiles.map((profile) => {
+                                    const sourceInfo = inferProfileSource(profile);
+                                    const wasEdited = profile.updatedAt && profile.updatedAt !== profile.createdAt;
+                                    return (
+                                        <tr key={profile.id} className={`hover:bg-slate-50/50 ${selectedIds.has(profile.id) ? 'bg-brand-soft/30' : ''}`}>
+                                            <td className="p-3">
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-4 w-4 rounded border-slate-300"
+                                                    checked={selectedIds.has(profile.id)}
+                                                    onChange={(e) => {
+                                                        setSelectedIds((prev) => {
+                                                            const next = new Set(prev);
+                                                            if (e.target.checked) next.add(profile.id); else next.delete(profile.id);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    aria-label={`เลือก ${profile.name}`}
+                                                />
+                                            </td>
+                                            <td className="p-3">
                                                 <p className="font-medium text-slate-800">{profile.name}</p>
                                                 {profile.description && (
-                                                    <p className="text-sm text-slate-500">{profile.description}</p>
+                                                    <p className="text-xs text-slate-500 max-w-56 truncate" title={profile.description}>{profile.description}</p>
                                                 )}
-                                                <p className="text-xs text-brand mt-1">
-                                                    {profile.mix_type === 2 ? '(แบบผสมกับ)' : '(แบบผสมให้ได้สุทธิ)'}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center font-mono py-4">
-                                            {profile.C}:{profile.S}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="inline-flex items-center px-2 py-1 bg-slate-100 rounded-md text-slate-700 font-medium text-sm">
-                                                {profile.RA} {profile.RA_unit === 'L' ? 'ลิตร' : 'มล.'}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {profile.A0.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {profile.isDefault ? (
-                                                <Badge variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200">ค่าเริ่มต้น</Badge>
-                                            ) : profile.isActive ? (
-                                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">ใช้งาน</Badge>
-                                            ) : (
-                                                <Badge variant="destructive" className="bg-rose-100 text-rose-700 border-none hover:bg-rose-100">ปิดใช้งาน</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-1">
-                                                {!profile.isActive && (
+                                            </td>
+                                            <td className="p-3 text-center font-mono">
+                                                {profile.C}
+                                                <span className="block font-sans text-[11px] text-slate-400">{formatCSUnitLabel(profile.C_unit)}</span>
+                                            </td>
+                                            <td className="p-3 text-center font-mono">
+                                                {profile.S}
+                                                <span className="block font-sans text-[11px] text-slate-400">{formatCSUnitLabel(profile.S_unit)}</span>
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-brand-soft text-brand-dark">
+                                                    {profile.mix_type === 2 ? 'แบบผสมกับ' : 'แบบผสมให้ได้'}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <div className="inline-flex items-center px-2 py-1 bg-slate-100 rounded-md text-slate-700 font-medium text-xs whitespace-nowrap">
+                                                    {profile.RA} {profile.RA_unit === 'L' ? 'ลิตร' : 'มล.'}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-center">{profile.A0.toLocaleString()}</td>
+                                            <td className="p-3 text-center">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
+                                                    sourceInfo.source === 'default' ? 'bg-slate-200 text-slate-700'
+                                                        : sourceInfo.source === 'file-import' ? 'bg-amber-100 text-amber-700'
+                                                            : sourceInfo.source === 'guest' ? 'bg-sky-100 text-sky-700'
+                                                                : 'bg-brand-soft text-brand-dark'
+                                                }`}>
+                                                    {sourceInfo.label}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 text-xs text-slate-600 whitespace-nowrap">
+                                                <div>สร้าง {format(new Date(profile.createdAt), 'd MMM yy HH:mm', { locale: th })}</div>
+                                                {wasEdited && (
+                                                    <div className="text-slate-400">แก้ไข {format(new Date(profile.updatedAt), 'd MMM yy HH:mm', { locale: th })}</div>
+                                                )}
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                {profile.isDefault ? (
+                                                    <Badge variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200">ค่าเริ่มต้น</Badge>
+                                                ) : profile.isActive ? (
+                                                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">ใช้งาน</Badge>
+                                                ) : (
+                                                    <Badge variant="destructive" className="bg-rose-100 text-rose-700 border-none hover:bg-rose-100">ปิดใช้งาน</Badge>
+                                                )}
+                                            </td>
+                                            <td className="p-3 text-right">
+                                                <div className="flex justify-end gap-1">
+                                                    {!profile.isActive && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                                            onClick={() => setPendingAction({ type: 'activate', profile })}
+                                                            title="อนุมัติและเผยแพร่สูตร"
+                                                        >
+                                                            <CheckCircle2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                                        onClick={() => setPendingAction({ type: 'activate', profile })}
-                                                        title="อนุมัติและเผยแพร่สูตร"
+                                                        className="h-8 w-8 hover:text-brand hover:bg-brand-soft"
+                                                        onClick={() => openEditDialog(profile)}
+                                                        title="แก้ไขสูตร"
                                                     >
-                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        <Pencil className="h-4 w-4" />
                                                     </Button>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 hover:text-brand hover:bg-brand-soft"
-                                                    onClick={() => openEditDialog(profile)}
-                                                    title="แก้ไขสูตร"
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                                                    onClick={() => setPendingAction({ type: 'delete', profile })}
-                                                    title="ลบสูตรถาวร"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                                                        onClick={() => setPendingAction({ type: 'delete', profile })}
+                                                        title="ลบสูตรถาวร"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
-                        </TableBody>
-                    </Table>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -677,6 +763,16 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                 isOpen={isCustomModalOpen}
                 onOpenChange={setIsCustomModalOpen}
                 onSuccess={() => router.refresh()}
+            />
+
+            <BulkEditProfilesModal
+                profiles={selectedProfiles}
+                open={isBulkEditOpen}
+                onOpenChange={setIsBulkEditOpen}
+                onDone={() => {
+                    setSelectedIds(new Set());
+                    router.refresh();
+                }}
             />
 
             <Dialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>

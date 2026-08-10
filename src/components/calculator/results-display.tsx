@@ -23,11 +23,6 @@ interface ResultsDisplayProps {
         V_S_1L: number;
         V_C_target?: number;
         V_S_target?: number;
-        tankCapacity?: number;
-        tanksCount?: number;
-        V_per_tank?: number;
-        V_C_per_tank?: number;
-        V_S_per_tank?: number;
     };
     input: {
         C: number;
@@ -334,26 +329,6 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                             </div>
                         </div>
 
-                        {/* Box 3: Standard Tank Capacity Recommendation */}
-                        <div className="p-4 sm:p-5 rounded-2xl border border-brand-line bg-white md:col-span-2">
-                            <h4 className="font-bold text-brand-ink mb-3 border-b border-brand-line pb-2 flex flex-wrap justify-between items-center gap-2 text-sm sm:text-base leading-relaxed">
-                                <span>ข้อแนะนำสัดส่วนต่อ 1 ถังพ่นสะพายหลัง </span>
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm leading-relaxed">
-                                <div className="p-3 rounded-xl bg-brand-cloud border border-brand-line flex justify-between items-center gap-3">
-                                    <span className="text-brand-muted font-medium">ตวงสารเคมีต่อ 1 ถัง:</span>
-                                    <span className="text-base font-bold text-brand-ink tabular-nums">
-                                        {formatNumber(result.V_C_per_tank ?? (result.V_C_1L * (result.tankCapacity ?? 10)))} มล.
-                                    </span>
-                                </div>
-                                <div className="p-3 rounded-xl bg-brand-cloud border border-brand-line flex justify-between items-center gap-3">
-                                    <span className="text-brand-muted font-medium">เติมน้ำมัน/น้ำต่อ 1 ถัง:</span>
-                                    <span className="text-base font-bold text-brand-ink tabular-nums">
-                                        {formatNumber((result.V_S_per_tank ?? (result.V_S_1L * (result.tankCapacity ?? 10))) / 1000, 2)} ลิตร
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 )}
 

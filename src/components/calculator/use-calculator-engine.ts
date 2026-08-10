@@ -9,6 +9,7 @@ import { runFormula, computeGenericFormula } from '@/lib/formula-interpreter';
 import { parseFormulaDefinition, type FormulaDefinition } from '@/lib/formula-schema';
 import type { ComputedVariable } from '@/lib/formula-engine';
 import { buildDynamicInputSchema } from '@/lib/formula-input-schema';
+import { simplifyRatio } from '@/lib/quantity';
 import { toast } from 'sonner';
 import { CHEMICAL_PRESETS } from '@/lib/constants';
 
@@ -33,6 +34,11 @@ export function useCalculatorEngine() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+    // ตัวช่วยเลือกหน่วยของ C และ S แยกอิสระจากกัน — ฉลากจริงมักเขียนหน่วยไม่ตรงกัน
+    // (เช่น C เป็น "500 มล." แต่ S เป็น "12.5 ลิตร") สลับหน่วยของช่องไหนจะแปลงแค่ช่องนั้น
+    // ก่อนคำนวณจริงจะแปลงทั้งคู่เป็นหน่วยเดียวกัน (มล.) เสมอ — ดูใน handleCalculateAndSave
+    const [CUnit, setCUnit] = useState<'L' | 'cc'>('L');
+    const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
 
     const form = useForm<ExtendedCalculationInput>({
         resolver: zodResolver(calculationSchema),
@@ -126,11 +132,26 @@ export function useCalculatorEngine() {
         setValue('RA_unit', unit);
     };
 
+    // C และ S แต่ละช่องแปลงหน่วยของตัวเองเท่านั้น เพื่อยังหมายถึงปริมาณเท่าเดิม
+    // (ไม่แตะอีกช่อง — ทั้งคู่จะถูกแปลงเป็นหน่วยเดียวกันตอนคำนวณจริงแทน)
+    const handleCUnitChange = (unit: 'L' | 'cc') => {
+        setValue('C', convertRA(getValues('C'), CUnit, unit));
+        setCUnit(unit);
+    };
+    const handleSUnitChange = (unit: 'L' | 'cc') => {
+        setValue('S', convertRA(getValues('S'), SUnit, unit));
+        setSUnit(unit);
+    };
+
     const handlePresetChange = (presetId: string) => {
         setSelectedPreset(presetId);
         setResult(null);
         setCalculatedInput(null);
         setGenericResult(null);
+        // ค่า C/S ของ preset เป็นสัดส่วนที่ normalize ไว้แล้วจาก DB — รีเซ็ตตัวเลือกหน่วยกลับ
+        // เป็นค่าเริ่มต้นเสมอ ไม่งั้นหน่วยเก่าที่ผู้ใช้เคยสลับไว้จะไปตีความเลขชุดใหม่ผิด
+        setCUnit('L');
+        setSUnit('L');
         const preset = dbPresets.find(p => String(p.id) === presetId);
 
         if (preset) {
@@ -196,9 +217,17 @@ export function useCalculatorEngine() {
                 ? (dbPresets.find(p => String(p.id) === selectedPreset)?.name || values.chemical)
                 : (values.chemical || 'อื่นๆ');
 
+            // C และ S อาจกรอกกันคนละหน่วย (มล./ลิตร) — แปลงเป็นหน่วยเดียวกัน (มล.) แล้วลดรูป
+            // สัดส่วนก่อนคำนวณเสมอ มิฉะนั้นสัดส่วน C/(C+S) หรือ C/S จะผิดไปตามตัวคูณ 1000
+            // ระหว่างหน่วย (การลดรูปยังทำให้ตัวเลขที่บันทึก/แสดงผลอ่านง่ายเหมือนเดิมด้วย)
+            const { C: C_ml, S: S_ml } = simplifyRatio(
+                CUnit === 'L' ? Number(values.C) * 1000 : Number(values.C),
+                SUnit === 'L' ? Number(values.S) * 1000 : Number(values.S),
+            );
+
             const input: ExtendedCalculationInput = {
-                C: Number(values.C),
-                S: Number(values.S),
+                C: C_ml,
+                S: S_ml,
                 RA: Number(values.RA),
                 RA_unit: values.RA_unit as 'L' | 'cc',
                 mix_type: Number(values.mix_type) || 1,
@@ -234,6 +263,10 @@ export function useCalculatorEngine() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         ...values,
+                        // ส่ง C/S ที่แปลงหน่วยแล้ว ไม่ใช่ค่าดิบจากฟอร์ม — เซิร์ฟเวอร์คำนวณซ้ำ
+                        // จาก body นี้ตรงๆ (ไม่เชื่อผลจาก client) ถ้าส่งค่าดิบสัดส่วนจะผิด
+                        C: C_ml,
+                        S: S_ml,
                         chemical: chemName,
                         lat: coords?.lat ?? null,
                         lng: coords?.lng ?? null,
@@ -275,7 +308,8 @@ export function useCalculatorEngine() {
         result, calculatedInput, genericResult, selectedPreset, selectedFormula,
         genericFormValues, setGenericFormValues, isCalculating, gpsStatus, coords,
         dbPresets, isGenericSelected,
+        CUnit, SUnit,
         // handlers
-        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCalculateAndSave, handleReset,
+        requestGPS, handleLocationChange, handlePresetChange, handleRAUnitChange, handleCUnitChange, handleSUnitChange, handleCalculateAndSave, handleReset,
     };
 }
