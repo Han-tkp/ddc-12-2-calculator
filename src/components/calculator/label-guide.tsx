@@ -72,7 +72,7 @@ export function LabelGuide() {
                                     <li className="flex gap-3 bg-white p-3 rounded-xl shadow-xs">
                                         <div className="shrink-0 w-6 h-6 rounded-full bg-brand-soft text-brand flex items-center justify-center font-bold">A</div>
                                         <div>
-                                            <p className="font-medium">แบบระบุตรงตัว</p>
+                                            <p className="font-medium">แบบระบุตรงตัว → เลือก "แบบผสมกับ"</p>
                                             <p className="text-slate-500">"ผสม 1 ลิตร กับน้ำมัน 79 ลิตร"</p>
                                             <p className="mt-1 text-emerald-600 font-medium">👉 C = 1, S = 79</p>
                                         </div>
@@ -80,9 +80,9 @@ export function LabelGuide() {
                                     <li className="flex gap-3 bg-white p-3 rounded-xl shadow-xs">
                                         <div className="shrink-0 w-6 h-6 rounded-full bg-brand-soft text-brand flex items-center justify-center font-bold">B</div>
                                         <div>
-                                            <p className="font-medium">แบบพันธุ์ผสมให้ได้จำนวนรวม</p>
+                                            <p className="font-medium">แบบผสมให้ได้จำนวนรวม → เลือก "แบบผสมให้ได้"</p>
                                             <p className="text-slate-500">"ผสม 1 ลิตร กับน้ำให้ได้ 40 ลิตร"</p>
-                                            <p className="mt-1 text-emerald-600 font-medium">👉 C = 1, S = 39 (มาจาก 40-1)</p>
+                                            <p className="mt-1 text-emerald-600 font-medium">👉 C = 1, S = 40 (ใส่ยอดรวมตามฉลาก ไม่ต้องลบ)</p>
                                         </div>
                                     </li>
                                 </ul>

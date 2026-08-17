@@ -2,7 +2,12 @@
 
 export interface CalculationInput {
     C: number;           // สัดส่วนสารออกฤทธิ์
-    S: number;           // สัดส่วนตัวทำละลาย
+    /**
+     * ความหมายขึ้นกับ mix_type — ตรงกับตัวเลขที่อ่านได้จากฉลากโดยไม่ต้องบวก/ลบเอง
+     * mix_type 1 (ผสมให้ได้): ยอดรวมสุทธิ เช่น "1 ลิตร ผสมน้ำมันให้ได้ 14 ลิตร" → S = 14
+     * mix_type 2 (ผสมกับ):   ตัวทำละลายล้วน เช่น "1 ลิตร ผสมกับน้ำมัน 79 ลิตร" → S = 79
+     */
+    S: number;
     RA: number;          // อัตราการพ่น
     RA_unit: 'L' | 'cc'; // หน่วย
     mix_type?: number;   // 1 = ผสมให้ได้, 2 = ผสมกับ (ค่าเริ่มต้น 1)
@@ -63,19 +68,21 @@ export function calculate(input: CalculationInput): CalculationResult {
     let V_C_1L = 0;
     let V_S_1L = 0;
 
+    // สัดส่วนสารออกฤทธิ์ในส่วนผสมสุทธิ — ต่างกันตามความหมายของ S ในแต่ละโหมด
+    const fC = mix_type === 2 ? C / (C + S) : C / S;
+
     if (mix_type === 2) {
-        // แบบ "ผสมกับ" (เติมสารเคมีลงไปทบในปริมาตรอ้างอิง)
+        // แบบ "ผสมกับ" (S = ตัวทำละลายล้วน, เติมสารเคมีลงไปทบในปริมาตรอ้างอิง)
         V_S = V_total_ref;
         V_C = V_S * (C / S);
         V_total = V_S + V_C;
 
-        // สารเคมีต่อตัวทำละลาย 1 ลิตร
+        // สารเคมีต่อตัวทำละลาย 1 ลิตร (ฐานคือตัวทำละลาย ไม่ใช่ยอดรวม)
         V_S_1L = 1000;
         V_C_1L = 1000 * (C / S);
     } else {
-        // แบบ 1 "ผสมให้ได้" (ปริมาตรรวมคงที่ = V_total_ref)
+        // แบบ 1 "ผสมให้ได้" (S = ยอดรวมสุทธิ, ปริมาตรรวมคงที่ = V_total_ref)
         V_total = V_total_ref;
-        const fC = C / (C + S);
         V_C = V_total * fC;
         V_S = V_total - V_C;
 
@@ -84,12 +91,13 @@ export function calculate(input: CalculationInput): CalculationResult {
         V_S_1L = 1000 - V_C_1L;
     }
 
-    // คำนวณส่วนผสมต่อหลังบ้านจริงตาม V_total 
+    // คำนวณส่วนผสมต่อหลังบ้านจริงตาม V_total
     const V_per_house = V_total / N;
 
-    // คำนวณตามเป้าหมาย (targetVolume ในหน่วยลิตร)
-    const V_C_target = V_C_1L * targetVolume;
-    const V_S_target = V_S_1L * targetVolume;
+    // คำนวณตามเป้าหมาย (targetVolume = ยอดรวมที่ต้องการ หน่วยลิตร)
+    // ใช้ fC เสมอ เพื่อให้สารเคมี + ตัวทำละลาย รวมกันได้เท่ากับ targetVolume พอดีทั้งสองโหมด
+    const V_C_target = 1000 * targetVolume * fC;
+    const V_S_target = 1000 * targetVolume - V_C_target;
 
     return {
         V_per_house: roundTo(V_per_house, 2),
@@ -107,7 +115,7 @@ export function calculate(input: CalculationInput): CalculationResult {
  * Validate calculation input
  */
 function validateCalculationInput(input: CalculationInput): void {
-    const { C, S, RA, A0, A_house, N, targetVolume = 1 } = input;
+    const { C, S, RA, A0, A_house, N, mix_type = 1, targetVolume = 1 } = input;
 
     if (C <= 0 || S <= 0 || RA <= 0 || A0 <= 0 || A_house <= 0 || N <= 0 || targetVolume <= 0) {
         throw new Error('ค่าทั้งหมดต้องเป็นจำนวนบวก');
@@ -120,6 +128,11 @@ function validateCalculationInput(input: CalculationInput): void {
 
     if (!Number.isInteger(N)) {
         throw new Error('จำนวนหลังบ้านต้องเป็นจำนวนเต็ม');
+    }
+
+    // โหมด "ผสมให้ได้" S คือยอดรวมสุทธิ จึงต้องมากกว่าปริมาณสารเคมีเสมอ
+    if (mix_type !== 2 && S <= C) {
+        throw new Error('แบบผสมให้ได้: ปริมาณรวมต้องมากกว่าปริมาณสารเคมี');
     }
 }
 

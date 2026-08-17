@@ -3,11 +3,13 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { calculate } from '@/lib/calculations';
 import { auth } from '@/lib/auth';
 
+// อัตราส่วนในชื่อคือ สารเคมี:ตัวทำละลาย ตามฉลาก ส่วนคอลัมน์ S ที่ mix_type = 1
+// ต้องเก็บ "ยอดรวมสุทธิ" (สารเคมี + ตัวทำละลาย) ตามที่ calculate() ตีความ
 const LABEL_PROFILES = [
     {
         name: 'Deltacide (หมอกควัน 1:79)',
         description: 'เดลตาไซด์ อัตราส่วน 1:79 สำหรับพ่นหมอกควัน Thermal Fogging กำจัดยุงลาย ยุงรำคาญ',
-        C: 1, S: 79, RA: 1, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
+        C: 1, S: 80, RA: 1, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
         isActive: true, isDefault: true,
     },
     {
@@ -19,19 +21,19 @@ const LABEL_PROFILES = [
     {
         name: 'Submarine (หมอกควัน 1:249)',
         description: 'ซับมาริน อัตราส่วน 1:249 สำหรับพ่นหมอกควัน Thermal Fogging กำจัดยุงลาย',
-        C: 1, S: 249, RA: 1.25, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
+        C: 1, S: 250, RA: 1.25, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
         isActive: true, isDefault: true,
     },
     {
         name: 'Submarine (ULV 1:39)',
         description: 'ซับมาริน อัตราส่วน 1:39 สำหรับพ่นฝอยละเอียด ULV กำจัดยุงลาย',
-        C: 1, S: 39, RA: 2, RA_unit: 'L', mix_type: 1, A0: 10000, tankCapacity: 10,
+        C: 1, S: 40, RA: 2, RA_unit: 'L', mix_type: 1, A0: 10000, tankCapacity: 10,
         isActive: true, isDefault: true,
     },
     {
         name: 'Fendona (หมอกควัน 1:99)',
         description: 'เฟนโดนา อัตราส่วน 1:99 สำหรับพ่นหมอกควัน กำจัดแมลงศัตรูพืช',
-        C: 1, S: 99, RA: 1, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
+        C: 1, S: 100, RA: 1, RA_unit: 'L', mix_type: 1, A0: 1000, tankCapacity: 10,
         isActive: true, isDefault: false,
     },
     {

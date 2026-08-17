@@ -136,8 +136,9 @@ describe('Formula Interpreter - Regression', () => {
     expect(result.V_total).toBe(2025.32);
     expect(result.V_C_1L).toBe(12.66);
     expect(result.V_S_1L).toBe(1000);
-    expect(result.V_C_target).toBe(63.29);
-    expect(result.V_S_target).toBe(5000);
+    // targetVolume คือยอดรวมที่ต้องการ สารเคมี + น้ำมัน จึงรวมกันได้ 5 ลิตรพอดี
+    expect(result.V_C_target).toBe(62.5);
+    expect(result.V_S_target).toBe(4937.5);
   });
 });
 

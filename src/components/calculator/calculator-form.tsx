@@ -197,7 +197,11 @@ export function CalculatorForm() {
                         <div className="bento-item bg-sky-50/50 border-sky-100 p-4 sm:p-5 flex flex-col justify-between">
                             <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
                                 <Beaker className="h-4 w-4 text-sky-500 shrink-0 mt-0.5" />
-                                <span>ปริมาณตัวทำละลายที่ระบุข้างขวด (น้ำมัน/น้ำ)</span>
+                                <span>
+                                    {(watchedValues.mix_type || 1) === 2
+                                        ? 'ปริมาณตัวทำละลายที่ระบุข้างขวด (น้ำมัน/น้ำ)'
+                                        : 'ปริมาณรวมสุทธิที่ระบุข้างขวด (ผสมให้ได้เท่าไร)'}
+                                </span>
                             </Label>
                             <div className="flex gap-2">
                                 <Input

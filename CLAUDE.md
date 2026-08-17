@@ -45,6 +45,15 @@ CalculatorForm → validations.ts (Zod) → calculate() → POST /api/calculatio
 
 `calculate()` (`src/lib/calculations.ts:35`) is the deterministic math engine. `mix_type: 1` ("แบบผสมให้ได้", fixed total target volume) and `mix_type: 2` ("แบบผสมกับ", carrier volume is the reference) produce different results. **The server re-runs `calculate()` before insert — never trust client math.**
 
+**`S` means different things per `mix_type` — it is always the number printed on the bottle, never a hand-computed one:**
+
+- `mix_type: 1` → `S` is the **net total** ("1 ลิตร ผสมน้ำมันให้ได้ 14 ลิตร" → `S = 14`), so `fC = C / S`.
+- `mix_type: 2` → `S` is the **carrier alone** ("1 ลิตร ผสมกับน้ำมัน 79 ลิตร" → `S = 79`), so `fC = C / (C + S)`.
+
+Until Aug 2026 mode 1 also used `C / (C + S)`, which required officers to enter `14 - 1 = 13` themselves. Nobody did, so every "ผสมให้ได้" profile was diluted by one extra part (7% off at 1:14). Don't reintroduce the subtraction — `20260817_fix_mix_type_1_total_volume.sql` migrated the seeded presets to totals, and user-authored rows already held totals.
+
+`targetVolume` is the **total** volume the officer wants to prepare in both modes, so `V_C_target + V_S_target === targetVolume * 1000` always. Note that `V_C_1L` / `V_S_1L` do *not* follow that rule under `mix_type: 2`: there they are per litre of *carrier* (`V_S_1L` is pinned at 1000), which is what the "ตัวตั้งต้น 1,000" caption in `ResultsDisplay` means.
+
 ### Two formula representations (important)
 
 Chemical profiles in `label_profiles` now carry an optional `formula` JSONB column (`supabase/migrations/20260802_add_formula_column.sql`), typed by `FormulaDefinition` in `src/lib/formula-schema.ts`. `meta.resultTemplate` selects the execution path, and `runFormula()` in `src/lib/formula-interpreter.ts` is the single dispatch point:

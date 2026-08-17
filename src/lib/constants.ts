@@ -4,13 +4,13 @@ export const CHEMICAL_PRESETS = [
         name: 'Deltacide (หมอกควัน)',
         formula: '1:79',
         C: 1,
-        S: 79,
+        S: 80,
         RA: 1,
         RA_unit: 'L' as const,
         mix_type: 1,
         A0: 1000,
         A_house: 100,
-        description: 'เดลตาไซด์ 1 ลิตร ผสมน้ำมัน 79 ลิตร'
+        description: 'เดลตาไซด์ 1 ลิตร ผสมน้ำมัน 79 ลิตร (รวม 80 ลิตร)'
     },
     {
         id: 'deltacide-ulv',
@@ -30,26 +30,26 @@ export const CHEMICAL_PRESETS = [
         name: 'Submarine (หมอกควัน)',
         formula: '1:249',
         C: 1,
-        S: 249,
+        S: 250,
         RA: 1.25,
         RA_unit: 'L' as const,
         mix_type: 1,
         A0: 1000,
         A_house: 100,
-        description: 'ซับมาริน 1 ลิตร ผสมน้ำมัน 249 ลิตร'
+        description: 'ซับมาริน 1 ลิตร ผสมน้ำมันให้ได้ 250 ลิตร'
     },
     {
         id: 'submarine-ulv',
         name: 'Submarine (ULV)',
         formula: '1:39',
         C: 1,
-        S: 39,
+        S: 40,
         RA: 2,
         RA_unit: 'L' as const,
         mix_type: 1,
         A0: 10000,
         A_house: 100,
-        description: 'ซับมาริน 1 ลิตร ผสมน้ำ 39 ลิตร'
+        description: 'ซับมาริน 1 ลิตร ผสมน้ำให้ได้ 40 ลิตร'
     },
     {
         id: 'other',
