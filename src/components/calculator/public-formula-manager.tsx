@@ -10,7 +10,7 @@ import { Plus, AlertTriangle, MapPin, Clock, CheckCircle2, FlaskConical } from '
 import { toast } from 'sonner';
 import { recordTrackingCalculation } from '@/lib/track-calculation';
 import { convertRA, formatRAUnit } from '@/lib/calculations';
-import { simplifyRatio } from '@/lib/quantity';
+import { csSavePayload, normalizeCSForCalc } from '@/lib/cs-units';
 import { ResultHelpEditor } from './result-help-editor';
 import { FormulaTrialPreview } from './formula-trial-preview';
 
@@ -80,20 +80,18 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
         setIsSubmitting(true);
         try {
             const nowIso = new Date().toISOString();
-            // C และ S อาจกรอกกันคนละหน่วย — แปลงเป็น มล. แล้วลดรูปสัดส่วนก่อนส่งเสมอ
-            const C_ml = CUnit === 'L' ? Number(C) * 1000 : Number(C);
-            const S_ml = SUnit === 'L' ? Number(S) * 1000 : Number(S);
-            const { C: C_norm, S: S_norm } = simplifyRatio(C_ml, S_ml);
+            // บันทึก C/S ตามที่พิมพ์ พร้อมหน่วยจริงของแต่ละช่อง — การแปลงหน่วยเกิดตอนคำนวณเท่านั้น
+            const saved = csSavePayload({ C: Number(C), CUnit, S: Number(S), SUnit });
             const res = await fetch('/api/profiles', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: name.trim(),
                     description: description.trim() || `เพิ่มโดยผู้ใช้ภายนอก (${new Date().toLocaleDateString('th-TH')})`,
-                    C: C_norm,
-                    S: S_norm,
-                    C_unit: CUnit,
-                    S_unit: SUnit,
+                    C: saved.C,
+                    S: saved.S,
+                    C_unit: saved.C_unit,
+                    S_unit: saved.S_unit,
                     RA: Number(RA),
                     RA_unit: RAUnit,
                     mix_type: Number(mixType),
@@ -113,9 +111,11 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
             }
 
             // Record tracking calculation entry (best-effort)
+            // ตาราง calculations เก็บสัดส่วนที่ normalize แล้วเสมอ (ต่างจาก label_profiles ที่เก็บตามพิมพ์)
+            const tracked = normalizeCSForCalc(Number(C), CUnit, Number(S), SUnit);
             await recordTrackingCalculation({
-                C: C_norm,
-                S: S_norm,
+                C: tracked.C,
+                S: tracked.S,
                 RA: Number(RA),
                 RA_unit: RAUnit,
                 mix_type: Number(mixType),
@@ -318,7 +318,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
 
                         <FormulaTrialPreview
                             storageKey="public-formula"
-                            {...simplifyRatio(CUnit === 'L' ? Number(C) * 1000 : Number(C), SUnit === 'L' ? Number(S) * 1000 : Number(S))}
+                            {...normalizeCSForCalc(Number(C), CUnit, Number(S), SUnit)}
                             RA={Number(RA)} RAUnit={RAUnit}
                             mixType={Number(mixType)} A0={Number(A0)}
                             resultHelp={resultHelp}
@@ -356,7 +356,7 @@ export function PublicFormulaManager({ onFormulaAdded }: PublicFormulaManagerPro
                         <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                             <span className="text-slate-500">อัตราส่วนผสม (C:S):</span>
                             <span className="font-bold text-slate-900">
-                                {(() => { const r = simplifyRatio(CUnit === 'L' ? Number(C) * 1000 : Number(C), SUnit === 'L' ? Number(S) * 1000 : Number(S)); return `${r.C}:${r.S}`; })()}
+                                {(() => { const r = normalizeCSForCalc(Number(C), CUnit, Number(S), SUnit); return `${r.C}:${r.S}`; })()}
                                 {' '}({mixType === 2 ? 'ผสมกับ' : 'ผสมให้ได้'})
                             </span>
                         </div>

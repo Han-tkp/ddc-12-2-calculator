@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Save, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { convertRA } from '@/lib/calculations';
-import { simplifyRatio } from '@/lib/quantity';
+import { applyCSUnitChoice, csEditState, csSavePayload, type CSUnitChoice, type CSUnitOrParts } from '@/lib/cs-units';
 
 interface BulkEditProfile {
     id: string;
@@ -29,9 +29,9 @@ interface BulkRow {
     name: string;
     description: string;
     C: number;
-    CUnit: 'L' | 'cc';
+    CUnit: CSUnitOrParts;
     S: number;
-    SUnit: 'L' | 'cc';
+    SUnit: CSUnitOrParts;
     RA: number;
     RA_unit: 'L' | 'cc';
     mix_type: number;
@@ -43,10 +43,8 @@ function toRow(p: BulkEditProfile): BulkRow {
         id: p.id,
         name: p.name,
         description: p.description || '',
-        C: p.C,
-        CUnit: p.C_unit || 'L',
-        S: p.S,
-        SUnit: p.S_unit || 'L',
+        // seed ผ่าน csEditState — คงสภาพ "ไม่มีหน่วย" ของสูตรเก่าไว้ ห้าม default ข้างเดียว
+        ...(({ C, CUnit, S, SUnit }) => ({ C, CUnit, S, SUnit }))(csEditState(p)),
         RA: p.RA,
         RA_unit: (p.RA_unit as 'L' | 'cc') || 'L',
         mix_type: p.mix_type || 1,
@@ -90,19 +88,18 @@ export function BulkEditProfilesModal({ profiles, open, onOpenChange, onDone }: 
         const outcome: Record<string, 'ok' | 'error'> = {};
         for (const row of rows) {
             try {
-                const { C, S } = simplifyRatio(
-                    row.CUnit === 'L' ? row.C * 1000 : row.C,
-                    row.SUnit === 'L' ? row.S * 1000 : row.S,
-                );
+                // บันทึกตามที่พิมพ์ พร้อมหน่วยจริง — ห้ามย่อสัดส่วนก่อนบันทึก (ดู src/lib/cs-units.ts)
+                const saved = csSavePayload({ C: row.C, CUnit: row.CUnit, S: row.S, SUnit: row.SUnit });
                 const res = await fetch(`/api/profiles/${row.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         name: row.name,
                         description: row.description,
-                        C, S,
-                        C_unit: row.CUnit,
-                        S_unit: row.SUnit,
+                        C: saved.C,
+                        S: saved.S,
+                        C_unit: saved.C_unit,
+                        S_unit: saved.S_unit,
                         RA: row.RA,
                         RA_unit: row.RA_unit,
                         mix_type: row.mix_type,
@@ -163,9 +160,9 @@ export function BulkEditProfilesModal({ profiles, open, onOpenChange, onDone }: 
                                         onChange={(e) => updateRow(row.id, { C: parseFloat(e.target.value) || 0 })}
                                         className="bg-white h-8 text-xs flex-1 min-w-0" title="สารเคมีออกฤทธิ์ (C)"
                                     />
-                                    <Select value={row.CUnit} onValueChange={(v: 'L' | 'cc') => updateRow(row.id, { C: convertRA(row.C, row.CUnit, v), CUnit: v })}>
+                                    <Select value={row.CUnit ?? 'part'} onValueChange={(v: CSUnitChoice) => updateRow(row.id, applyCSUnitChoice(row, 'C', v, convertRA))}>
                                         <SelectTrigger className="w-16 h-8 text-xs bg-white shrink-0"><SelectValue /></SelectTrigger>
-                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem><SelectItem value="part">ส่วน</SelectItem></SelectContent>
                                     </Select>
                                 </div>
                                 <div className="flex gap-1 min-w-0">
@@ -174,9 +171,9 @@ export function BulkEditProfilesModal({ profiles, open, onOpenChange, onDone }: 
                                         onChange={(e) => updateRow(row.id, { S: parseFloat(e.target.value) || 0 })}
                                         className="bg-white h-8 text-xs flex-1 min-w-0" title="ตัวทำละลาย (S)"
                                     />
-                                    <Select value={row.SUnit} onValueChange={(v: 'L' | 'cc') => updateRow(row.id, { S: convertRA(row.S, row.SUnit, v), SUnit: v })}>
+                                    <Select value={row.SUnit ?? 'part'} onValueChange={(v: CSUnitChoice) => updateRow(row.id, applyCSUnitChoice(row, 'S', v, convertRA))}>
                                         <SelectTrigger className="w-16 h-8 text-xs bg-white shrink-0"><SelectValue /></SelectTrigger>
-                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem><SelectItem value="part">ส่วน</SelectItem></SelectContent>
                                     </Select>
                                 </div>
                                 <div className="flex gap-1 min-w-0">

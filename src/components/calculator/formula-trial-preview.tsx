@@ -49,6 +49,15 @@ export function FormulaTrialPreview({ storageKey, C, S, RA, RAUnit, mixType, A0,
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // ผลลัพธ์ที่คำนวณไว้ผูกกับค่า input ชุดที่กดคำนวณ พอผู้ใช้แก้ C/S/RA/พื้นที่ ตัวเลขบนจอ
+    // จะกลายเป็นของเก่าที่ไม่ตรงกับช่องกรอกอีกต่อไป — ล้างทิ้งเพื่อไม่ให้อ่านว่า "แก้แล้วค่าไม่เปลี่ยน"
+    // เลือกล้างแทนคำนวณสด เพราะ calculate() throw กับค่าที่พิมพ์ค้างกลางคัน (0 หรือ S <= C)
+    // และปุ่ม "ทดลองคำนวณ" คือจังหวะที่ผู้ใช้ตั้งใจสั่งอยู่แล้ว
+    useEffect(() => {
+        setResult(null);
+        setCalculatedInput(null);
+    }, [C, S, RA, RAUnit, mixType, A0, scratch.A_house, scratch.N]);
+
     const persistScratch = (next: TrialScratch) => {
         setScratch(next);
         try {

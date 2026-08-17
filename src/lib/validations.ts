@@ -1,6 +1,7 @@
 // lib/validations.ts
 
 import { z } from 'zod';
+import { normalizeCSForCalc } from './cs-units';
 
 export const calculationSchema = z.object({
     C: z.number().positive('สัดส่วนสารออกฤทธิ์ต้องเป็นจำนวนบวก'),
@@ -31,8 +32,10 @@ export const profileSchema = z.object({
     mix_type: z.number().int().min(1).max(2).default(1),
     A0: z.number().positive('พื้นที่มาตรฐานต้องเป็นจำนวนบวก'),
     isActive: z.boolean().default(true),
-    // Which unit (L/cc) the admin picked for C and S at entry time — informational
-    // only, never read by calculate(). C/S themselves stay the normalized ratio.
+    // The real units of the stored C and S — these ARE read at calculation time
+    // (normalizeCSForCalc in src/lib/cs-units.ts). C/S hold the numbers as typed off
+    // the label; null on BOTH means a unit-less ratio ("ส่วน"), which is how legacy
+    // rows that were reduced before this model existed are represented.
     C_unit: z.enum(['L', 'cc']).optional().nullable(),
     S_unit: z.enum(['L', 'cc']).optional().nullable(),
     // Optional per-field explanation shown alongside the result (e.g. why A0
@@ -40,12 +43,49 @@ export const profileSchema = z.object({
     resultHelp: z.record(z.string(), z.string()).optional().nullable(),
 });
 
+/**
+ * กฎความสอดคล้องของคู่ C/S ที่ใช้ร่วมกันทุก schema ของสูตร — แยกออกมาเพราะ .extend()
+ * ใช้กับ schema ที่ refine แล้วไม่ได้ ต้อง refine ทีหลังสุดของแต่ละตัว
+ */
+const refineCSConsistency = (data: {
+    C: number; S: number; mix_type: number;
+    C_unit?: 'L' | 'cc' | null; S_unit?: 'L' | 'cc' | null;
+}, ctx: z.RefinementCtx) => {
+    // หน่วยต้องมาเป็นคู่เสมอ — มีข้างเดียวแปลว่าอีกข้างจะถูกเดาเป็นค่า default แล้วสัดส่วน
+    // จะเพี้ยนไปตามตัวคูณ 1000 ระหว่างหน่วย ปิดที่ชั้น API ด้วยเพื่อกัน bundle เก่าที่ค้างอยู่
+    const hasC = data.C_unit != null;
+    const hasS = data.S_unit != null;
+    if (hasC !== hasS) {
+        ctx.addIssue({
+            code: 'custom',
+            path: [hasC ? 'S_unit' : 'C_unit'],
+            message: 'ต้องระบุหน่วยของสารเคมีและตัวทำละลายให้ครบทั้งคู่ หรือไม่ระบุทั้งคู่',
+        });
+        return;
+    }
+
+    // โหมด "ผสมให้ได้" S คือยอดรวม จึงต้องมากกว่าปริมาณสารเคมีหลังแปลงหน่วยแล้ว
+    // ให้ตรงกับ guard ใน calculate() เพื่อให้สูตรผิดถูกปัดตกตอนบันทึก ไม่ใช่ตอนออกหน้างาน
+    if (data.mix_type !== 2) {
+        const { C, S } = normalizeCSForCalc(data.C, data.C_unit, data.S, data.S_unit);
+        if (S <= C) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['S'],
+                message: 'แบบผสมให้ได้: ปริมาณรวมต้องมากกว่าปริมาณสารเคมี',
+            });
+        }
+    }
+};
+
+// profileSchema ดิบไว้สำหรับ .extend() เท่านั้น — payload จริงทุกเส้นทางผ่าน profileMutationSchema
+// (src/app/api/profiles/route.ts:41 และ src/app/api/profiles/[id]/route.ts:50) ซึ่ง refine แล้ว
 export const profileMutationSchema = profileSchema.extend({
     actorLabel: z.string().trim().min(1, 'กรุณาระบุชื่อผู้ทำรายการ').max(100, 'ชื่อผู้ทำรายการยาวเกินไป').optional(),
     location: z.string().trim().max(200, 'ชื่อสถานที่ยาวเกินไป').optional(),
     lat: z.number().min(-90).max(90).optional().nullable(),
     lng: z.number().min(-180).max(180).optional().nullable(),
-});
+}).superRefine(refineCSConsistency);
 
 export const loginSchema = z.object({
     email: z.string({ message: 'กรุณาระบุอีเมล' }).min(1, 'กรุณาระบุอีเมล').email('รูปแบบอีเมลไม่ถูกต้อง'),

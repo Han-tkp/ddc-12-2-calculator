@@ -179,8 +179,8 @@ export function CalculatorForm() {
                                     className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
                                 />
                                 <Select
-                                    onValueChange={(val) => handleCUnitChange(val as 'L' | 'cc')}
-                                    value={CUnit}
+                                    onValueChange={(val) => handleCUnitChange(val as 'L' | 'cc' | 'part')}
+                                    value={CUnit ?? 'part'}
                                 >
                                     <SelectTrigger className="w-20 bg-white/60 h-11 sm:h-12 text-xs sm:text-sm">
                                         <SelectValue />
@@ -188,6 +188,8 @@ export function CalculatorForm() {
                                     <SelectContent>
                                         <SelectItem value="L">ลิตร</SelectItem>
                                         <SelectItem value="cc">มล.</SelectItem>
+                                        {/* สูตรเก่าเก็บเป็นสัดส่วนล้วนโดยไม่มีหน่วยกำกับ */}
+                                        <SelectItem value="part">ส่วน</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -211,8 +213,8 @@ export function CalculatorForm() {
                                     className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
                                 />
                                 <Select
-                                    onValueChange={(val) => handleSUnitChange(val as 'L' | 'cc')}
-                                    value={SUnit}
+                                    onValueChange={(val) => handleSUnitChange(val as 'L' | 'cc' | 'part')}
+                                    value={SUnit ?? 'part'}
                                 >
                                     <SelectTrigger className="w-20 bg-white/60 h-11 sm:h-12 text-xs sm:text-sm">
                                         <SelectValue />
@@ -220,6 +222,8 @@ export function CalculatorForm() {
                                     <SelectContent>
                                         <SelectItem value="L">ลิตร</SelectItem>
                                         <SelectItem value="cc">มล.</SelectItem>
+                                        {/* สูตรเก่าเก็บเป็นสัดส่วนล้วนโดยไม่มีหน่วยกำกับ */}
+                                        <SelectItem value="part">ส่วน</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

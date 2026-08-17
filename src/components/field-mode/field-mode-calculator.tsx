@@ -227,13 +227,14 @@ export function FieldModeCalculator() {
                                 <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>สารเคมี</label>
                                 <div className="flex gap-1">
                                     <Input type="number" step="0.1" {...register('C', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
-                                    <Select onValueChange={(val) => handleCUnitChange(val as 'L' | 'cc')} value={CUnit}>
+                                    <Select onValueChange={(val) => handleCUnitChange(val as 'L' | 'cc' | 'part')} value={CUnit ?? 'part'}>
                                         <SelectTrigger className="w-16 h-10 text-xs bg-white shrink-0">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="L">ลิตร</SelectItem>
                                             <SelectItem value="cc">มล.</SelectItem>
+                                            <SelectItem value="part">ส่วน</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -242,13 +243,14 @@ export function FieldModeCalculator() {
                                 <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>ตัวทำละลาย</label>
                                 <div className="flex gap-1">
                                     <Input type="number" step="0.1" {...register('S', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
-                                    <Select onValueChange={(val) => handleSUnitChange(val as 'L' | 'cc')} value={SUnit}>
+                                    <Select onValueChange={(val) => handleSUnitChange(val as 'L' | 'cc' | 'part')} value={SUnit ?? 'part'}>
                                         <SelectTrigger className="w-16 h-10 text-xs bg-white shrink-0">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="L">ลิตร</SelectItem>
                                             <SelectItem value="cc">มล.</SelectItem>
+                                            <SelectItem value="part">ส่วน</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

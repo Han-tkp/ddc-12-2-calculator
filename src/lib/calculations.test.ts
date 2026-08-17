@@ -171,6 +171,22 @@ describe('Chemical Calculations', () => {
         });
     });
 
+    describe('ผลลัพธ์ขึ้นกับสัดส่วน ไม่ใช่ขนาดของตัวเลข', () => {
+        // สมมติฐานที่การเก็บ C/S "ตามที่พิมพ์" ตั้งอยู่ (ดู src/lib/cs-units.ts): ตราบใดที่
+        // สัดส่วนเท่ากัน จะพิมพ์มาเป็น 1:250 หรือ 100:25000 ก็ต้องได้ผลเท่ากันเป๊ะ
+        const base = {
+            RA: 1, RA_unit: 'L' as const, A0: 1000,
+            A_house: 100, N: 20, targetVolume: 5,
+        };
+
+        for (const mix_type of [1, 2]) {
+            it(`mix_type ${mix_type}`, () => {
+                expect(calculate({ ...base, C: 100, S: 25000, mix_type }))
+                    .toEqual(calculate({ ...base, C: 1, S: 250, mix_type }));
+            });
+        }
+    });
+
     describe('Validation', () => {
         it('should throw error for non-positive values', () => {
             expect(() => calculate({

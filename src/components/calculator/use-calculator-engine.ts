@@ -9,7 +9,7 @@ import { runFormula, computeGenericFormula } from '@/lib/formula-interpreter';
 import { parseFormulaDefinition, type FormulaDefinition } from '@/lib/formula-schema';
 import type { ComputedVariable } from '@/lib/formula-engine';
 import { buildDynamicInputSchema } from '@/lib/formula-input-schema';
-import { simplifyRatio } from '@/lib/quantity';
+import { csEditState, normalizeCSForCalc, resolveCSUnitPair, type CSUnit, type CSUnitOrParts } from '@/lib/cs-units';
 import { toast } from 'sonner';
 import { CHEMICAL_PRESETS } from '@/lib/constants';
 
@@ -37,8 +37,11 @@ export function useCalculatorEngine() {
     // ตัวช่วยเลือกหน่วยของ C และ S แยกอิสระจากกัน — ฉลากจริงมักเขียนหน่วยไม่ตรงกัน
     // (เช่น C เป็น "500 มล." แต่ S เป็น "12.5 ลิตร") สลับหน่วยของช่องไหนจะแปลงแค่ช่องนั้น
     // ก่อนคำนวณจริงจะแปลงทั้งคู่เป็นหน่วยเดียวกัน (มล.) เสมอ — ดูใน handleCalculateAndSave
-    const [CUnit, setCUnit] = useState<'L' | 'cc'>('L');
-    const [SUnit, setSUnit] = useState<'L' | 'cc'>('L');
+    //
+    // ค่าเริ่มต้นเป็น null ("ส่วน") สำหรับสูตรเก่าที่เก็บสัดส่วนย่อไว้โดยไม่มีหน่วยกำกับ
+    // เลือกหน่วยข้างเดียวไม่ได้ — resolveCSUnitPair() บังคับให้อีกข้างมีหน่วยตามไปด้วย
+    const [CUnit, setCUnit] = useState<CSUnitOrParts>('L');
+    const [SUnit, setSUnit] = useState<CSUnitOrParts>('L');
 
     const form = useForm<ExtendedCalculationInput>({
         resolver: zodResolver(calculationSchema),
@@ -105,6 +108,10 @@ export function useCalculatorEngine() {
                         mix_type: p.mix_type,
                         A0: p.A0,
                         A_house: 100,
+                        // หน่วยของ C/S ต้องติดมาด้วย ไม่งั้น handlePresetChange เดาเป็น 'L' ทั้งคู่
+                        // แล้วสูตรที่เก็บคนละหน่วยจะถูกคำนวณผิดสัดส่วนไปถึงพันเท่า
+                        C_unit: p.C_unit ?? null,
+                        S_unit: p.S_unit ?? null,
                         formula: parseFormulaDefinition(p.formula),
                     }));
                     const otherPreset = CHEMICAL_PRESETS.find(p => p.id === 'other');
@@ -134,25 +141,44 @@ export function useCalculatorEngine() {
 
     // C และ S แต่ละช่องแปลงหน่วยของตัวเองเท่านั้น เพื่อยังหมายถึงปริมาณเท่าเดิม
     // (ไม่แตะอีกช่อง — ทั้งคู่จะถูกแปลงเป็นหน่วยเดียวกันตอนคำนวณจริงแทน)
-    const handleCUnitChange = (unit: 'L' | 'cc') => {
-        setValue('C', convertRA(getValues('C'), CUnit, unit));
-        setCUnit(unit);
+    // สลับหน่วยแล้วแปลงตัวเลขตาม เพื่อให้ยังหมายถึงปริมาณเท่าเดิม (สูตรที่ยังไม่มีหน่วยถือเป็นลิตร
+    // ตอนแปลง) จากนั้นบังคับให้อีกช่องมีหน่วยด้วย — คู่ null/'cc' ตีความสัดส่วนผิดไป 1,000 เท่า
+    // 'part' = "ส่วน" สัดส่วนล้วนไม่มีหน่วย ซึ่งเป็นคุณสมบัติของ "คู่" ไม่ใช่ของช่องเดียว
+    // จึงต้องเซ็ตทั้งสองข้างพร้อมกัน และตัวเลขไม่ต้องแปลงเพราะไม่ได้เป็นปริมาตรอีกต่อไป
+    const handleCSUnitChange = (side: 'C' | 'S', value: CSUnit | 'part') => {
+        if (value === 'part') {
+            setCUnit(null);
+            setSUnit(null);
+            return;
+        }
+        const field = side === 'C' ? 'C' : 'S';
+        const currentUnit = side === 'C' ? CUnit : SUnit;
+        setValue(field, convertRA(getValues(field), currentUnit ?? 'L', value));
+        const next = resolveCSUnitPair({ C: 0, CUnit, S: 0, SUnit }, side, value);
+        setCUnit(next.CUnit);
+        setSUnit(next.SUnit);
     };
-    const handleSUnitChange = (unit: 'L' | 'cc') => {
-        setValue('S', convertRA(getValues('S'), SUnit, unit));
-        setSUnit(unit);
-    };
+    const handleCUnitChange = (unit: CSUnit | 'part') => handleCSUnitChange('C', unit);
+    const handleSUnitChange = (unit: CSUnit | 'part') => handleCSUnitChange('S', unit);
 
     const handlePresetChange = (presetId: string) => {
         setSelectedPreset(presetId);
         setResult(null);
         setCalculatedInput(null);
         setGenericResult(null);
-        // ค่า C/S ของ preset เป็นสัดส่วนที่ normalize ไว้แล้วจาก DB — รีเซ็ตตัวเลือกหน่วยกลับ
-        // เป็นค่าเริ่มต้นเสมอ ไม่งั้นหน่วยเก่าที่ผู้ใช้เคยสลับไว้จะไปตีความเลขชุดใหม่ผิด
-        setCUnit('L');
-        setSUnit('L');
         const preset = dbPresets.find(p => String(p.id) === presetId);
+
+        // C/S ของสูตรคือตัวเลขตามที่กรอกไว้ หน่วยจึงต้องมาจากสูตรนั้นเอง ไม่ใช่หน่วยที่ผู้ใช้
+        // เคยสลับค้างไว้จากสูตรก่อนหน้า สูตรที่ไม่มีหน่วยกำกับ (แถวเก่า) อ่านเป็น "ส่วน" ตามเดิม
+        // ส่วน CHEMICAL_PRESETS ที่ hardcode ไว้ไม่มีคอลัมน์หน่วย จึงตกมาเป็นสัดส่วนล้วนเช่นกัน
+        const presetState = csEditState({
+            C: preset?.C ?? 0,
+            S: preset?.S ?? 0,
+            C_unit: preset?.C_unit ?? null,
+            S_unit: preset?.S_unit ?? null,
+        });
+        setCUnit(presetState.CUnit);
+        setSUnit(presetState.SUnit);
 
         if (preset) {
             if (preset.id !== 'other') {
@@ -220,9 +246,9 @@ export function useCalculatorEngine() {
             // C และ S อาจกรอกกันคนละหน่วย (มล./ลิตร) — แปลงเป็นหน่วยเดียวกัน (มล.) แล้วลดรูป
             // สัดส่วนก่อนคำนวณเสมอ มิฉะนั้นสัดส่วน C/(C+S) หรือ C/S จะผิดไปตามตัวคูณ 1000
             // ระหว่างหน่วย (การลดรูปยังทำให้ตัวเลขที่บันทึก/แสดงผลอ่านง่ายเหมือนเดิมด้วย)
-            const { C: C_ml, S: S_ml } = simplifyRatio(
-                CUnit === 'L' ? Number(values.C) * 1000 : Number(values.C),
-                SUnit === 'L' ? Number(values.S) * 1000 : Number(values.S),
+            const { C: C_ml, S: S_ml } = normalizeCSForCalc(
+                Number(values.C), CUnit,
+                Number(values.S), SUnit,
             );
 
             const input: ExtendedCalculationInput = {

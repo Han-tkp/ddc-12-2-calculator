@@ -22,19 +22,10 @@ import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { BulkEditProfilesModal } from './bulk-edit-profiles-modal';
 import { convertRA } from '@/lib/calculations';
-import { simplifyRatio, formatCSUnitLabel } from '@/lib/quantity';
+import { formatCSUnitLabel } from '@/lib/quantity';
+import { applyCSUnitChoice, csEditState, csSavePayload, type CSUnitChoice, type CSUnitOrParts } from '@/lib/cs-units';
 import { inferProfileSource } from '@/lib/profile-source';
 
-/**
- * C และ S บนฉลากจริงมักมาคนละหน่วยกัน (เช่น "500 มล." สารเคมี ต่อ "12.5 ลิตร" ตัวทำละลาย)
- * แปลงทั้งคู่เป็น มล. ก่อนแล้วค่อยลดรูปสัดส่วน — อ่านค่าดิบตรงๆ โดยไม่แปลงหน่วยคือบั๊กพันเท่า
- * (ดู src/lib/quantity.ts ที่ทำแบบเดียวกันสำหรับ pipeline แยกสูตรจากไฟล์)
- */
-function normalizeCS(C: number, CUnit: 'L' | 'cc', S: number, SUnit: 'L' | 'cc') {
-    const C_ml = CUnit === 'L' ? C * 1000 : C;
-    const S_ml = SUnit === 'L' ? S * 1000 : S;
-    return simplifyRatio(C_ml, S_ml);
-}
 
 interface Profile {
     id: string;
@@ -85,23 +76,27 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
     const [formData, setFormData] = useState(initialFormData);
     const [editData, setEditData] = useState(initialFormData);
-    // ตัวเลือกหน่วยของ C และ S แยกอิสระจากกัน (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน) — ค่า
-    // C/S ที่ส่งไปบันทึกจะถูกแปลง+ลดรูปเป็นสัดส่วนเดียวกันเสมอ (ดู normalizeCS) แต่หน่วย
-    // ที่เลือกไว้ตอนกรอกจะถูกบันทึกแยกไปที่ C_unit/S_unit เพื่อแสดงผลในตารางเท่านั้น
-    const [addCUnit, setAddCUnit] = useState<'L' | 'cc'>('L');
-    const [addSUnit, setAddSUnit] = useState<'L' | 'cc'>('L');
-    const [editCUnit, setEditCUnit] = useState<'L' | 'cc'>('L');
-    const [editSUnit, setEditSUnit] = useState<'L' | 'cc'>('L');
+    // ตัวเลือกหน่วยของ C และ S แยกอิสระจากกัน (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน) — ค่า C/S
+    // ถูกบันทึก "ตามที่พิมพ์" โดยมี C_unit/S_unit เป็นหน่วยจริงของตัวเลขนั้น การแปลงหน่วย
+    // เกิดตอนคำนวณเท่านั้น (normalizeCSForCalc) ห้ามย่อสัดส่วนก่อนบันทึกอีก มิฉะนั้นหน่วยเดิม
+    // จะถูกเอาไปคูณกับเลขที่ย่อแล้วซ้ำอีกรอบ = เจือจางลง 1,000 เท่าทุกครั้งที่กดบันทึก
+    const [addCUnit, setAddCUnit] = useState<CSUnitOrParts>('L');
+    const [addSUnit, setAddSUnit] = useState<CSUnitOrParts>('L');
+    const [editCUnit, setEditCUnit] = useState<CSUnitOrParts>('L');
+    const [editSUnit, setEditSUnit] = useState<CSUnitOrParts>('L');
 
     const openEditDialog = (profile: Profile) => {
         setEditingProfileId(profile.id);
-        setEditCUnit(profile.C_unit || 'L');
-        setEditSUnit(profile.S_unit || 'L');
+        // seed ผ่าน csEditState เพื่อคงความเป็น "ไม่มีหน่วย" ไว้ — ห้าม default ข้างเดียวเป็น 'L'
+        // เพราะหน่วยจริงข้างหนึ่งคู่กับ default อีกข้างคือรูปร่างของบั๊ก 1,000 เท่า
+        const seeded = csEditState(profile);
+        setEditCUnit(seeded.CUnit);
+        setEditSUnit(seeded.SUnit);
         setEditData({
             name: profile.name,
             description: profile.description || '',
-            C: profile.C,
-            S: profile.S,
+            C: seeded.C,
+            S: seeded.S,
             RA: profile.RA,
             RA_unit: profile.RA_unit,
             mix_type: profile.mix_type || 1,
@@ -122,7 +117,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             const response = await fetch('/api/profiles', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, ...normalizeCS(formData.C, addCUnit, formData.S, addSUnit), C_unit: addCUnit, S_unit: addSUnit }),
+                body: JSON.stringify({ ...formData, ...csSavePayload({ C: formData.C, CUnit: addCUnit, S: formData.S, SUnit: addSUnit }) }),
             });
 
             if (!response.ok) {
@@ -159,7 +154,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
             const response = await fetch(`/api/profiles/${editingProfileId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...editData, ...normalizeCS(editData.C, editCUnit, editData.S, editSUnit), C_unit: editCUnit, S_unit: editSUnit }),
+                body: JSON.stringify({ ...editData, ...csSavePayload({ C: editData.C, CUnit: editCUnit, S: editData.S, SUnit: editSUnit }) }),
             });
 
             if (!response.ok) {
@@ -315,11 +310,14 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             required
                                         />
                                         <Select
-                                            value={addCUnit}
-                                            onValueChange={(val: 'L' | 'cc') => {
+                                            value={addCUnit ?? 'part'}
+                                            onValueChange={(val: CSUnitChoice) => {
                                                 // หน่วยของ C แยกอิสระจาก S — สลับแล้วแปลงแค่ค่า C ให้ยังหมายถึงปริมาณเท่าเดิม
-                                                setFormData({ ...formData, C: convertRA(formData.C, addCUnit, val) });
-                                                setAddCUnit(val);
+                                                // (applyCSUnitChoice ยังบังคับให้อีกข้างมีหน่วยตามไปด้วยเสมอ)
+                                                const next = applyCSUnitChoice({ C: formData.C, CUnit: addCUnit, S: formData.S, SUnit: addSUnit }, 'C', val, convertRA);
+                                                setFormData({ ...formData, C: next.C, S: next.S });
+                                                setAddCUnit(next.CUnit);
+                                                setAddSUnit(next.SUnit);
                                             }}
                                         >
                                             <SelectTrigger id="add-C-unit" className="w-24 shrink-0">
@@ -344,10 +342,12 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             required
                                         />
                                         <Select
-                                            value={addSUnit}
-                                            onValueChange={(val: 'L' | 'cc') => {
-                                                setFormData({ ...formData, S: convertRA(formData.S, addSUnit, val) });
-                                                setAddSUnit(val);
+                                            value={addSUnit ?? 'part'}
+                                            onValueChange={(val: CSUnitChoice) => {
+                                                const next = applyCSUnitChoice({ C: formData.C, CUnit: addCUnit, S: formData.S, SUnit: addSUnit }, 'S', val, convertRA);
+                                                setFormData({ ...formData, C: next.C, S: next.S });
+                                                setAddCUnit(next.CUnit);
+                                                setAddSUnit(next.SUnit);
                                             }}
                                         >
                                             <SelectTrigger id="add-S-unit" className="w-24 shrink-0">
@@ -477,10 +477,12 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             required
                                         />
                                         <Select
-                                            value={editCUnit}
-                                            onValueChange={(val: 'L' | 'cc') => {
-                                                setEditData({ ...editData, C: convertRA(editData.C, editCUnit, val) });
-                                                setEditCUnit(val);
+                                            value={editCUnit ?? 'part'}
+                                            onValueChange={(val: CSUnitChoice) => {
+                                                const next = applyCSUnitChoice({ C: editData.C, CUnit: editCUnit, S: editData.S, SUnit: editSUnit }, 'C', val, convertRA);
+                                                setEditData({ ...editData, C: next.C, S: next.S });
+                                                setEditCUnit(next.CUnit);
+                                                setEditSUnit(next.SUnit);
                                             }}
                                         >
                                             <SelectTrigger id="edit-C-unit" className="w-24 shrink-0">
@@ -505,10 +507,12 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             required
                                         />
                                         <Select
-                                            value={editSUnit}
-                                            onValueChange={(val: 'L' | 'cc') => {
-                                                setEditData({ ...editData, S: convertRA(editData.S, editSUnit, val) });
-                                                setEditSUnit(val);
+                                            value={editSUnit ?? 'part'}
+                                            onValueChange={(val: CSUnitChoice) => {
+                                                const next = applyCSUnitChoice({ C: editData.C, CUnit: editCUnit, S: editData.S, SUnit: editSUnit }, 'S', val, convertRA);
+                                                setEditData({ ...editData, C: next.C, S: next.S });
+                                                setEditCUnit(next.CUnit);
+                                                setEditSUnit(next.SUnit);
                                             }}
                                         >
                                             <SelectTrigger id="edit-S-unit" className="w-24 shrink-0">

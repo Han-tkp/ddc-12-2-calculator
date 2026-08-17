@@ -54,6 +54,21 @@ Until Aug 2026 mode 1 also used `C / (C + S)`, which required officers to enter 
 
 `targetVolume` is the **total** volume the officer wants to prepare in both modes, so `V_C_target + V_S_target === targetVolume * 1000` always. Note that `V_C_1L` / `V_S_1L` do *not* follow that rule under `mix_type: 2`: there they are per litre of *carrier* (`V_S_1L` is pinned at 1000), which is what the "ตัวตั้งต้น 1,000" caption in `ResultsDisplay` means.
 
+### C/S units (`src/lib/cs-units.ts`)
+
+`label_profiles.C` / `.S` hold **the numbers as typed off the bottle**, and `C_unit` / `S_unit` are the real units of those numbers. Unit conversion happens **only at calculation time**, via `normalizeCSForCalc()`. Never call `simplifyRatio()` on a value about to be persisted.
+
+Until Aug 2026 it was the reverse: saves ran `simplifyRatio()` first and `C_unit`/`S_unit` recorded only what the officer had typed, so the pair contradicted itself. Typing `100 มล. : 25 ลิตร` stored `C=1, S=250` beside units `cc`/`L` — which reads as 1:250,000. Two failures followed: officers re-entered the label numbers and watched them snap back to the same reduced pair ("ค่าไม่เปลี่ยน"), and re-opening the edit dialog re-multiplied the already-reduced numbers by their old units, **compounding S by 1000× on every save** (`1:250 → 1:250,000 → 1:250,000,000`).
+
+Consequences for anything touching C/S:
+
+- Seed every edit dialog through `csEditState()` and save through `csSavePayload()`. `csSavePayload(csEditState(p))` must be an identity — `cs-units.test.ts` pins it.
+- **Units are a pair.** Both present or both `null`; never default one side alone, which is exactly the shape of the 1000× bug. `applyCSUnitChoice()` enforces this when a unit dropdown changes, and `profileMutationSchema` rejects a half-set pair at the API.
+- `null` on both means a unit-less ratio, rendered "ส่วน" by `formatCSUnitLabel()`. `20260817120000_make_cs_units_self_consistent.sql` moved every self-contradicting row into that state (metadata only — no numeric column touched, so no ratio moved).
+- The `calculations` table still stores the **normalized** pair, so exports, logs, and dashboards that read it need no changes.
+
+`calculate()` depends only on the C:S ratio, so scaling both sides changes nothing (`calculations.test.ts` pins this). That is what makes storing the typed numbers safe.
+
 ### Two formula representations (important)
 
 Chemical profiles in `label_profiles` now carry an optional `formula` JSONB column (`supabase/migrations/20260802_add_formula_column.sql`), typed by `FormulaDefinition` in `src/lib/formula-schema.ts`. `meta.resultTemplate` selects the execution path, and `runFormula()` in `src/lib/formula-interpreter.ts` is the single dispatch point:

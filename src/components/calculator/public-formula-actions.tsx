@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { convertRA } from '@/lib/calculations';
-import { simplifyRatio } from '@/lib/quantity';
+import { applyCSUnitChoice, csEditState, csSavePayload, type CSUnitChoice, type CSUnitOrParts } from '@/lib/cs-units';
 
 interface PublicProfile {
     id: string;
@@ -46,10 +46,12 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
         A0: profile.A0,
         location: '',
     });
-    // C และ S แยกหน่วยกันอิสระ (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน) — แปลงเป็น มล. แล้วลดรูป
-    // สัดส่วนตอนบันทึก หน่วยที่เลือกไว้จะถูกบันทึกแยกไปที่ C_unit/S_unit เพื่อแสดงผลเท่านั้น
-    const [CUnit, setCUnit] = useState<'L' | 'cc'>(profile.C_unit || 'L');
-    const [SUnit, setSUnit] = useState<'L' | 'cc'>(profile.S_unit || 'L');
+    // C และ S แยกหน่วยกันอิสระ (ฉลากจริงมักเขียนหน่วยไม่ตรงกัน) — เก็บตัวเลขตามที่พิมพ์
+    // โดยมี C_unit/S_unit เป็นหน่วยจริงของมัน แปลงหน่วยตอนคำนวณเท่านั้น seed ผ่าน csEditState
+    // เพื่อคงสภาพ "ไม่มีหน่วย" ของสูตรเก่าไว้ — default ข้างเดียวคือรูปร่างของบั๊ก 1,000 เท่า
+    const seeded = csEditState(profile);
+    const [CUnit, setCUnit] = useState<CSUnitOrParts>(seeded.CUnit);
+    const [SUnit, setSUnit] = useState<CSUnitOrParts>(seeded.SUnit);
 
     if (!profile.canManage) return null;
 
@@ -71,15 +73,12 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
 
         try {
             const coordinates = await getCoordinates();
-            // C และ S อาจกรอกกันคนละหน่วย — แปลงเป็น มล. แล้วลดรูปสัดส่วนก่อนส่งเสมอ
-            const C_ml = CUnit === 'L' ? form.C * 1000 : form.C;
-            const S_ml = SUnit === 'L' ? form.S * 1000 : form.S;
             const response = await fetch(`/api/profiles/${profile.id}`, {
                 method: confirmation === 'update' ? 'PUT' : 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(
                     confirmation === 'update'
-                        ? { ...form, ...simplifyRatio(C_ml, S_ml), C_unit: CUnit, S_unit: SUnit, ...coordinates }
+                        ? { ...form, ...csSavePayload({ C: form.C, CUnit, S: form.S, SUnit }), ...coordinates }
                         : { location: form.location, ...coordinates }
                 ),
             });
@@ -122,9 +121,9 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                                 <Label>สารออกฤทธิ์ (C)</Label>
                                 <div className="flex gap-2">
                                     <Input type="number" min="0.0001" step="any" value={form.C} onChange={(event) => setForm({ ...form, C: Number(event.target.value) })} required />
-                                    <Select value={CUnit} onValueChange={(value: 'L' | 'cc') => { setForm({ ...form, C: convertRA(form.C, CUnit, value) }); setCUnit(value); }}>
+                                    <Select value={CUnit ?? 'part'} onValueChange={(value: CSUnitChoice) => { const next = applyCSUnitChoice({ C: form.C, CUnit, S: form.S, SUnit }, 'C', value, convertRA); setForm({ ...form, C: next.C, S: next.S }); setCUnit(next.CUnit); setSUnit(next.SUnit); }}>
                                         <SelectTrigger className="w-24 shrink-0"><SelectValue /></SelectTrigger>
-                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem><SelectItem value="part">ส่วน</SelectItem></SelectContent>
                                     </Select>
                                 </div>
                             </div>
@@ -132,9 +131,9 @@ export function PublicFormulaActions({ profile, onChanged }: PublicFormulaAction
                                 <Label>ตัวทำละลาย (S)</Label>
                                 <div className="flex gap-2">
                                     <Input type="number" min="0.0001" step="any" value={form.S} onChange={(event) => setForm({ ...form, S: Number(event.target.value) })} required />
-                                    <Select value={SUnit} onValueChange={(value: 'L' | 'cc') => { setForm({ ...form, S: convertRA(form.S, SUnit, value) }); setSUnit(value); }}>
+                                    <Select value={SUnit ?? 'part'} onValueChange={(value: CSUnitChoice) => { const next = applyCSUnitChoice({ C: form.C, CUnit, S: form.S, SUnit }, 'S', value, convertRA); setForm({ ...form, C: next.C, S: next.S }); setCUnit(next.CUnit); setSUnit(next.SUnit); }}>
                                         <SelectTrigger className="w-24 shrink-0"><SelectValue /></SelectTrigger>
-                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem></SelectContent>
+                                        <SelectContent><SelectItem value="L">ลิตร</SelectItem><SelectItem value="cc">มล.</SelectItem><SelectItem value="part">ส่วน</SelectItem></SelectContent>
                                     </Select>
                                 </div>
                             </div>
