@@ -13,13 +13,23 @@ import {
     CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { csRatioLabel, type CSUnitOrParts } from '@/lib/cs-units';
 
 interface PresetOption {
     id: string | number;
     name: string;
+    /** ตัวเลขตามที่เจ้าหน้าที่พิมพ์ — ต้องอ่านคู่กับ C_unit/S_unit เสมอ (ดู src/lib/cs-units.ts) */
     C?: number;
     S?: number;
+    C_unit?: CSUnitOrParts;
+    S_unit?: CSUnitOrParts;
     [key: string]: unknown;
+}
+
+/** ป้ายสัดส่วนย่อ เช่น "1:250" — สูตรเก็บเลขดิบตามฉลาก (100/25) แต่เจ้าหน้าที่ค้นหาด้วยรูปย่อ */
+function ratioLabel(preset: PresetOption): string | null {
+    if (preset.C === undefined || preset.S === undefined) return null;
+    return csRatioLabel(preset.C, preset.C_unit, preset.S, preset.S_unit);
 }
 
 interface PresetComboboxProps {
@@ -47,7 +57,9 @@ export function PresetCombobox({ presets, value, onValueChange, placeholder = '�
         const matches = q
             ? presets.filter(p =>
                 p.name.toLowerCase().includes(q) ||
-                (p.C !== undefined && p.S !== undefined && `${p.C}:${p.S}`.includes(q))
+                // ค้นได้ทั้งเลขที่พิมพ์ไว้ ("100:25") และสัดส่วนย่อที่คุ้นจากฉลาก ("1:250")
+                (p.C !== undefined && p.S !== undefined && `${p.C}:${p.S}`.includes(q)) ||
+                (ratioLabel(p)?.includes(q) ?? false)
             )
             : presets;
         return matches.slice(0, maxVisible);
@@ -66,8 +78,8 @@ export function PresetCombobox({ presets, value, onValueChange, placeholder = '�
                     {selected ? (
                         <span className="flex items-center gap-2 truncate">
                             <span className="font-medium">{selected.name}</span>
-                            {selected.id !== 'other' && selected.C !== undefined && (
-                                <span className="text-[11px] text-slate-400">({selected.C}:{selected.S})</span>
+                            {selected.id !== 'other' && ratioLabel(selected) && (
+                                <span className="text-[11px] text-slate-400">({ratioLabel(selected)})</span>
                             )}
                         </span>
                     ) : (
@@ -98,8 +110,8 @@ export function PresetCombobox({ presets, value, onValueChange, placeholder = '�
                                 >
                                     <Check className={cn('h-4 w-4', String(preset.id) === value ? 'opacity-100' : 'opacity-0')} />
                                     <span className="text-xs sm:text-sm font-medium">{preset.name}</span>
-                                    {preset.id !== 'other' && preset.C !== undefined && (
-                                        <span className="text-[11px] text-slate-400 ml-auto">({preset.C}:{preset.S})</span>
+                                    {preset.id !== 'other' && ratioLabel(preset) && (
+                                        <span className="text-[11px] text-slate-400 ml-auto">({ratioLabel(preset)})</span>
                                     )}
                                 </CommandItem>
                             ))}

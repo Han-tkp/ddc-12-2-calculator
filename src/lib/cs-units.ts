@@ -105,6 +105,20 @@ export function resolveCSUnitPair(
     };
 }
 
+/**
+ * สัดส่วนในรูปย่อสำหรับแสดงผล เช่น "1:250" — เจ้าหน้าที่คุ้นกับรูปนี้จากฉลาก
+ * ใช้คู่กับตัวเลขตามที่พิมพ์ เพื่อให้เห็นว่าเลขที่กรอกกับสัดส่วนที่ระบบใช้ตรงกัน
+ */
+export function csRatioLabel(
+    C: number,
+    C_unit: CSUnitOrParts | undefined,
+    S: number,
+    S_unit: CSUnitOrParts | undefined,
+): string {
+    const r = normalizeCSForCalc(C, C_unit, S, S_unit);
+    return `${r.C}:${r.S}`;
+}
+
 /** ค่าที่ dropdown หน่วยส่งกลับมา — `'part'` คือตัวเลือก "ส่วน" (สัดส่วนล้วน) */
 export type CSUnitChoice = CSUnit | 'part';
 

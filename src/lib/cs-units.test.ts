@@ -3,6 +3,7 @@ import {
     csToMl,
     normalizeCSForCalc,
     csEditState,
+    csRatioLabel,
     csSavePayload,
     resolveCSUnitPair,
     type CSPair,
@@ -81,6 +82,27 @@ describe('cs-units', () => {
             expect(csToMl(250, 'cc')).toBe(250);
             expect(csToMl(250, null)).toBe(250);
             expect(csToMl(250, undefined)).toBe(250);
+        });
+    });
+
+    describe('csRatioLabel', () => {
+        it('ย่อสัดส่วนจากเลขที่พิมพ์คนละหน่วย', () => {
+            expect(csRatioLabel(100, 'cc', 25, 'L')).toBe('1:250');
+            expect(csRatioLabel(500, 'cc', 12.5, 'L')).toBe('1:25');
+        });
+
+        it('หน่วยเดียวกันก็ย่อให้เหมือนกัน', () => {
+            expect(csRatioLabel(1, 'cc', 40, 'cc')).toBe('1:40');
+            expect(csRatioLabel(2, 'L', 200, 'L')).toBe('1:100');
+        });
+
+        it('สูตรเก่าที่ไม่มีหน่วยต้องอ่านเป็นสัดส่วนล้วน', () => {
+            expect(csRatioLabel(1, null, 250, null)).toBe('1:250');
+            expect(csRatioLabel(1, undefined, 250, undefined)).toBe('1:250');
+        });
+
+        it('เลขที่พิมพ์ต่างกันแต่สัดส่วนเท่ากัน ต้องได้ป้ายเดียวกัน', () => {
+            expect(csRatioLabel(100, 'cc', 25, 'L')).toBe(csRatioLabel(1, null, 250, null));
         });
     });
 

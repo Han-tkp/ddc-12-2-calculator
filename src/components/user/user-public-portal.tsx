@@ -12,6 +12,7 @@ import { FreeFormulaCalculator } from '@/components/calculator/free-formula-calc
 import { formatRAUnit } from '@/lib/calculations';
 import { inferProfileSource } from '@/lib/profile-source';
 import { formatCSUnitLabel } from '@/lib/quantity';
+import { csRatioLabel } from '@/lib/cs-units';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import {
@@ -319,6 +320,10 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                             <td className="p-3 text-center font-mono font-bold text-brand-ink tabular-nums whitespace-nowrap">
                                                 {p.S}
                                                 <span className="block font-sans font-normal text-[10px] text-brand-muted/70">{formatCSUnitLabel(p.S_unit)}</span>
+                                                {/* สัดส่วนย่อกำกับ ให้เห็นว่าเลขที่กรอกกับสัดส่วนที่ระบบใช้คำนวณตรงกัน */}
+                                                <span className="block font-sans font-normal text-[10px] text-brand-dark/60">
+                                                    = {csRatioLabel(p.C, p.C_unit, p.S, p.S_unit)}
+                                                </span>
                                             </td>
                                             <td className="p-3">
                                                 <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap bg-brand-soft text-brand-dark">

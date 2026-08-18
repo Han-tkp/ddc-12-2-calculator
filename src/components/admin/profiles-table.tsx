@@ -23,7 +23,7 @@ import { th } from 'date-fns/locale';
 import { BulkEditProfilesModal } from './bulk-edit-profiles-modal';
 import { convertRA } from '@/lib/calculations';
 import { formatCSUnitLabel } from '@/lib/quantity';
-import { applyCSUnitChoice, csEditState, csSavePayload, type CSUnitChoice, type CSUnitOrParts } from '@/lib/cs-units';
+import { applyCSUnitChoice, csEditState, csRatioLabel, csSavePayload, type CSUnitChoice, type CSUnitOrParts } from '@/lib/cs-units';
 import { inferProfileSource } from '@/lib/profile-source';
 
 
@@ -672,6 +672,10 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                             <td className="p-3 text-center font-mono">
                                                 {profile.S}
                                                 <span className="block font-sans text-[11px] text-slate-400">{formatCSUnitLabel(profile.S_unit)}</span>
+                                                {/* สัดส่วนย่อกำกับ ให้เห็นว่าเลขที่กรอกกับสัดส่วนที่ระบบใช้คำนวณตรงกัน */}
+                                                <span className="block font-sans text-[11px] text-brand-dark/60 whitespace-nowrap">
+                                                    = {csRatioLabel(profile.C, profile.C_unit, profile.S, profile.S_unit)}
+                                                </span>
                                             </td>
                                             <td className="p-3 text-center">
                                                 <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-brand-soft text-brand-dark">

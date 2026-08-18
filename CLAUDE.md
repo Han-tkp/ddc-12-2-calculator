@@ -69,6 +69,8 @@ Consequences for anything touching C/S:
 
 `calculate()` depends only on the C:S ratio, so scaling both sides changes nothing (`calculations.test.ts` pins this). That is what makes storing the typed numbers safe.
 
+Rows edited under the old model before `ba302e1` may still hold an inflated `S`. `supabase/forensics/find_inflated_cs_ratios.sql` (SELECT-only, run by hand in the Supabase SQL editor — it is deliberately **not** under `migrations/`) reconstructs each ratio's history from `formula_audit_logs` snapshots and emits a review worksheet. It flags a jump only when the units did *not* change, so a legitimate unit switch isn't a false positive. Never apply its suggested UPDATEs without checking them against the physical labels.
+
 ### Two formula representations (important)
 
 Chemical profiles in `label_profiles` now carry an optional `formula` JSONB column (`supabase/migrations/20260802_add_formula_column.sql`), typed by `FormulaDefinition` in `src/lib/formula-schema.ts`. `meta.resultTemplate` selects the execution path, and `runFormula()` in `src/lib/formula-interpreter.ts` is the single dispatch point:
