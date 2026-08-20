@@ -279,6 +279,22 @@ export function CalculatorForm() {
                             </div>
                         </div>
 
+                        {/* Point 3b: Reference area — the second half of the label's spray rate.
+                            "20 มล. ต่อพื้นที่ 100 ตร.ม." คือ RA คู่กับ A0 แสดงแยกกันไม่ได้
+                            เพราะอัตราการพ่นไม่มีความหมายถ้าไม่รู้ว่าต่อพื้นที่เท่าไร */}
+                        <div className="bento-item bg-amber-50/50 border-amber-100 p-4 sm:p-5 flex flex-col justify-between">
+                            <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed min-h-[2.5rem]">
+                                <Zap className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                <span>ต่อพื้นที่ที่ระบุข้างขวด (ตารางเมตร)</span>
+                            </Label>
+                            <Input
+                                type="number"
+                                step="1"
+                                {...register('A0', { valueAsNumber: true })}
+                                className="glass-input text-lg sm:text-xl text-center font-semibold bg-white/60 h-11 sm:h-12"
+                            />
+                        </div>
+
                         {/* Point 4: Area per House */}
                         <div className="bento-item bg-slate-50/50 border-slate-100 p-4 sm:p-5 flex flex-col justify-between">
                             <Label className="flex items-start gap-2 mb-2 text-xs sm:text-sm font-medium text-slate-600 leading-relaxed min-h-[2.5rem]">

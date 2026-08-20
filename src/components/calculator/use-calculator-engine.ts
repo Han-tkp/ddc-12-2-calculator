@@ -107,7 +107,8 @@ export function useCalculatorEngine() {
                         RA_unit: p.RA_unit,
                         mix_type: p.mix_type,
                         A0: p.A0,
-                        A_house: 100,
+                        // ไม่มี A_house ที่นี่โดยตั้งใจ — label_profiles ไม่มีคอลัมน์นี้ และฉลาก
+                        // สารเคมีไม่มีทางระบุพื้นที่ต่อหลังได้ ค่านี้มาจากช่องกรอกของเจ้าหน้าที่เท่านั้น
                         // หน่วยของ C/S ต้องติดมาด้วย ไม่งั้น handlePresetChange เดาเป็น 'L' ทั้งคู่
                         // แล้วสูตรที่เก็บคนละหน่วยจะถูกคำนวณผิดสัดส่วนไปถึงพันเท่า
                         C_unit: p.C_unit ?? null,
@@ -186,7 +187,6 @@ export function useCalculatorEngine() {
                 setValue('S', preset.S);
                 setValue('RA', preset.RA);
                 setValue('RA_unit', preset.RA_unit);
-                setValue('A0', preset.A0);
                 setValue('mix_type', (preset as any).mix_type || 1);
                 setValue('chemical', preset.name);
                 if (preset.formula) {
@@ -211,7 +211,15 @@ export function useCalculatorEngine() {
                 setSelectedFormula(null);
                 setGenericFormValues({});
             }
-            setValue('A_house', preset.A_house);
+
+            // A0 คือ "ต่อพื้นที่เท่าไร" ของอัตราการพ่น ต้องมาพร้อมสูตรเสมอ รวมถึงกรณี "อื่นๆ"
+            // ก่อนหน้านี้กรณี "อื่นๆ" ไม่ได้เซ็ต ค่าจึงค้างจากสูตรก่อนหน้า — เลือกสูตรที่ A0=10,000
+            // แล้วสลับมา "อื่นๆ" เพื่อกรอกฉลากที่ต่อ 100 ตร.ม. จะได้สารเคมีน้อยกว่าที่ควร 100 เท่า
+            setValue('A0', preset.A0);
+
+            // ไม่รีเซ็ต A_house — พื้นที่ต่อหลังเป็นเรื่องของพื้นที่ปฏิบัติงาน ไม่ใช่ของสารเคมี
+            // ฉลากไม่มีทางระบุค่านี้ได้ (ดู src/lib/area-per-house.ts) การเลือกสูตรจึงไม่ควรลบค่า
+            // ที่เจ้าหน้าที่วัดมาเองทิ้ง
         } else {
             setSelectedFormula(null);
             setGenericFormValues({});

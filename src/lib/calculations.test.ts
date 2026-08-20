@@ -187,6 +187,33 @@ describe('Chemical Calculations', () => {
         }
     });
 
+    describe('A0 — พื้นที่อ้างอิงตามฉลาก', () => {
+        // A0 คือครึ่งหลังของอัตราการพ่นบนฉลาก ("20 มล. ต่อพื้นที่ 100 ตร.ม.")
+        // เดิมไม่มีช่องกรอกในฟอร์ม และกรณีเลือก "อื่นๆ" ก็ไม่ถูกเซ็ต ค่าจึงค้างจากสูตรก่อนหน้า
+        const base = {
+            C: 1, S: 15, RA: 20, RA_unit: 'cc' as const, mix_type: 1,
+            A_house: 100, N: 25, targetVolume: 5,
+        };
+
+        it('A0 ต่างกันทำให้ยอดรวมต่างกันตามสัดส่วน', () => {
+            const ตามฉลาก = calculate({ ...base, A0: 100 });
+            const ค้างจากสูตรอื่น = calculate({ ...base, A0: 10000 });
+
+            expect(ตามฉลาก.V_per_house).toBe(20);      // 20 มล. ต่อบ้าน 100 ตร.ม.
+            expect(ตามฉลาก.V_total).toBe(500);          // 25 หลัง
+
+            // A0 ค้างที่ 10,000 ทำให้ได้สารเคมีน้อยกว่าที่ควร 100 เท่า
+            expect(ค้างจากสูตรอื่น.V_total).toBe(5);
+            expect(ตามฉลาก.V_total / ค้างจากสูตรอื่น.V_total).toBe(100);
+        });
+
+        it('มีผลเฉพาะผ่านอัตราส่วน A_house / A0', () => {
+            // ขยายทั้งพื้นที่อ้างอิงและพื้นที่ต่อหลังเท่ากัน ผลต้องไม่ขยับ
+            expect(calculate({ ...base, A0: 100, A_house: 100 }))
+                .toEqual(calculate({ ...base, A0: 1000, A_house: 1000 }));
+        });
+    });
+
     describe('Validation', () => {
         it('should throw error for non-positive values', () => {
             expect(() => calculate({

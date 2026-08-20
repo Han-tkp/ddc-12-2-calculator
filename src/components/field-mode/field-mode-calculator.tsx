@@ -285,6 +285,11 @@ export function FieldModeCalculator() {
                                     </Select>
                                 </div>
                             </div>
+                            {/* คู่กับอัตราการพ่น — "20 มล. ต่อพื้นที่ 100 ตร.ม." แยกจากกันไม่ได้ */}
+                            <div className="rounded-lg p-3" style={{ background: CLOUD, border: `1px solid ${LINE}` }}>
+                                <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>ต่อพื้นที่ข้างขวด (ตร.ม.)</label>
+                                <Input type="number" step="1" {...register('A0', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
+                            </div>
                             <div className="rounded-lg p-3" style={{ background: CLOUD, border: `1px solid ${LINE}` }}>
                                 <label className="block text-[10px] mb-1.5" style={{ color: INK_MUTED }}>พื้นที่ต่อ 1 หลัง (ตร.ม.)</label>
                                 <Input type="number" {...register('A_house', { valueAsNumber: true })} className="h-10 text-sm font-mono font-semibold bg-white" />
