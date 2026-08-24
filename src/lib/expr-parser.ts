@@ -231,6 +231,15 @@ export function evaluate(node: AstNode, scope: Record<string, number>, functions
         case 'call': {
             const fn = functions[node.name];
             if (!fn) throw new ExprError(`พบฟังก์ชันที่ไม่รู้จัก: "${node.name}"`);
+
+            // IF ต้องคำนวณเฉพาะฝั่งที่เงื่อนไขเลือก เหมือน IF ของ Excel
+            // ถ้าคำนวณทั้งสองฝั่ง สูตรที่เขียนกันเงื่อนไขไว้ เช่น IF(n > 0, total / n, 0)
+            // จะยังไปแตะการหารด้วยศูนย์ในฝั่งที่ไม่ได้ใช้
+            if (node.name.toUpperCase() === 'IF' && node.args.length === 3) {
+                const cond = evaluate(node.args[0], scope, functions);
+                return evaluate(cond ? node.args[1] : node.args[2], scope, functions);
+            }
+
             const args = node.args.map(a => evaluate(a, scope, functions));
             return fn(...args);
         }

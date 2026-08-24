@@ -123,6 +123,31 @@ export function evaluateVariable(
 }
 
 export function computeAll(variables: FormulaVariable[]): ComputedVariable[] {
+    // ชื่อตัวแปรซ้ำกันเคยถูกกลืนหายไปเงียบ ๆ — Map ชื่อ→ตัวแปรเก็บได้ตัวเดียว ตัวที่เหลือ
+    // จึงหายจากผลลัพธ์ ทั้งที่ผู้ใช้ยังเห็นมันอยู่ในตารางสูตร และตัวไหนถูกใช้จริงก็เดาไม่ได้
+    // ตอนนี้แจ้งเป็นข้อผิดพลาดที่ตัวแปรทุกตัวที่ชื่อชนกัน แล้วไม่นำเข้าไปคำนวณ
+    const nameCounts = new Map<string, number>();
+    for (const v of variables) {
+        nameCounts.set(v.name, (nameCounts.get(v.name) || 0) + 1);
+    }
+    const duplicatedNames = new Set(
+        [...nameCounts.entries()].filter(([, n]) => n > 1).map(([name]) => name)
+    );
+
+    if (duplicatedNames.size > 0) {
+        const usable = variables.filter(v => !duplicatedNames.has(v.name));
+        const computedUsable = computeAll(usable);
+        const duplicates: ComputedVariable[] = variables
+            .filter(v => duplicatedNames.has(v.name))
+            .map(v => ({
+                ...v,
+                computed: null,
+                error: `ชื่อตัวแปร "${v.name}" ซ้ำกับตัวแปรอื่น กรุณาตั้งชื่อให้ไม่ซ้ำกัน`,
+                dependsOn: extractVarRefs(v.expression),
+            }));
+        return [...computedUsable, ...duplicates];
+    }
+
     const { sorted, error } = topologicalSort(variables);
     if (error) {
         return variables.map(v => ({

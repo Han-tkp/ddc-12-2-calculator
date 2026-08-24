@@ -31,6 +31,16 @@ const PART_PATTERNS = /ส่วน|part/i;
  * Note the parenthetical carrier note ("(ผสมน้ำ)" / "(ผสมน้ำมัน)") is deliberately
  * ignored here — it identifies WHICH solvent, not how much, and is captured separately.
  */
+/**
+ * ⚠️ ยังไม่ได้ใช้งานในระบบจริง และ **ห้ามนำไปต่อสายก่อนตรวจ regex ใหม่**
+ *
+ * ตัวแยกหน่วยของฟังก์ชันกลุ่มนี้ (parseQuantity / ratioFromQuantities / parseArea)
+ * ยังแยกหน่วยผิดในบางรูปแบบข้อความ ตอนนี้โปรดักชันเรียกใช้เฉพาะ formatCSUnitLabel
+ * และ simplifyRatio จึงยังไม่เป็นอันตราย แต่ถ้านำสามฟังก์ชันนี้ไปใช้กับข้อมูลสารเคมี
+ * เมื่อไหร่ ค่าที่แยกผิดจะกลายเป็นสัดส่วนผสมที่ผิดทันที
+ *
+ * ก่อนใช้งาน: แก้ regex และเพิ่มเทสต์ครอบรูปแบบข้อความที่พบจริงบนฉลากให้ครบก่อน
+ */
 export function parseQuantity(raw: unknown): ParsedQuantity | null {
     const text = String(raw ?? '').trim();
     if (!text) return null;
@@ -66,6 +76,16 @@ export function parseQuantity(raw: unknown): ParsedQuantity | null {
  * Both sides must be the same KIND of quantity: two volumes, or two unitless parts.
  * A volume paired with a bare "ส่วน" is rejected rather than guessed — silently
  * assuming a unit is how a dosing error gets shipped.
+ */
+/**
+ * ⚠️ ยังไม่ได้ใช้งานในระบบจริง และ **ห้ามนำไปต่อสายก่อนตรวจ regex ใหม่**
+ *
+ * ตัวแยกหน่วยของฟังก์ชันกลุ่มนี้ (parseQuantity / ratioFromQuantities / parseArea)
+ * ยังแยกหน่วยผิดในบางรูปแบบข้อความ ตอนนี้โปรดักชันเรียกใช้เฉพาะ formatCSUnitLabel
+ * และ simplifyRatio จึงยังไม่เป็นอันตราย แต่ถ้านำสามฟังก์ชันนี้ไปใช้กับข้อมูลสารเคมี
+ * เมื่อไหร่ ค่าที่แยกผิดจะกลายเป็นสัดส่วนผสมที่ผิดทันที
+ *
+ * ก่อนใช้งาน: แก้ regex และเพิ่มเทสต์ครอบรูปแบบข้อความที่พบจริงบนฉลากให้ครบก่อน
  */
 export function ratioFromQuantities(
     concentrate: unknown,
@@ -121,6 +141,16 @@ export function formatCSUnitLabel(unit: 'L' | 'cc' | null | undefined): string {
 }
 
 /** Parses "10,000 ตารางเมตร" → 10000. Returns null when absent or unparseable. */
+/**
+ * ⚠️ ยังไม่ได้ใช้งานในระบบจริง และ **ห้ามนำไปต่อสายก่อนตรวจ regex ใหม่**
+ *
+ * ตัวแยกหน่วยของฟังก์ชันกลุ่มนี้ (parseQuantity / ratioFromQuantities / parseArea)
+ * ยังแยกหน่วยผิดในบางรูปแบบข้อความ ตอนนี้โปรดักชันเรียกใช้เฉพาะ formatCSUnitLabel
+ * และ simplifyRatio จึงยังไม่เป็นอันตราย แต่ถ้านำสามฟังก์ชันนี้ไปใช้กับข้อมูลสารเคมี
+ * เมื่อไหร่ ค่าที่แยกผิดจะกลายเป็นสัดส่วนผสมที่ผิดทันที
+ *
+ * ก่อนใช้งาน: แก้ regex และเพิ่มเทสต์ครอบรูปแบบข้อความที่พบจริงบนฉลากให้ครบก่อน
+ */
 export function parseArea(raw: unknown): number | null {
     const text = String(raw ?? '').trim();
     if (!text) return null;

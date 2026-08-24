@@ -111,3 +111,59 @@ describe('extractVarRefs', () => {
         expect(extractVarRefs('42')).toEqual([]);
     });
 });
+
+describe('ชื่อตัวแปรซ้ำ — ต้องแจ้ง ไม่ใช่กลืนหายไปเงียบ ๆ', () => {
+    it('ตัวแปรที่ชื่อชนกันทุกตัวได้ error และไม่หายจากผลลัพธ์', () => {
+        const result = computeAll([
+            { id: '1', name: 'A', expression: '10' },
+            { id: '2', name: 'A', expression: '20' },
+            { id: '3', name: 'B', expression: '5' },
+        ]);
+
+        // เดิมได้กลับมา 2 แถว (A หายไปหนึ่ง) ตอนนี้ต้องครบ 3
+        expect(result).toHaveLength(3);
+
+        const dup = result.filter(r => r.name === 'A');
+        expect(dup).toHaveLength(2);
+        dup.forEach(r => {
+            expect(r.error).toContain('ซ้ำ');
+            expect(r.computed).toBeNull();
+        });
+
+        // ตัวแปรที่ชื่อไม่ซ้ำยังคำนวณได้ตามปกติ
+        expect(result.find(r => r.name === 'B')?.computed).toBe(5);
+    });
+
+    it('สูตรที่อ้างถึงชื่อที่ซ้ำ ต้องขึ้น error ไม่ใช่เดาเอาตัวใดตัวหนึ่ง', () => {
+        const result = computeAll([
+            { id: '1', name: 'A', expression: '10' },
+            { id: '2', name: 'A', expression: '20' },
+            { id: '3', name: 'total', expression: 'A * 2' },
+        ]);
+        const total = result.find(r => r.name === 'total');
+        expect(total?.computed).toBeNull();
+        expect(total?.error).toBeTruthy();
+    });
+});
+
+describe('IF — คำนวณเฉพาะฝั่งที่เงื่อนไขเลือก', () => {
+    it('ฝั่งที่ไม่ได้ใช้ ไม่ถูกคำนวณ (กันหารด้วยศูนย์ในสูตรที่เขียนกันไว้แล้ว)', () => {
+        const result = computeAll([
+            { id: '1', name: 'n', expression: '0' },
+            { id: '2', name: 'total', expression: '100' },
+            { id: '3', name: 'per_unit', expression: 'IF(n > 0, total / n, 0)' },
+        ]);
+        const perUnit = result.find(r => r.name === 'per_unit');
+        expect(perUnit?.computed).toBe(0);
+        expect(perUnit?.error).toBeUndefined();
+    });
+
+    it('เงื่อนไขเป็นจริง ใช้ค่าฝั่งแรก', () => {
+        const result = computeAll([
+            { id: '1', name: 'n', expression: '4' },
+            { id: '2', name: 'total', expression: '100' },
+            { id: '3', name: 'per_unit', expression: 'IF(n > 0, total / n, 0)' },
+        ]);
+        expect(result.find(r => r.name === 'per_unit')?.computed).toBe(25);
+    });
+});
