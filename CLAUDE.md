@@ -149,6 +149,18 @@ Vitest, config in `vitest.config.ts`. Tests sit next to their source as `*.test.
 
 Any test whose import chain reaches `@/lib/auth` (→ next-auth → `next/server`, unresolvable outside the Next runtime) must hoist `vi.mock('@/lib/auth')`.
 
+## Time: every "day" is a Thai day
+
+`src/lib/thai-time.ts` is the only place that converts time, and it never reads the machine's timezone. Vercel and the Docker image run UTC, seven hours behind Thailand, so `startOfDay()`/`format()` from date-fns bucketed the 00:00–07:00 Thai window — exactly when fogging runs happen — into the previous day, and printed every timestamp seven hours early. Thailand has been a fixed UTC+07:00 with no DST since 1920, so the module uses a constant offset rather than a tz database.
+
+Use `thaiStartOfDay()` / `thaiEndOfDay()` for every `createdAt` range filter, `thaiDayKey()` for daily bucketing, and the `formatThai*` helpers for any **server-side** rendering of a date. Client components inherit the officer's browser timezone and are already correct, but the export button uses the helpers anyway so an admin abroad gets Thai timestamps in the file. Note `toLocaleString('th-TH')` alone does **not** change the timezone — only `timeZone: 'Asia/Bangkok'` does.
+
+## Reading more than 1,000 rows
+
+PostgREST caps a response at 1,000 rows and truncates silently — no error, no warning. Any query that must cover a whole date range (dashboard aggregates, the user portal, `getExportData`) goes through `fetchAllRows()` in `src/lib/fetch-all-rows.ts`, which pages with `.range()` until exhausted and reports `truncated` when it hits `DEFAULT_MAX_ROWS`; the dashboard renders a banner in that case. Paginated tables that deliberately show one page keep their own `.range()`.
+
+`src/lib/calculation-filters.ts` holds the `/admin/logs` filter rules (date, keyword, role) so the page and its Excel button always select the same rows — the export used to send only the date range and produced a file wider than what was on screen.
+
 ## Database / Migrations
 
 Schema lives in Supabase; migrations in `supabase/migrations/`. The root-level `fix_database.sql`, `fix_id_constraint.sql`, `supabase_schema_update.sql`, and `sql_migration_feedback.sql` are historical setup scripts — add new schema changes as migrations instead.
