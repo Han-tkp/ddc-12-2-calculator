@@ -9,7 +9,8 @@ import { DashboardMap } from '@/components/admin/dashboard-map';
 import { LocationReport } from '@/components/admin/location-report';
 import { PublicFormulaManager } from '@/components/calculator/public-formula-manager';
 import { FreeFormulaCalculator } from '@/components/calculator/free-formula-calculator';
-import { formatRAUnit } from '@/lib/calculations';
+import { formatRAUnit, sprayVolumePerHouse, formatVolumePerHouse } from '@/lib/calculations';
+import { useAreaPerHouse, AreaPerHouseControl } from '@/components/shared/use-area-per-house';
 import { inferProfileSource } from '@/lib/profile-source';
 import { formatCSUnitLabel } from '@/lib/quantity';
 import { csRatioLabel } from '@/lib/cs-units';
@@ -37,6 +38,7 @@ interface UserPublicPortalProps {
 }
 
 export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPublicPortalProps) {
+    const { areaPerHouse, setAreaPerHouse } = useAreaPerHouse();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
     const [activeTab, setActiveTab] = useState(tabParam || 'overview');
@@ -267,26 +269,30 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                     </CardHeader>
 
                     <CardContent className="p-4 sm:p-6 space-y-4">
-                        <div className="flex items-center gap-1 bg-brand-cloud rounded-xl p-0.5 w-fit overflow-x-auto">
-                            {([
-                                { value: 'all', label: 'ทั้งหมด' },
-                                { value: 'default', label: 'ค่าเริ่มต้น' },
-                                { value: 'admin', label: 'เพิ่มโดยผู้ใช้งาน' },
-                                { value: 'file-import', label: 'นำเข้าไฟล์' },
-                            ] as const).map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => { setCatalogSource(opt.value); setCatalogPage(1); }}
-                                    className={`h-8 px-3 text-xs rounded-lg whitespace-nowrap transition-all ${
-                                        catalogSource === opt.value
-                                            ? 'bg-white text-brand font-semibold shadow-xs'
-                                            : 'text-brand-muted hover:text-brand-dark'
-                                    }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-1 bg-brand-cloud rounded-xl p-0.5 w-fit overflow-x-auto">
+                                {([
+                                    { value: 'all', label: 'ทั้งหมด' },
+                                    { value: 'default', label: 'ค่าเริ่มต้น' },
+                                    { value: 'admin', label: 'เพิ่มโดยผู้ใช้งาน' },
+                                    { value: 'file-import', label: 'นำเข้าไฟล์' },
+                                ] as const).map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => { setCatalogSource(opt.value); setCatalogPage(1); }}
+                                        className={`h-8 px-3 text-xs rounded-lg whitespace-nowrap transition-all ${
+                                            catalogSource === opt.value
+                                                ? 'bg-white text-brand font-semibold shadow-xs'
+                                                : 'text-brand-muted hover:text-brand-dark'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                            {/* ฐานพื้นที่ต่อหลังปรับได้ทุกค่า ไม่ผูกกับ 100 — พื้นที่จริงแต่ละแห่งต่างกัน */}
+                            <AreaPerHouseControl value={areaPerHouse} onChange={setAreaPerHouse} tone="brand" />
                         </div>
                         <div className="overflow-x-auto rounded-xl border border-brand-line">
                             <table className="w-full text-left text-xs sm:text-sm min-w-275">
@@ -297,6 +303,12 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                         <th className="p-3 text-center">ตัวทำละลาย</th>
                                         <th className="p-3">ประเภทผสม</th>
                                         <th className="p-3 text-center">อัตราพ่น</th>
+                                        <th className="p-3 text-center">
+                                            ต่อ 1 หลัง
+                                            <span className="block font-normal text-[10px] text-brand-muted/70">
+                                                ({areaPerHouse.toLocaleString('th-TH')} ตร.ม.)
+                                            </span>
+                                        </th>
                                         <th className="p-3 text-center">เพิ่มรูปแบบ</th>
                                         <th className="p-3">เวลาเพิ่ม</th>
                                         <th className="p-3">คำอธิบาย</th>
@@ -333,6 +345,11 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                             <td className="p-3 text-center font-semibold text-brand-ink tabular-nums whitespace-nowrap">
                                                 {p.RA} {formatRAUnit(p.RA_unit)} / {(p.A0 || 1000).toLocaleString('th-TH')} ตร.ม.
                                             </td>
+                                            {/* ตัวช่วยประมาณ คิดจากอัตราพ่นของสูตรนั้นเอง ไม่ใช่ค่าเดียวกันทุกสารเคมี
+                                                ส่ง p.A0 ดิบเข้าไป ไม่ใช้ fallback 1000 เพื่อไม่กลบข้อมูลที่หายด้วยเลขเดา */}
+                                            <td className="p-3 text-center font-semibold text-brand-dark tabular-nums whitespace-nowrap">
+                                                {formatVolumePerHouse(sprayVolumePerHouse(p.RA, p.RA_unit, p.A0, areaPerHouse))}
+                                            </td>
                                             <td className="p-3 text-center">
                                                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${
                                                     sourceInfo.source === 'default' ? 'bg-slate-200 text-slate-700'
@@ -355,7 +372,7 @@ export function UserPublicPortal({ initialCalcData, initialProfiles }: UserPubli
                                     })}
                                     {pagedProfiles.length === 0 && (
                                         <tr>
-                                            <td colSpan={8} className="p-8 text-center text-brand-muted">
+                                            <td colSpan={9} className="p-8 text-center text-brand-muted">
                                                 ไม่พบสูตรที่ตรงกับคำค้นหา
                                             </td>
                                         </tr>

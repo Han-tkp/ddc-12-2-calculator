@@ -1,5 +1,7 @@
 // lib/calculations.ts
 
+import { DEFAULT_AREA_PER_HOUSE } from './area-per-house';
+
 export interface CalculationInput {
     C: number;           // สัดส่วนสารออกฤทธิ์
     /**
@@ -44,6 +46,41 @@ export function convertRA(value: number, from: 'L' | 'cc', to: 'L' | 'cc'): numb
  */
 export function formatRAUnit(unit: string): string {
     return unit === 'L' ? 'ลิตร' : 'มล.';
+}
+
+/**
+ * ปริมาณน้ำยาผสมที่ต้องใช้ต่อบ้าน 1 หลัง — ตัวช่วยดูคร่าว ๆ ในตารางสูตร
+ *
+ * คิดจากอัตราพ่นบนฉลากของสารเคมีตัวนั้นเอง (`RA` ต่อพื้นที่ `A0`) ซึ่งไม่เท่ากันในแต่ละสูตร —
+ * จากแบบฟอร์มของศูนย์ฯ มีตั้งแต่ 1 ถึง 10,000 ตร.ม. จึงใช้ค่าเดียวกันทุกสารเคมีไม่ได้
+ * ส่วน `A_house` เป็นตัวช่วยประมาณ (ค่าเริ่มต้น 100 ตร.ม./หลัง) ไม่ใช่ค่าจากฉลาก
+ *
+ * ⚠️ ค่านี้คือ "อัตราพ่นตามฉลาก" จึงไม่ขึ้นกับ mix_type ต่างจาก `V_per_house` ของ calculate()
+ * ที่โหมด "ผสมกับ" เติมสารเคมีทบเข้าไปอีก (ต่างกันได้ถึง 25% ในสูตรเข้มข้นอย่าง 1:4)
+ * ถ้ามีการแก้พฤติกรรมโหมด "ผสมกับ" เมื่อไร ต้องกลับมาทบทวนฟังก์ชันนี้ด้วย
+ *
+ * คืน `null` เมื่อข้อมูลไม่พอคำนวณ เพื่อให้หน้าจอแสดงขีดแทนที่จะโชว์ Infinity/NaN
+ */
+export function sprayVolumePerHouse(
+    RA: number,
+    RA_unit: 'L' | 'cc',
+    A0: number,
+    A_house: number = DEFAULT_AREA_PER_HOUSE,
+): number | null {
+    if (![RA, A0, A_house].every(v => Number.isFinite(v) && v > 0)) return null;
+    const RA_cc = convertRA(RA, RA_unit, 'cc');
+    return roundTo(RA_cc * (A_house / A0), 2);
+}
+
+/**
+ * จัดรูปแบบปริมาณต่อหลังให้อ่านในช่องตารางได้ — ค่ากว้างตั้งแต่ 10 ถึง 5,000 มล.
+ * ต่ำกว่า 1 ลิตรแสดงเป็น มล. ตั้งแต่ 1 ลิตรขึ้นไปแสดงเป็นลิตร กันเลขล้นเซลล์
+ * `null` (ข้อมูลไม่พอคำนวณ) แสดงเป็นขีด ไม่ใช่ 0 ซึ่งจะอ่านเป็น "ไม่ต้องใช้ยา"
+ */
+export function formatVolumePerHouse(ml: number | null): string {
+    if (ml === null) return '—';
+    if (ml < 1000) return `${formatNumber(ml, ml % 1 === 0 ? 0 : 2)} มล.`;
+    return `${formatNumber(ml / 1000, (ml / 1000) % 1 === 0 ? 0 : 2)} ลิตร`;
 }
 
 /**

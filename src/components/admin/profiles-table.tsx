@@ -24,6 +24,8 @@ import { BulkEditProfilesModal } from './bulk-edit-profiles-modal';
 import { convertRA } from '@/lib/calculations';
 import { formatCSUnitLabel } from '@/lib/quantity';
 import { applyCSUnitChoice, csEditState, csRatioLabel, csSavePayload, type CSUnitChoice, type CSUnitOrParts } from '@/lib/cs-units';
+import { sprayVolumePerHouse, formatVolumePerHouse } from '@/lib/calculations';
+import { useAreaPerHouse, AreaPerHouseControl } from '@/components/shared/use-area-per-house';
 import { inferProfileSource } from '@/lib/profile-source';
 
 
@@ -53,6 +55,7 @@ interface ProfilesTableProps {
 }
 
 export function ProfilesTable({ profiles }: ProfilesTableProps) {
+    const { areaPerHouse, setAreaPerHouse } = useAreaPerHouse();
     const router = useRouter();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -606,6 +609,10 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
 
             {/* Table — matches the history pages' (ประวัติคำนวณ / ประวัติจัดการสูตร) format */}
             <div className="glass-card rounded-xl border border-slate-200/50 shadow-sm overflow-hidden mb-6 w-full">
+                {/* ฐานพื้นที่ต่อหลังปรับได้ทุกค่า ไม่ผูกกับ 100 — พื้นที่จริงแต่ละแห่งต่างกัน */}
+                <div className="flex justify-end px-3 py-2 border-b border-slate-200/60 bg-slate-50/50">
+                    <AreaPerHouseControl value={areaPerHouse} onChange={setAreaPerHouse} />
+                </div>
                 <div className="overflow-x-auto max-h-[70vh] overflow-y-auto w-full relative">
                     <table className="w-full text-left text-sm min-w-275">
                         <thead className="bg-slate-50 text-slate-600 sticky top-0 z-10 border-b">
@@ -625,6 +632,12 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                 <th className="p-3 font-semibold text-center">รูปแบบการผสม</th>
                                 <th className="p-3 font-semibold text-center">ปริมาณพ่น</th>
                                 <th className="p-3 font-semibold text-center">พื้นที่ (ตร.ม.)</th>
+                                <th className="p-3 font-semibold text-center">
+                                    ต่อ 1 หลัง
+                                    <span className="block font-normal text-[10px] text-slate-400">
+                                        ({areaPerHouse.toLocaleString('th-TH')} ตร.ม.)
+                                    </span>
+                                </th>
                                 <th className="p-3 font-semibold text-center">เพิ่มมาในรูปแบบใด</th>
                                 <th className="p-3 font-semibold">เวลา CRUD</th>
                                 <th className="p-3 font-semibold text-center">สถานะ</th>
@@ -634,7 +647,7 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                         <tbody className="divide-y divide-slate-100">
                             {profiles.length === 0 ? (
                                 <tr>
-                                    <td colSpan={11} className="text-center py-8 text-slate-500">
+                                    <td colSpan={12} className="text-center py-8 text-slate-500">
                                         ยังไม่มีสูตรสารเคมี
                                     </td>
                                 </tr>
@@ -688,6 +701,10 @@ export function ProfilesTable({ profiles }: ProfilesTableProps) {
                                                 </div>
                                             </td>
                                             <td className="p-3 text-center">{profile.A0.toLocaleString()}</td>
+                                            {/* ตัวช่วยประมาณ คิดจากอัตราพ่นของสูตรนั้นเอง ไม่ใช่ค่าเดียวกันทุกสารเคมี */}
+                                            <td className="p-3 text-center font-medium text-brand-dark whitespace-nowrap">
+                                                {formatVolumePerHouse(sprayVolumePerHouse(profile.RA, profile.RA_unit as 'L' | 'cc', profile.A0, areaPerHouse))}
+                                            </td>
                                             <td className="p-3 text-center">
                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
                                                     sourceInfo.source === 'default' ? 'bg-slate-200 text-slate-700'

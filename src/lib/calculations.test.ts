@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculate, parseRatio, ccToLiters, litersToCc } from './calculations';
+import { calculate, parseRatio, ccToLiters, litersToCc, sprayVolumePerHouse, formatVolumePerHouse } from './calculations';
 
 describe('Chemical Calculations', () => {
     describe('Deltacide Fogging (mix_type = 2, ผสมกับ)', () => {
@@ -211,6 +211,70 @@ describe('Chemical Calculations', () => {
             // ขยายทั้งพื้นที่อ้างอิงและพื้นที่ต่อหลังเท่ากัน ผลต้องไม่ขยับ
             expect(calculate({ ...base, A0: 100, A_house: 100 }))
                 .toEqual(calculate({ ...base, A0: 1000, A_house: 1000 }));
+        });
+    });
+
+    describe('sprayVolumePerHouse — ตัวช่วยดูคร่าว ๆ ต่อบ้าน 1 หลัง', () => {
+        // ground truth จากแบบฟอร์มจริงของศูนย์ฯ (แบบฟอร์มกรอกสารเคมีพ่น สงขลา/สตูล)
+        // คอลัมน์ "ต่อพื้นที่ตารางเมตร" ในฟอร์มมี 4 ค่า: 1 / 100 / 1,000 / 10,000
+        const rows: [string, number, 'L' | 'cc', number, number][] = [
+            ['ซับมาริน ULV — 1.25 ล./10,000 ตร.ม.', 1.25, 'L', 10000, 12.5],
+            ['ซับมาริน หมอกควัน — 1.25 ล./1,000 ตร.ม.', 1.25, 'L', 1000, 125],
+            ['เดลต้า 50 ULV — 15 มล./100 ตร.ม.', 15, 'cc', 100, 15],
+            ['เดลทริน 25 หมอกควัน — 100 มล./100 ตร.ม.', 100, 'cc', 100, 100],
+            ['เวนเท็กซ์250 คลาน — 50 มล./1 ตร.ม.', 50, 'cc', 1, 5000],
+            ['ไดนาโฟล 10 หมอกควัน — 10 ล./10,000 ตร.ม.', 10, 'L', 10000, 100],
+        ];
+
+        for (const [name, RA, unit, A0, expected] of rows) {
+            it(name, () => {
+                expect(sprayVolumePerHouse(RA, unit, A0)).toBe(expected);
+            });
+        }
+
+        it('รับพื้นที่ต่อหลังที่กำหนดเองได้', () => {
+            expect(sprayVolumePerHouse(100, 'cc', 100, 200)).toBe(200);
+        });
+
+        it('รองรับพื้นที่ค่าใดก็ได้ ไม่ผูกกับชุด 1/100/1,000/10,000', () => {
+            // อนาคตอาจมีฉลากที่ระบุพื้นที่อื่น และพื้นที่ต่อหลังจริงก็ไม่ได้เป็น 100 เสมอ
+            expect(sprayVolumePerHouse(60, 'cc', 750, 137.5)).toBe(11);      // 60 × 137.5/750
+            expect(sprayVolumePerHouse(0.4, 'L', 250, 62.5)).toBe(100);      // 400 × 62.5/250
+            expect(sprayVolumePerHouse(7, 'cc', 3, 1)).toBe(2.33);           // ปัดทศนิยม 2 ตำแหน่ง
+        });
+
+        it('เพิ่มพื้นที่ต่อหลังเป็นสองเท่า ปริมาณต้องเป็นสองเท่า', () => {
+            const base = sprayVolumePerHouse(100, 'cc', 100, 100)!;
+            expect(sprayVolumePerHouse(100, 'cc', 100, 200)).toBe(base * 2);
+        });
+
+        it('ข้อมูลไม่พอคำนวณต้องคืน null ไม่ใช่ Infinity หรือ NaN', () => {
+            expect(sprayVolumePerHouse(100, 'cc', 0)).toBeNull();
+            expect(sprayVolumePerHouse(0, 'cc', 100)).toBeNull();
+            expect(sprayVolumePerHouse(NaN, 'cc', 100)).toBeNull();
+            expect(sprayVolumePerHouse(100, 'cc', undefined as unknown as number)).toBeNull();
+        });
+
+        it('ตรงกับ V_per_house ของ calculate() ในโหมดผสมให้ได้', () => {
+            // โหมด "ผสมให้ได้" ปริมาตรรวมเท่ากับอัตราฉลากพอดี ทั้งสองทางจึงต้องได้เลขเดียวกัน
+            const result = calculate({
+                C: 1, S: 14, RA: 20, RA_unit: 'cc', mix_type: 1,
+                A0: 100, A_house: 100, N: 25,
+            });
+            expect(sprayVolumePerHouse(20, 'cc', 100)).toBe(result.V_per_house);
+        });
+    });
+
+    describe('formatVolumePerHouse', () => {
+        it('ต่ำกว่า 1 ลิตรเป็น มล. ตั้งแต่ 1 ลิตรขึ้นไปเป็นลิตร', () => {
+            expect(formatVolumePerHouse(12.5)).toBe('12.50 มล.');
+            expect(formatVolumePerHouse(100)).toBe('100 มล.');
+            expect(formatVolumePerHouse(5000)).toBe('5 ลิตร');
+            expect(formatVolumePerHouse(2500)).toBe('2.50 ลิตร');
+        });
+
+        it('null แสดงเป็นขีด ไม่ใช่ 0', () => {
+            expect(formatVolumePerHouse(null)).toBe('—');
         });
     });
 
