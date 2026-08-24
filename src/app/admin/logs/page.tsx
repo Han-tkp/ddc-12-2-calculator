@@ -5,7 +5,8 @@ import { decryptName } from '@/lib/encryption';
 import { Pagination } from '@/components/ui/pagination';
 import { Shield, User, Calendar, FlaskConical } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
-import { thaiStartOfDay, thaiEndOfDay, formatThaiDateTimeShortYear } from '@/lib/thai-time';
+import { formatThaiDateTimeShortYear } from '@/lib/thai-time';
+import { applyCalculationFilters } from '@/lib/calculation-filters';
 import { formatNumber } from '@/lib/calculations';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
 import { ExportExcelButton } from '@/components/admin/export-excel-button';
@@ -18,33 +19,15 @@ async function getLogs(pageStr: string | undefined, fromDateStr?: string, toDate
     const from = (currentPage - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabaseAdmin
-        .from('calculations')
-        .select('*, user:users(name, email, role)', { count: 'exact' })
-        .order('createdAt', { ascending: false });
-
-    if (q && q.trim()) {
-        const keyword = `%${q.trim()}%`;
-        query = query.or(`chemical.ilike.${keyword},location.ilike.${keyword},agency.ilike.${keyword}`);
-    }
-
-    if (fromDateStr) {
-        query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
-    }
-    if (toDateStr) {
-        query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
-    }
-
-    // ตัวกรองบทบาท: admin = บันทึกโดยผู้ล็อกอิน (userId มีค่า) หรือ agency มีคำว่า Admin
-    // user = กลับด้าน: userId ว่าง และ agency ไม่ใช่ Admin
-    if (role === 'admin') {
-        query = query.or('userId.not.is.null,agency.ilike.%Admin%');
-    } else if (role === 'user') {
-        query = query.or(
-            'and(userId.is.null,agency.not.ilike.%Admin%),' +
-            'and(userId.is.null,agency.is.null)'
-        );
-    }
+    // ตัวกรองชุดเดียวกับที่ปุ่มดาวน์โหลด Excel ใช้ (src/lib/calculation-filters.ts)
+    // เพื่อให้ไฟล์ที่ได้ตรงกับสิ่งที่เห็นบนหน้าจอเสมอ
+    const query = applyCalculationFilters(
+        supabaseAdmin
+            .from('calculations')
+            .select('*, user:users(name, email, role)', { count: 'exact' })
+            .order('createdAt', { ascending: false }),
+        { from: fromDateStr, to: toDateStr, role, q },
+    );
 
     const { data: logs, count, error } = await query.range(from, to);
 
@@ -90,7 +73,7 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                         <DateRangeFilter />
                     </div>
                     <div className="w-full sm:w-auto">
-                        <ExportExcelButton fromDate={from} toDate={to} />
+                        <ExportExcelButton fromDate={from} toDate={to} role={role} q={q} />
                     </div>
                 </div>
             </div>

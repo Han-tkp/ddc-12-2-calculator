@@ -98,3 +98,30 @@ export function formatThaiDate(value: Date | string | number): string {
 export function formatThaiDayMonth(value: Date | string | number): string {
     return formatThai(value, { day: 'numeric', month: 'short' });
 }
+
+/** เช่น "24/08/2569 08:30" — รูปแบบที่ใช้ในไฟล์ Excel */
+export function formatThaiSlashDateTime(value: Date | string | number): string {
+    return formatThai(value, {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+}
+
+/** เช่น "24/08/2569" */
+export function formatThaiSlashDate(value: Date | string | number): string {
+    return formatThai(value, { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/**
+ * ป้ายเวลาสำหรับตั้งชื่อไฟล์ รูปแบบ yyyyMMdd_HHmm ตามเวลาไทย (ปี ค.ศ. เพื่อให้เรียงไฟล์ได้)
+ */
+export function thaiFileStamp(value: Date = new Date()): string {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: THAI_TZ,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(value);
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+        parts.find((p) => p.type === type)?.value ?? '';
+    return `${get('year')}${get('month')}${get('day')}_${get('hour')}${get('minute')}`;
+}

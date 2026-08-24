@@ -13,13 +13,16 @@ import {
 import { Download, FileSpreadsheet, Loader2, FileText, LayoutList, Map, Calculator, ClipboardList } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getExportData } from '@/app/actions/export';
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { formatThaiSlashDateTime, formatThaiSlashDate, thaiFileStamp } from '@/lib/thai-time';
 import { toast } from 'sonner';
 
 interface ExportExcelButtonProps {
     fromDate?: string;
     toDate?: string;
+    /** ตัวกรองบทบาทและคำค้นของหน้าประวัติ — ต้องส่งต่อไปด้วย ไม่งั้นไฟล์ที่ได้
+        จะมีข้อมูลมากกว่าที่ผู้ใช้เห็นบนหน้าจอ */
+    role?: string;
+    q?: string;
 }
 
 const EXPORT_MODES = [
@@ -55,14 +58,14 @@ const EXPORT_MODES = [
     },
 ];
 
-export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) {
+export function ExportExcelButton({ fromDate, toDate, role, q }: ExportExcelButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isExporting, setIsExporting] = useState<string | null>(null);
 
     const handleExport = async (modeId: string) => {
         try {
             setIsExporting(modeId);
-            const data = await getExportData(fromDate, toDate);
+            const data = await getExportData({ from: fromDate, to: toDate, role, q });
 
             if (!data || data.length === 0) {
                 toast.error('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
@@ -77,12 +80,14 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
             if (modeId === 'daily') {
                 sheetName = 'Daily_Summary';
                 wsData = data.map((item) => ({
-                    'วัน-เวลา': format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm', { locale: th }),
+                    'วัน-เวลา': formatThaiSlashDateTime(item.createdAt),
                     'สถานที่': item.location || 'ไม่ระบุ',
                     'หน่วยงาน': item.agency || '-',
                     'สารเคมี': item.chemical,
                     'อัตราส่วน': `${item.C}:${item.S}`,
-                    'ชนิดการพ่น': item.type || 'หมอกควัน/ULV',
+                    // ฐานข้อมูลยังไม่ได้เก็บชนิดการพ่น เดิมเติม "หมอกควัน/ULV" ให้ทุกแถว
+                    // ซึ่งเป็นข้อมูลที่ระบบแต่งขึ้นเอง ถ้ามีคนเอาไปสรุปจะผิดทันที
+                    'ชนิดการพ่น': item.type || '-',
                     'ใช้เครื่อง (Rate)': item.flow_rate || '-',
                     'ปริมาณรวมทั้งหมด (มล.)': item.V_total,
                     'ใช้สารเคมี (มล.)': item.V_C ?? item.V_chem ?? 0,
@@ -93,7 +98,7 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
                 sheetName = 'Preparation_Tickets';
                 wsData = data.map((item, index) => ({
                     'Ticket No.': `#${String(index + 1).padStart(4, '0')}`,
-                    'เวลางาน': format(new Date(item.createdAt), 'dd/MM/yyyy HH:mm', { locale: th }),
+                    'เวลางาน': formatThaiSlashDateTime(item.createdAt),
                     'พื้นที่': item.location || 'ไม่ระบุ',
                     'หน่วยงาน': item.agency || '-',
                     'สารเคมีที่เบิก': item.chemical,
@@ -127,7 +132,7 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
             } else if (modeId === 'cost') {
                 sheetName = 'Inventory_Cost';
                 wsData = data.map((item) => ({
-                    'วันที่เบิก': format(new Date(item.createdAt), 'dd/MM/yyyy', { locale: th }),
+                    'วันที่เบิก': formatThaiSlashDate(item.createdAt),
                     'สารเคมี': item.chemical,
                     'ปริมาณเบิกใช้ (มล.)': item.V_C ?? item.V_chem ?? 0,
                     'ราคาต่อหน่วย (บาท)': '',
@@ -141,7 +146,7 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
             } else if (modeId === 'ddc') {
                 sheetName = 'DDC_Report';
                 wsData = data.map((item) => ({
-                    'วัน/เดือน/ปี': format(new Date(item.createdAt), 'dd/MM/yyyy', { locale: th }),
+                    'วัน/เดือน/ปี': formatThaiSlashDate(item.createdAt),
                     'สถานที่พ่น': item.location || '-',
                     'หน่วยงาน': item.agency || '-',
                     'จำนวนหลังคาเรือน': item.N || item.params?.N || '-',
@@ -164,7 +169,7 @@ export function ExportExcelButton({ fromDate, toDate }: ExportExcelButtonProps) 
             ws['!cols'] = colWidths;
 
             // Trigger file download
-            const fileName = `DDC_Export_${modeId}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
+            const fileName = `DDC_Export_${modeId}_${thaiFileStamp()}.xlsx`;
             XLSX.writeFile(wb, fileName);
 
             toast.success(`ดาวน์โหลดไฟล์ ${fileName} สำเร็จ`);

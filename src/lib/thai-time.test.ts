@@ -84,3 +84,11 @@ describe('thai-time — การแสดงผลต้องเป็นเ�
         expect(formatThaiDateTime('ไม่ใช่วันที่')).toBe('-');
     });
 });
+
+describe('thaiFileStamp — ชื่อไฟล์ต้องเรียงตามเวลาได้และเป็นเวลาไทย', () => {
+    it('ใช้เวลาไทย ไม่ใช่เวลาสากล', async () => {
+        const { thaiFileStamp } = await import('./thai-time');
+        // ตี 2 ของวันที่ 24 ตามเวลาไทย = 19:00 ของวันที่ 23 ตามเวลาสากล
+        expect(thaiFileStamp(new Date('2026-08-24T02:00:00+07:00'))).toBe('20260824_0200');
+    });
+});
