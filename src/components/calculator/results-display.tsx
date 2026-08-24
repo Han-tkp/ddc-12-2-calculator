@@ -64,9 +64,15 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
 
         if (mode === 1) {
             // โหมด 1: แบบสรุปรายการประจำวัน (Daily Summary Log)
+            //
+            // คอลัมน์ "ปริมาณตัวผสม" เดิมใส่ input.S ลงไป ซึ่งเป็น "ตัวเลขอัตราส่วนบนฉลาก"
+            // (14, 79, 250 …) ไม่ใช่ปริมาตรเป็นมิลลิลิตรเหมือนคอลัมน์รอบข้าง คนอ่านไฟล์จึง
+            // เห็นเลข 79 อยู่กลางแถวที่เป็น มล. แล้วตีความว่า "ใช้ตัวผสม 79 มล."
+            // ตัดคอลัมน์นั้นออก เพราะข้อมูลเดียวกันมีอยู่แล้วในคอลัมน์ "อัตราส่วน"
+            // (formatMixRatio) และปริมาตรตัวทำละลายจริงอยู่ใน "น้ำมัน/น้ำเตรียม(มล.)"
             wsData = [
-                ['วันที่-เวลา', 'หน่วยงาน', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(มล.)', 'น้ำมัน/น้ำเตรียม(มล.)', 'ยอดรวม(มล.)', 'สถานที่/พิกัด'],
-                [dateStr, agencyName, chemName, formatMixRatio(input.C, input.S, input.mix_type), input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
+                ['วันที่-เวลา', 'หน่วยงาน', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'สารเคมีเตรียม(มล.)', 'น้ำมัน/น้ำเตรียม(มล.)', 'ยอดรวม(มล.)', 'สถานที่/พิกัด'],
+                [dateStr, agencyName, chemName, formatMixRatio(input.C, input.S, input.mix_type), input.N, input.RA, result.V_C, result.V_S, result.V_total, locName]
             ];
         } else if (mode === 2) {
             // โหมด 2: แบบใบสั่งเตรียมสารเคมี (Chemical Preparation Ticket)

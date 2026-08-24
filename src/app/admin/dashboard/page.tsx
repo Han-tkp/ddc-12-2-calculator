@@ -269,16 +269,19 @@ export default async function AdminDashboard({
         value: item._count.chemical
     }));
 
-    // Chemical Volume Stats
+    // Chemical Volume Stats — the chart this feeds is titled "ปริมาณการใช้สารเคมีรวม (ลิตร)"
+    // but V_total is stored in millilitres, so the sum MUST be divided by 1000 here.
+    // Without it the chart overstates usage 1000× and contradicts the "ปริมาณสารเคมีรวม"
+    // card above, which converts (line 263-264). Keep the two conversions in step.
     const chemicalVolume = new Map<string, number>();
     calculationsInRange.forEach((c: any) => {
         const chem = c.chemical || 'อื่นๆ';
-        const vol = c.V_total || 0;
+        const vol = Number(c.V_total) || 0;
         chemicalVolume.set(chem, (chemicalVolume.get(chem) || 0) + vol);
     });
 
     const volumeStats = Array.from(chemicalVolume.entries())
-        .map(([name, value]) => ({ name, value: Math.round(value) }))
+        .map(([name, ml]) => ({ name, value: Number((ml / 1000).toFixed(1)) }))
         .sort((a, b) => b.value - a.value);
 
     // Decrypt names for display. decryptName() is used rather than decrypt() because the
@@ -378,8 +381,11 @@ export default async function AdminDashboard({
                                 <div className="text-2xl font-bold text-brand-ink tabular-nums">
                                     {currentVolumeL.toLocaleString('th-TH', { maximumFractionDigits: 1 })} <span className="text-sm font-normal text-brand-muted">ลิตร</span>
                                 </div>
+                                {/* ปัดเศษให้เท่ากันทั้งสองฝั่ง — เดิมฝั่งก่อนหน้าปัด 1 ตำแหน่ง
+                                    แต่ฝั่งปัจจุบันส่งค่าดิบ ทำให้ช่วงที่ใช้จริงเท่ากันยังขึ้น
+                                    ลูกศรเพิ่ม/ลดจากเศษทศนิยมที่ตาไม่เห็นบนหน้าจอ */}
                                 <TrendDelta
-                                    current={currentVolumeL}
+                                    current={Number(currentVolumeL.toFixed(1))}
                                     previous={Number(previousVolumeL.toFixed(1))}
                                     unit="ลิตร"
                                 />
