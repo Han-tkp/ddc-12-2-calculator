@@ -9,6 +9,7 @@ import { UserPublicPortal } from '@/components/user/user-public-portal';
 import Link from 'next/link';
 import { ArrowLeft, LayoutDashboard, Layers, Bot, Sparkles, MapPin, Calculator, CheckCircle2 } from 'lucide-react';
 import { thaiToday, thaiStartOfDay, thaiEndOfDay, toThaiDayKey, shiftThaiDayKey } from '@/lib/thai-time';
+import { fetchAllRows } from '@/lib/fetch-all-rows';
 
 import { Suspense } from 'react';
 
@@ -31,11 +32,12 @@ export default async function PublicUserPortalPage({
     };
 
     // 1. Fetch calculation data
-    const { data: calcData } = await supabaseAdmin
+    // ดึงทีละหน้าจนหมด — PostgREST ตัดที่ 1,000 แถวต่อคำขอโดยไม่แจ้งเตือน
+    const { rows: calcData } = await fetchAllRows<any>(() => supabaseAdmin
         .from('calculations')
         .select('chemical, location, createdAt, V_total, lat, lng')
         .gte('createdAt', dateFilterStr.gte)
-        .lte('createdAt', dateFilterStr.lte);
+        .lte('createdAt', dateFilterStr.lte));
 
     // 2. Fetch profiles
     const { data: profiles } = await supabaseAdmin

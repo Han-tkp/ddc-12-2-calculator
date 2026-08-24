@@ -25,6 +25,7 @@ import {
     formatThaiDayMonth,
 } from '@/lib/thai-time';
 import { formatNumber } from '@/lib/calculations';
+import { fetchAllRows } from '@/lib/fetch-all-rows';
 
 const PAGE_SIZE = 100;
 
@@ -86,10 +87,13 @@ export default async function AdminDashboard({
         .gte('createdAt', dateFilterStr.gte)
         .lte('createdAt', dateFilterStr.lte));
 
-    const prevCalcDataPromise = withDimensions(supabaseAdmin.from('calculations')
-        .select('chemical, location, V_total')
-        .gte('createdAt', prevStartDate.toISOString())
-        .lte('createdAt', prevEndDate.toISOString()));
+    // ดึงทีละหน้าจนหมด — PostgREST ตอบกลับสูงสุด 1,000 แถวต่อคำขอและตัดส่วนเกินทิ้ง
+    // เงียบ ๆ ถ้าปล่อยไว้ ยอดรวมบนการ์ดจะหยุดโตเมื่อข้อมูลถึงหลักพันโดยไม่มีคำเตือน
+    const prevCalcDataPromise = fetchAllRows<{ V_total: number | null }>(() =>
+        withDimensions(supabaseAdmin.from('calculations')
+            .select('chemical, location, V_total')
+            .gte('createdAt', prevStartDate.toISOString())
+            .lte('createdAt', prevEndDate.toISOString())));
 
     const userCountPromise = supabaseAdmin.from('users')
         .select('*', { count: 'exact', head: true });
@@ -97,16 +101,19 @@ export default async function AdminDashboard({
     // Distinct values that populate the filter drop-downs. Read from the whole date
     // range but WITHOUT the dimension filters, so choosing a chemical never removes the
     // other chemicals from the list and traps the user in their own selection.
-    const filterOptionsPromise = supabaseAdmin.from('calculations')
-        .select('chemical, location')
-        .gte('createdAt', dateFilterStr.gte)
-        .lte('createdAt', dateFilterStr.lte);
+    const filterOptionsPromise = fetchAllRows<{ chemical: string | null; location: string | null }>(() =>
+        supabaseAdmin.from('calculations')
+            .select('chemical, location')
+            .gte('createdAt', dateFilterStr.gte)
+            .lte('createdAt', dateFilterStr.lte));
 
-    // 2.2 Aggregations (fetch data then aggregate)
-    const calcDataPromise = withDimensions(supabaseAdmin.from('calculations')
-        .select('chemical, location, createdAt, V_total')
-        .gte('createdAt', dateFilterStr.gte)
-        .lte('createdAt', dateFilterStr.lte));
+    // 2.2 Aggregations (fetch data then aggregate) — ต้องได้ทั้งช่วง ไม่ใช่ 1,000 แถวแรก
+    // เพราะทุกกราฟและ KPI บนหน้านี้คำนวณจากชุดนี้
+    const calcDataPromise = fetchAllRows<Record<string, unknown>>(() =>
+        withDimensions(supabaseAdmin.from('calculations')
+            .select('chemical, location, createdAt, V_total')
+            .gte('createdAt', dateFilterStr.gte)
+            .lte('createdAt', dateFilterStr.lte)));
 
     // 2.3 Recent Activity (with Join) — filtered too, otherwise "สูตรที่ใช้งานล่าสุด"
     // reports a chemical the user has filtered out, contradicting the rest of the page.
@@ -166,12 +173,12 @@ export default async function AdminDashboard({
     const [
         { count: totalCalculations },
         { count: totalUsers },
-        { data: allCalcData },
+        { rows: allCalcData, truncated: calcDataTruncated },
         { data: recentCalculations },
         { data: mapPoints },
         { data: historyRows, count: historyCount },
-        { data: prevCalcData },
-        { data: filterOptionRows },
+        { rows: prevCalcData },
+        { rows: filterOptionRows },
         { data: exportSourceRows },
     ] = await Promise.all([
         calcCountPromise,
@@ -330,6 +337,14 @@ export default async function AdminDashboard({
                     <p className="text-slate-500">
                         ข้อมูลระหว่าง {formatThaiDate(startDate)} - {formatThaiDate(endDate)}
                     </p>
+                    {/* ถ้าชนเพดานจำนวนแถว ต้องบอกให้เห็น ไม่ใช่แสดงยอดที่ไม่ครบเงียบ ๆ
+                        เหมือนตอนที่ระบบยังตัดที่ 1,000 แถวโดยไม่มีคำเตือน */}
+                    {calcDataTruncated && (
+                        <p className="mt-1 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 inline-block">
+                            ข้อมูลในช่วงนี้มีจำนวนมากเกินกว่าที่ระบบสรุปได้ในครั้งเดียว
+                            ตัวเลขสรุปด้านล่างจึงยังไม่ครบทั้งช่วง — กรุณาเลือกช่วงวันที่ให้แคบลง
+                        </p>
+                    )}
                 </div>
                 <div className="flex items-center gap-2 bg-brand-soft text-brand-dark px-3 py-1 rounded-full text-sm font-medium">
                     <CalendarRange className="h-4 w-4" />

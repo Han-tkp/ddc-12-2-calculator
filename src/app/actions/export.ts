@@ -3,24 +3,27 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { decrypt } from '@/lib/encryption';
 import { thaiStartOfDay, thaiEndOfDay } from '@/lib/thai-time';
+import { fetchAllRows } from '@/lib/fetch-all-rows';
 
 export async function getExportData(fromDateStr?: string, toDateStr?: string) {
-    let query = supabaseAdmin
-        .from('calculations')
-        .select('*, user:users(name, email)')
-        .order('createdAt', { ascending: false });
+    // ดึงทีละหน้าจนหมด — เดิมยิงครั้งเดียวแล้ว PostgREST ตัดที่ 1,000 แถวเงียบ ๆ
+    // ไฟล์ที่ได้จึงขาดข้อมูลโดยไม่มีอะไรบอก
+    const buildQuery = () => {
+        let query = supabaseAdmin
+            .from('calculations')
+            .select('*, user:users(name, email)')
+            .order('createdAt', { ascending: false });
 
-    if (fromDateStr) {
-        query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
-    }
-    if (toDateStr) {
-        query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
-    }
+        if (fromDateStr) {
+            query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
+        }
+        if (toDateStr) {
+            query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
+        }
+        return query;
+    };
 
-    const { data, error } = await query;
-    if (error) {
-        throw new Error(`Error fetching export data: ${error.message}`);
-    }
+    const { rows: data } = await fetchAllRows<any>(buildQuery);
 
     // Decrypt names
     const processedData = (data || []).map((calc: any) => ({
