@@ -1,8 +1,12 @@
+// `ratioLabel` คืออัตราส่วนแบบอ่านง่ายจากฉลาก (เช่น '1:79') — ตั้งใจไม่ใช้ชื่อ `formula`
+// เพราะฟิลด์ชื่อนั้นในสูตรจาก DB เป็น FormulaDefinition (JSONB) ถ้าใช้ชื่อซ้ำกัน สตริงนี้
+// จะหลุดเข้า runFormula() แล้วอ่าน .meta.resultTemplate ของสตริงจนพัง
+// (ทาง fallback ไม่ได้กรองผ่าน parseFormulaDefinition เหมือนแถวจาก DB)
 export const CHEMICAL_PRESETS = [
     {
         id: 'deltacide-fogging',
         name: 'Deltacide (หมอกควัน)',
-        formula: '1:79',
+        ratioLabel: '1:79',
         C: 1,
         S: 80,
         RA: 1,
@@ -15,7 +19,7 @@ export const CHEMICAL_PRESETS = [
     {
         id: 'deltacide-ulv',
         name: 'Deltacide (ULV)',
-        formula: '1:4',
+        ratioLabel: '1:4',
         C: 1,
         S: 4,
         RA: 75,
@@ -28,7 +32,7 @@ export const CHEMICAL_PRESETS = [
     {
         id: 'submarine-fogging',
         name: 'Submarine (หมอกควัน)',
-        formula: '1:249',
+        ratioLabel: '1:249',
         C: 1,
         S: 250,
         RA: 1.25,
@@ -41,7 +45,7 @@ export const CHEMICAL_PRESETS = [
     {
         id: 'submarine-ulv',
         name: 'Submarine (ULV)',
-        formula: '1:39',
+        ratioLabel: '1:39',
         C: 1,
         S: 40,
         RA: 2,
@@ -54,7 +58,7 @@ export const CHEMICAL_PRESETS = [
     {
         id: 'other',
         name: 'อื่นๆ (กำหนดเอง)',
-        formula: 'Custom',
+        ratioLabel: 'Custom',
         C: 0,
         S: 0,
         RA: 0,

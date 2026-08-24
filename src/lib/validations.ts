@@ -20,6 +20,19 @@ export const calculationSchema = z.object({
     chemical: z.string().optional(),
     lat: z.number().min(-90).max(90).optional().nullable(),
     lng: z.number().min(-180).max(180).optional().nullable(),
+}).superRefine((data, ctx) => {
+    // ด่านเดียวกับใน calculate() (calculations.ts) — ต้องอยู่ที่ schema ด้วย ไม่งั้น calculate()
+    // จะโยน Error ธรรมดาที่ไม่มี .issues แล้วหลุด branch 400 ใน api/calculations กลายเป็น 500
+    // ผู้ใช้จึงเห็นแค่ "เกิดข้อผิดพลาด" โดยไม่รู้ว่าผิดช่องไหน
+    //
+    // C/S ที่มาถึงตรงนี้ผ่าน normalizeCSForCalc มาแล้ว จึงเทียบกันตรง ๆ ได้
+    if (data.mix_type !== 2 && data.S <= data.C) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['S'],
+            message: 'แบบผสมให้ได้: ปริมาณรวมต้องมากกว่าปริมาณสารเคมี',
+        });
+    }
 });
 
 export const profileSchema = z.object({

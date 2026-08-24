@@ -1,6 +1,6 @@
 'use client';
 
-import { formatNumber } from '@/lib/calculations';
+import { formatNumber, formatMixRatio } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Printer, FlaskConical, Droplets, Home, Beaker, MapPin, Download, Building, CheckCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -66,7 +66,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
             // โหมด 1: แบบสรุปรายการประจำวัน (Daily Summary Log)
             wsData = [
                 ['วันที่-เวลา', 'หน่วยงาน', 'ชื่อสารเคมี', 'อัตราส่วน', 'จำนวนหลัง(N)', 'ฉีดพ่นในอัตรา(RA)', 'ปริมาณตัวผสม', 'สารเคมีเตรียม(มล.)', 'น้ำมัน/น้ำเตรียม(มล.)', 'ยอดรวม(มล.)', 'สถานที่/พิกัด'],
-                [dateStr, agencyName, chemName, `${input.C}:${input.S}`, input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
+                [dateStr, agencyName, chemName, formatMixRatio(input.C, input.S, input.mix_type), input.N, input.RA, input.S, result.V_C, result.V_S, result.V_total, locName]
             ];
         } else if (mode === 2) {
             // โหมด 2: แบบใบสั่งเตรียมสารเคมี (Chemical Preparation Ticket)
@@ -107,7 +107,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                 ['พิกัด GPS:', coords ? `${coords.lat}, ${coords.lng}` : 'N/A'],
                 [''],
                 ['รายละเอียดการใช้สารเคมี:'],
-                ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน ${input.C}:${input.S}`],
+                ['ประเภทสารที่ใช้:', chemName, `อัตราส่วน ${formatMixRatio(input.C, input.S, input.mix_type)}`],
                 ['ฉีดพ่นในอัตรา (RA):', `${input.RA} ${input.RA_unit === 'L' ? 'ลิตร' : 'มล.'}`],
                 ['จำนวนหลังคาเรือนเป้าหมาย:', input.N, 'หลัง'],
                 ['รวมปริมาณสารเคมีที่ใช้สุทธิ:', result.V_C, 'มล.'],
@@ -134,7 +134,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                                 ผลการคำนวณ
                             </h2>
                             <p className="text-brand-muted text-sm truncate">
-                                สูตร {input.C}:{input.S} • {input.N} หลัง
+                                สูตร {formatMixRatio(input.C, input.S, input.mix_type)} • {input.N} หลัง
                             </p>
                         </div>
                     </div>
@@ -216,7 +216,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                         </div>
                         <div className="rounded-xl bg-brand-cloud border border-brand-line p-3">
                             <span className="block text-brand-muted text-xs mb-0.5">อัตราส่วนผสม</span>
-                            <span className="font-bold text-brand-ink text-sm sm:text-base leading-relaxed">{input.C} : {input.S} ({chemicalName} : น้ำมัน/น้ำ)</span>
+                            <span className="font-bold text-brand-ink text-sm sm:text-base leading-relaxed">{formatMixRatio(input.C, input.S, input.mix_type).replace(':', ' : ')} ({chemicalName} : น้ำมัน/น้ำ)</span>
                         </div>
                         <div className="rounded-xl bg-brand-cloud border border-brand-line p-3 lg:col-span-2">
                             <span className="block text-brand-muted text-xs mb-0.5">อัตราการฉีดพ่น (RA)</span>
@@ -356,7 +356,7 @@ export function ResultsDisplay({ result, input, agency, location, coords, result
                         </li>
                     </ol>
                     <p className="text-xs text-brand-muted mt-4 pt-3 border-t border-brand-line leading-relaxed">
-                        สูตร: {input.C}:{input.S} | พื้นที่หลังละ {input.A_house.toLocaleString('th-TH')} ตร.ม. | จำนวน {input.N.toLocaleString('th-TH')} หลัง
+                        สูตร: {formatMixRatio(input.C, input.S, input.mix_type)} | พื้นที่หลังละ {input.A_house.toLocaleString('th-TH')} ตร.ม. | จำนวน {input.N.toLocaleString('th-TH')} หลัง
                     </p>
                 </div>
 

@@ -84,6 +84,32 @@ export function formatVolumePerHouse(ml: number | null): string {
 }
 
 /**
+ * อัตราส่วน "สารเคมี : ตัวทำละลาย" สำหรับแสดงผล ให้อ่านตรงกับที่เขียนบนฉลากทั้งสองโหมด
+ *
+ * ตัวเลข S ที่เก็บไว้มีความหมายต่างกันตามโหมด การเอาไปแสดงดิบ ๆ คู่กับคำว่า "น้ำมัน/น้ำ"
+ * จึงขัดกับขวดในโหมด "ผสมให้ได้" — สูตร 1 ลิตร ผสมน้ำมันให้ได้ 80 ลิตร เก็บเป็น S = 80
+ * แต่ฉลากเขียนว่าน้ำมัน 79 ลิตร
+ *
+ *   ผสมให้ได้ (mix_type 1) : S คือยอดรวม  → ตัวทำละลาย = S - C
+ *   ผสมกับ   (mix_type 2) : S คือตัวทำละลายอยู่แล้ว → ใช้ตามนั้น
+ */
+export function chemicalToSolventRatio(
+    C: number,
+    S: number,
+    mix_type: number = 1,
+): { C: number; S: number } {
+    const solvent = mix_type === 2 ? S : S - C;
+    // โหมด 1 ที่ S <= C ถูกปัดตกตั้งแต่ validate แล้ว แต่กันไว้เผื่อข้อมูลเก่าที่ไม่ผ่านด่าน
+    return solvent > 0 ? { C, S: roundTo(solvent, 4) } : { C, S };
+}
+
+/** อัตราส่วนแบบข้อความ เช่น "1:79" — ใช้กับหัวข้อและไฟล์ส่งออก */
+export function formatMixRatio(C: number, S: number, mix_type: number = 1): string {
+    const r = chemicalToSolventRatio(C, S, mix_type);
+    return `${r.C}:${r.S}`;
+}
+
+/**
  * คำนวณปริมาณสารเคมีและตัวทำละลาย
  */
 export function calculate(input: CalculationInput): CalculationResult {

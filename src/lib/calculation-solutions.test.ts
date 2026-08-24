@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { calculate, sprayVolumePerHouse } from './calculations';
+import { calculate, sprayVolumePerHouse, formatMixRatio, chemicalToSolventRatio } from './calculations';
 import { normalizeCSForCalc } from './cs-units';
 import { computeGenericFormula } from './formula-interpreter';
 import { buildGenericFormulaDefinition } from './formula-schema';
 import { DEFAULT_TEMPLATES } from './formula-engine';
+import { calculationSchema } from './validations';
+import { CHEMICAL_PRESETS } from './constants';
+import { parseFormulaDefinition } from './formula-schema';
 
 /**
  * เอกสารวิธีคำนวณที่รันได้ — ครอบทุกประเภทการคำนวณในระบบ
@@ -247,5 +250,77 @@ describe('ประเภทที่ 6 · ตัวช่วย "ต่อ 1 �
         const expected = sprayVolumePerHouse(base.RA, base.RA_unit, base.A0, base.A_house);
         expect(calculate({ ...base, C: 1, S: 4, mix_type: 2 }).V_per_house).toBe(expected);
         expect(calculate({ ...base, C: 1, S: 5, mix_type: 1 }).V_per_house).toBe(expected);
+    });
+});
+
+describe('ประเภทที่ 7 · อัตราส่วนที่แสดงต้องอ่านตรงกับฉลาก', () => {
+    // ตัวเลข S ที่เก็บไว้มีความหมายต่างกันตามโหมด เอาไปแสดงดิบ ๆ คู่กับคำว่า "น้ำมัน/น้ำ"
+    // จะขัดกับขวดในโหมด "ผสมให้ได้"
+    it('ผสมให้ได้ · เก็บ 1:80 (ยอดรวม) → แสดง 1:79 ตรงกับที่ฉลากเขียน', () => {
+        expect(formatMixRatio(1, 80, 1)).toBe('1:79');
+        expect(chemicalToSolventRatio(1, 80, 1)).toEqual({ C: 1, S: 79 });
+    });
+
+    it('ผสมกับ · เก็บ 1:79 (น้ำมันล้วน) → แสดง 1:79 ตามเดิม', () => {
+        expect(formatMixRatio(1, 79, 2)).toBe('1:79');
+        expect(chemicalToSolventRatio(1, 79, 2)).toEqual({ C: 1, S: 79 });
+    });
+
+    it('สองโหมดที่ความเข้มข้นเท่ากัน ต้องแสดงอัตราส่วนเดียวกัน', () => {
+        expect(formatMixRatio(1, 80, 1)).toBe(formatMixRatio(1, 79, 2));
+    });
+
+    it('เศษทศนิยมไม่เพี้ยน · เก็บ 1:14 ให้ได้ → แสดง 1:13', () => {
+        expect(formatMixRatio(1, 14, 1)).toBe('1:13');
+    });
+});
+
+describe('ประเภทที่ 8 · ค่าที่กรอกผิดต้องถูกปัดตกพร้อมบอกสาเหตุ', () => {
+    // ด่านนี้ต้องอยู่ที่ schema ไม่ใช่แค่ใน calculate() ไม่งั้น error จะไม่มี .issues
+    // แล้ว api/calculations จะตอบ 500 แทนที่จะเป็น 400 พร้อมข้อความบอกช่องที่ผิด
+    const bad = {
+        C: 5, S: 2, mix_type: 1,
+        RA: 1, RA_unit: 'L' as const, A0: 1000, A_house: 100, N: 10,
+    };
+
+    it('ผสมให้ได้ที่ยอดรวมน้อยกว่าสารเคมี → schema ปัดตก', () => {
+        const parsed = calculationSchema.safeParse(bad);
+        expect(parsed.success).toBe(false);
+    });
+
+    it('error มี issues และชี้ช่องที่ผิด — เงื่อนไขที่ทำให้ตอบ 400 ไม่ใช่ 500', () => {
+        const parsed = calculationSchema.safeParse(bad);
+        if (parsed.success) throw new Error('ควรไม่ผ่าน');
+        expect(parsed.error.issues[0].path).toEqual(['S']);
+        expect(parsed.error.issues[0].message).toContain('ปริมาณรวมต้องมากกว่าปริมาณสารเคมี');
+    });
+
+    it('โหมดผสมกับมี S น้อยกว่า C ได้ตามปกติ', () => {
+        expect(calculationSchema.safeParse({ ...bad, mix_type: 2 }).success).toBe(true);
+    });
+});
+
+describe('ประเภทที่ 9 · สูตรตั้งต้นต้องคำนวณได้แม้ฐานข้อมูลว่าง', () => {
+    // ทาง fallback ไม่ได้กรองผ่าน parseFormulaDefinition เหมือนแถวจาก DB
+    // ถ้ามีฟิลด์ชื่อ formula ที่เป็นสตริง มันจะหลุดเข้า runFormula() แล้วพัง
+    it('CHEMICAL_PRESETS ต้องไม่มีฟิลด์ชื่อ formula ที่ไม่ใช่ FormulaDefinition', () => {
+        for (const preset of CHEMICAL_PRESETS) {
+            const asAny = preset as Record<string, unknown>;
+            if ('formula' in asAny) {
+                // ถ้ามี ต้อง parse ผ่านเป็น FormulaDefinition จริงเท่านั้น
+                expect(parseFormulaDefinition(asAny.formula)).not.toBeNull();
+            }
+        }
+    });
+
+    it('ทุกสูตรตั้งต้นคำนวณผ่าน ไม่โยน error', () => {
+        for (const preset of CHEMICAL_PRESETS) {
+            if (preset.id === 'other') continue;   // ค่าว่างไว้ให้ผู้ใช้กรอกเอง
+            expect(() => calculate({
+                C: preset.C, S: preset.S, mix_type: preset.mix_type,
+                RA: preset.RA, RA_unit: preset.RA_unit,
+                A0: preset.A0, A_house: preset.A_house, N: 20,
+            })).not.toThrow();
+        }
     });
 });
