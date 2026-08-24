@@ -12,8 +12,18 @@ import { DimensionFilter } from '@/components/admin/dimension-filter';
 import { DashboardExportButton } from '@/components/admin/dashboard-export-button';
 import { SearchInput } from '@/components/admin/search-input';
 import { Pagination } from '@/components/ui/pagination';
-import { format, subDays, startOfDay, endOfDay, eachDayOfInterval, parseISO } from 'date-fns';
-import { th } from 'date-fns/locale';
+import {
+    thaiToday,
+    thaiDayKey,
+    thaiStartOfDay,
+    thaiEndOfDay,
+    toThaiDayKey,
+    shiftThaiDayKey,
+    formatThaiDate,
+    formatThaiDateTime,
+    formatThaiDateTimeShortYear,
+    formatThaiDayMonth,
+} from '@/lib/thai-time';
 import { formatNumber } from '@/lib/calculations';
 
 const PAGE_SIZE = 100;
@@ -27,9 +37,12 @@ export default async function AdminDashboard({
     const { from, to, q, page, tab, chemical, location } = await searchParams;
     const activeTab = tab || 'operational';
 
-    // 2. Date Logic
-    const startDate = from ? startOfDay(parseISO(from)) : subDays(startOfDay(new Date()), 30);
-    const endDate = to ? endOfDay(parseISO(to)) : endOfDay(new Date());
+    // 2. Date Logic — ทุกอย่างบนหน้านี้ยึด "วัน" ตามเวลาไทย ไม่ใช่เวลาของเครื่องเซิร์ฟเวอร์
+    // (Vercel เดิน UTC ซึ่งช้ากว่าไทย 7 ชม. งานพ่นช่วงเช้ามืดจะตกไปอยู่วันก่อนหน้า)
+    const endDayKey = to ? toThaiDayKey(to) : thaiToday();
+    const startDayKey = from ? toThaiDayKey(from) : shiftThaiDayKey(thaiToday(), -30);
+    const startDate = thaiStartOfDay(startDayKey);
+    const endDate = thaiEndOfDay(endDayKey);
 
     // 2. Fetch Data
     // Note: Supabase doesn't support Promise.all for some chained builders easily, but we can await them.
@@ -186,7 +199,7 @@ export default async function AdminDashboard({
     // Export payload: the history rows the current filters produced, so the file always
     // matches the dashboard it came from.
     const exportRows = ((exportSourceRows || []) as any[]).map((c: any) => ({
-        createdAt: c.createdAt ? new Date(c.createdAt).toLocaleString('th-TH') : '',
+        createdAt: c.createdAt ? formatThaiDateTimeShortYear(c.createdAt) : '',
         chemical: c.chemical ?? '',
         location: c.location ?? '',
         agency: c.agency ?? '',
@@ -234,28 +247,28 @@ export default async function AdminDashboard({
         .sort((a, b) => b._count.location - a._count.location)
         .slice(0, 20);
 
-    // Daily Stats
+    // Daily Stats — จับกลุ่มด้วยวันตามเวลาไทย (thaiDayKey) ไม่ใช่วันตามเวลาเครื่อง
+    // มิฉะนั้นงานที่ทำช่วงเช้ามืดจะไปโผล่ในแท่งของเมื่อวาน
     const daysMap = new Map<string, number>();
-    const daysInterval = eachDayOfInterval({ start: startDate, end: endDate });
-
-    daysInterval.forEach(day => {
-        daysMap.set(format(day, 'yyyy-MM-dd'), 0);
-    });
+    for (let key = startDayKey; key <= endDayKey; key = shiftThaiDayKey(key, 1)) {
+        daysMap.set(key, 0);
+    }
 
     calculationsInRange.forEach((calc: any) => {
-        const dateKey = format(new Date(calc.createdAt), 'yyyy-MM-dd');
+        const dateKey = thaiDayKey(calc.createdAt);
         if (daysMap.has(dateKey)) {
             daysMap.set(dateKey, (daysMap.get(dateKey) || 0) + 1);
         }
     });
 
     const dailyStats = Array.from(daysMap.entries()).map(([date, count]) => ({
-        date: format(parseISO(date), 'd MMM', { locale: th }),
+        date: formatThaiDayMonth(thaiStartOfDay(date)),
         count
     }));
 
-    const todayCount = daysMap.get(format(new Date(), 'yyyy-MM-dd')) || 0;
-    const yesterdayCount = daysMap.get(format(subDays(new Date(), 1), 'yyyy-MM-dd')) || 0;
+    const todayKey = thaiToday();
+    const todayCount = daysMap.get(todayKey) || 0;
+    const yesterdayCount = daysMap.get(shiftThaiDayKey(todayKey, -1)) || 0;
 
     // Period-over-period baselines for the KPI cards.
     const previousRows = (prevCalcData || []) as { V_total: number | null }[];
@@ -305,7 +318,7 @@ export default async function AdminDashboard({
         count: loc._count.location,
         chemical: loc._max.chemical || null,
         lastUsed: loc._max.createdAt
-            ? format(loc._max.createdAt, 'd MMM yy', { locale: th })
+            ? formatThaiDate(loc._max.createdAt)
             : '-',
     }));
 
@@ -315,7 +328,7 @@ export default async function AdminDashboard({
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-slate-800">Dashboard ภาพรวม</h1>
                     <p className="text-slate-500">
-                        ข้อมูลระหว่าง {format(startDate, 'd MMM yyyy', { locale: th })} - {format(endDate, 'd MMM yyyy', { locale: th })}
+                        ข้อมูลระหว่าง {formatThaiDate(startDate)} - {formatThaiDate(endDate)}
                     </p>
                 </div>
                 <div className="flex items-center gap-2 bg-brand-soft text-brand-dark px-3 py-1 rounded-full text-sm font-medium">
@@ -333,7 +346,7 @@ export default async function AdminDashboard({
                 <DimensionFilter paramKey="location" label="สถานที่" options={locationOptions} allLabel="ทุกสถานที่" />
                 <DashboardExportButton
                     rows={exportRows}
-                    fileLabel={`dashboard_${format(startDate, 'yyyy-MM-dd')}_${format(endDate, 'yyyy-MM-dd')}`}
+                    fileLabel={`dashboard_${startDayKey}_${endDayKey}`}
                 />
             </div>
 
@@ -471,7 +484,7 @@ export default async function AdminDashboard({
                                             <div className="text-right whitespace-nowrap">
                                                 <p className="font-medium text-emerald-600">{calc.V_total.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} มล.</p>
                                                 <p className="text-xs text-slate-400">
-                                                    {format(new Date(calc.createdAt), 'd MMM HH:mm', { locale: th })}
+                                                    {formatThaiDateTime(calc.createdAt)}
                                                 </p>
                                             </div>
                                         </div>
@@ -572,7 +585,7 @@ export default async function AdminDashboard({
                                     {historyWithNames.map((calc: any) => (
                                         <tr key={calc.id} className="hover:bg-slate-50">
                                             <td className="p-3 text-xs text-slate-600">
-                                                {format(new Date(calc.createdAt), 'd MMM yy HH:mm', { locale: th })}
+                                                {formatThaiDateTimeShortYear(calc.createdAt)}
                                             </td>
                                             <td className="p-3 text-xs font-semibold text-slate-700">
                                                 {calc.userName}

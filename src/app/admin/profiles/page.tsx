@@ -10,7 +10,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { SearchInput } from '@/components/admin/search-input';
 import { ProfileSourceFilter } from '@/components/admin/profile-source-filter';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
-import { startOfDay, endOfDay, parseISO } from 'date-fns';
+import { thaiStartOfDay, thaiEndOfDay } from '@/lib/thai-time';
 
 async function getProfiles(pageStr: string | undefined, q?: string, source?: string, fromDateStr?: string, toDateStr?: string) {
     const currentPage = parseInt(pageStr || '1', 10);
@@ -41,10 +41,10 @@ async function getProfiles(pageStr: string | undefined, q?: string, source?: str
     }
 
     if (fromDateStr) {
-        query = query.gte('createdAt', startOfDay(parseISO(fromDateStr)).toISOString());
+        query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
     }
     if (toDateStr) {
-        query = query.lte('createdAt', endOfDay(parseISO(toDateStr)).toISOString());
+        query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
     }
 
     const { data: profiles, count, error } = await query.range(rangeFrom, rangeTo);

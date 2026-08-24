@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import Link from 'next/link';
 import { UserPlus, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { formatThaiDate } from '@/lib/thai-time';
 import { UserActions } from '@/components/admin/user-actions';
 import { SearchInput } from '@/components/admin/search-input';
 
@@ -97,7 +96,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                                     <TableCell className="text-slate-500 text-sm">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="h-3 w-3" />
-                                            {format(new Date(user.createdAt), 'd MMM yyyy', { locale: th })}
+                                            {formatThaiDate(user.createdAt)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">

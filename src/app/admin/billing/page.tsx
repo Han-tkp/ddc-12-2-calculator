@@ -1,8 +1,7 @@
 import { getSubscriptionStatus } from '@/lib/billing';
 import { BillingActions } from '@/components/admin/billing-actions';
 import { CreditCard, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { formatThaiDate } from '@/lib/thai-time';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +37,7 @@ export default async function AdminBillingPage() {
 
                 {subscription.active && subscription.currentPeriodEnd && (
                     <p className="text-sm text-slate-500">
-                        ต่ออายุ/สิ้นสุดรอบถัดไป: {format(new Date(subscription.currentPeriodEnd), 'd MMM y', { locale: th })}
+                        ต่ออายุ/สิ้นสุดรอบถัดไป: {formatThaiDate(subscription.currentPeriodEnd)}
                     </p>
                 )}
 

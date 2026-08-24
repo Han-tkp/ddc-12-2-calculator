@@ -5,8 +5,7 @@ import { decryptName } from '@/lib/encryption';
 import { Pagination } from '@/components/ui/pagination';
 import { Shield, User, Calendar, FlaskConical } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
-import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { thaiStartOfDay, thaiEndOfDay, formatThaiDateTimeShortYear } from '@/lib/thai-time';
 import { formatNumber } from '@/lib/calculations';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
 import { ExportExcelButton } from '@/components/admin/export-excel-button';
@@ -30,10 +29,10 @@ async function getLogs(pageStr: string | undefined, fromDateStr?: string, toDate
     }
 
     if (fromDateStr) {
-        query = query.gte('createdAt', startOfDay(parseISO(fromDateStr)).toISOString());
+        query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
     }
     if (toDateStr) {
-        query = query.lte('createdAt', endOfDay(parseISO(toDateStr)).toISOString());
+        query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
     }
 
     // ตัวกรองบทบาท: admin = บันทึกโดยผู้ล็อกอิน (userId มีค่า) หรือ agency มีคำว่า Admin
@@ -120,7 +119,7 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-1.5 font-medium text-slate-800">
                                                     <Calendar className="h-4 w-4 text-brand" />
-                                                    {format(new Date(log.createdAt), 'd MMM yy HH:mm', { locale: th })}
+                                                    {formatThaiDateTimeShortYear(log.createdAt)}
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     {isAi ? (

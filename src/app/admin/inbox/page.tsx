@@ -3,8 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/pagination';
 import { Inbox, MessageSquareText, FlaskConical, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { formatThaiDateTimeShortYear } from '@/lib/thai-time';
 import { SearchInput } from '@/components/admin/search-input';
 
 export const dynamic = 'force-dynamic';
@@ -69,7 +68,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                                     <TableCell className="text-slate-500 text-sm align-top pt-4">
                                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                                             <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                            {format(new Date(item.createdAt), 'd MMM y HH:mm', { locale: th })}
+                                            {formatThaiDateTimeShortYear(item.createdAt)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="align-top pt-4">

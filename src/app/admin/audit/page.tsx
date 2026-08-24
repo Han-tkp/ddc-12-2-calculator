@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { thaiStartOfDay, thaiEndOfDay, formatThaiDateTimeShortYear } from '@/lib/thai-time';
 import { Shield } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { DateRangeFilter } from '@/components/admin/date-range-filter';
@@ -39,10 +38,10 @@ async function getFormulaAuditLogs(pageStr: string | undefined, fromDateStr?: st
     }
 
     if (fromDateStr) {
-        query = query.gte('createdAt', startOfDay(parseISO(fromDateStr)).toISOString());
+        query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
     }
     if (toDateStr) {
-        query = query.lte('createdAt', endOfDay(parseISO(toDateStr)).toISOString());
+        query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
     }
 
     if (role === 'admin') {
@@ -134,7 +133,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                             {formulaAuditLogs.map((log: any) => (
                                 <tr key={log.id} className="hover:bg-slate-50">
                                     <td className="p-3 text-xs text-slate-600">
-                                        {format(new Date(log.createdAt), 'd MMM yy HH:mm', { locale: th })}
+                                        {formatThaiDateTimeShortYear(log.createdAt)}
                                     </td>
                                     <td className="p-3 max-w-40">
                                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${log.actorType === 'ADMIN' ? 'bg-brand-soft text-brand-dark' : 'bg-slate-100 text-slate-700'}`}>

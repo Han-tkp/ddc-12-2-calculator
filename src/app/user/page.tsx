@@ -8,7 +8,7 @@ import { LocationReport } from '@/components/admin/location-report';
 import { UserPublicPortal } from '@/components/user/user-public-portal';
 import Link from 'next/link';
 import { ArrowLeft, LayoutDashboard, Layers, Bot, Sparkles, MapPin, Calculator, CheckCircle2 } from 'lucide-react';
-import { subDays, startOfDay, endOfDay } from 'date-fns';
+import { thaiToday, thaiStartOfDay, thaiEndOfDay, toThaiDayKey, shiftThaiDayKey } from '@/lib/thai-time';
 
 import { Suspense } from 'react';
 
@@ -21,8 +21,9 @@ export default async function PublicUserPortalPage({
 }) {
     const { from, to } = await searchParams;
 
-    const startDate = from ? startOfDay(new Date(from)) : subDays(startOfDay(new Date()), 30);
-    const endDate = to ? endOfDay(new Date(to)) : endOfDay(new Date());
+    // "วัน" ยึดตามเวลาไทยเสมอ ไม่ใช่เขตเวลาของเครื่องเซิร์ฟเวอร์ (ดู src/lib/thai-time.ts)
+    const startDate = thaiStartOfDay(from ? toThaiDayKey(from) : shiftThaiDayKey(thaiToday(), -30));
+    const endDate = thaiEndOfDay(to ? toThaiDayKey(to) : thaiToday());
 
     const dateFilterStr = {
         gte: startDate.toISOString(),

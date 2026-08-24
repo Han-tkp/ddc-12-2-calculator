@@ -2,7 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { decrypt } from '@/lib/encryption';
-import { startOfDay, endOfDay, parseISO } from 'date-fns';
+import { thaiStartOfDay, thaiEndOfDay } from '@/lib/thai-time';
 
 export async function getExportData(fromDateStr?: string, toDateStr?: string) {
     let query = supabaseAdmin
@@ -11,10 +11,10 @@ export async function getExportData(fromDateStr?: string, toDateStr?: string) {
         .order('createdAt', { ascending: false });
 
     if (fromDateStr) {
-        query = query.gte('createdAt', startOfDay(parseISO(fromDateStr)).toISOString());
+        query = query.gte('createdAt', thaiStartOfDay(fromDateStr).toISOString());
     }
     if (toDateStr) {
-        query = query.lte('createdAt', endOfDay(parseISO(toDateStr)).toISOString());
+        query = query.lte('createdAt', thaiEndOfDay(toDateStr).toISOString());
     }
 
     const { data, error } = await query;
