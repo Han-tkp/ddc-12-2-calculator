@@ -131,9 +131,9 @@ describe('Formula Interpreter - Regression', () => {
 
   it('runFormula with tank-dilution produces correct specific values for Deltacide Fogging', () => {
     const result = runFormula(deltacideFoggingFormula, { ...testInputs });
-    expect(result.V_S).toBe(2000);
-    expect(result.V_C).toBe(25.32);
-    expect(result.V_total).toBe(2025.32);
+    expect(result.V_total).toBe(2000);
+    expect(result.V_C).toBe(25);
+    expect(result.V_S).toBe(1975);
     expect(result.V_C_1L).toBe(12.66);
     expect(result.V_S_1L).toBe(1000);
     // targetVolume คือยอดรวมที่ต้องการ สารเคมี + น้ำมัน จึงรวมกันได้ 5 ลิตรพอดี

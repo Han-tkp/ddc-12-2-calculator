@@ -8,10 +8,9 @@ describe('Chemical Calculations', () => {
             // ฉีดพ่น 1 ลิตร ต่อพื้นที่ 1,000 ตร.ม.
             // บ้าน 1 หลัง = 100 ตร.ม.
             // 20 หลัง = 2,000 ตร.ม.
-            // ในสูตร mix_type = 2 (ผสมกับ): ปริมาตรตัวทำละลาย (น้ำมัน) = 2,000 cc (2 ลิตร)
-            // สารออกฤทธิ์ C = 1, ตัวผสม S = 79
-            // ปริมาณสารเคมี = 2000 * (1 / 79) = 25.32 cc
-            // ปริมาณรวม = 2000 + 25.32 = 2025.32 cc
+            // อัตราพ่นบนฉลากใช้กับส่วนผสมที่ผสมเสร็จแล้ว → ต้องเตรียมรวม 2,000 cc พอดี
+            // mix_type = 2 (ผสมกับ): S = ตัวทำละลายล้วน → fC = 1/(1+79) = 1/80
+            // สารเคมี = 2000 / 80 = 25 cc · น้ำมัน = 2000 - 25 = 1,975 cc
             const result = calculate({
                 C: 1,
                 S: 79,
@@ -24,9 +23,10 @@ describe('Chemical Calculations', () => {
                 targetVolume: 5,
             });
 
-            expect(result.V_S).toBe(2000);
-            expect(result.V_C).toBe(25.32); // 2000 * (1 / 79) = 25.316 -> round to 25.32
-            expect(result.V_total).toBe(2025.32);
+            expect(result.V_total).toBe(2000);
+            expect(result.V_C).toBe(25);
+            expect(result.V_S).toBe(1975);
+            expect(result.V_per_house).toBe(100);
             expect(result.V_C_1L).toBe(12.66); // 1000 * (1 / 79) = 12.658 -> round to 12.66
             expect(result.V_S_1L).toBe(1000);
             // targetVolume = ยอดรวม 5 ลิตร: สารเคมี = 5000 * 1/80 = 62.5, ที่เหลือเป็นน้ำมัน
@@ -275,6 +275,61 @@ describe('Chemical Calculations', () => {
 
         it('null แสดงเป็นขีด ไม่ใช่ 0', () => {
             expect(formatVolumePerHouse(null)).toBe('—');
+        });
+    });
+
+    describe('นิยามสองโหมดตามที่เจ้าหน้าที่ระบุ', () => {
+        // ผสมกับ    → ปริมาตรรวม = สารเคมี + ตัวทำละลาย
+        // ผสมให้ได้ → ตัวเลขคือปริมาตรรวมสุดท้าย เติมตัวทำละลาย (S - C)
+        // ตั้ง RA/A0/A_house/N ให้ V_total เท่ากับปริมาตรของชุดผสมตามฉลากพอดี เพื่อเทียบตรง ๆ
+        const cases: [string, number, number, number, number, number, number][] = [
+            // ชื่อ, C(มล.), S(มล.), mix_type, ปริมาตรรวม, สารเคมี, ตัวทำละลาย
+            ['ผสมกับ · ซับมาริน ULV 500 มล. : 12.5 ล.', 500, 12500, 2, 13000, 500, 12500],
+            ['ผสมกับ · อีเล็กซ่า ULV 100 มล. : 2 ล.', 100, 2000, 2, 2100, 100, 2000],
+            ['ผสมให้ได้ · ซับมาริน ULV 100 มล. ให้ได้ 20 ล.', 100, 20000, 1, 20000, 100, 19900],
+            ['ผสมให้ได้ · เดลต้า 50 — 1 ล. ให้ได้ 6 ล.', 1000, 6000, 1, 6000, 1000, 5000],
+        ];
+
+        for (const [name, C, S, mix_type, total, expC, expS] of cases) {
+            it(name, () => {
+                // RA = ปริมาตรรวมที่ต้องการ (มล.) ต่อพื้นที่ A0 = A_house, N = 1
+                const result = calculate({
+                    C, S, mix_type,
+                    RA: total, RA_unit: 'cc',
+                    A0: 100, A_house: 100, N: 1,
+                });
+
+                expect(result.V_total).toBe(total);
+                expect(result.V_C).toBeCloseTo(expC, 2);
+                expect(result.V_S).toBeCloseTo(expS, 2);
+                expect(result.V_C + result.V_S).toBeCloseTo(total, 2);
+            });
+        }
+    });
+
+    describe('ปริมาตรที่ต้องเตรียมเท่ากับอัตราพ่นบนฉลากเสมอ', () => {
+        // ฉลากเขียนว่า "นำส่วนผสมนี้ไปฉีดพ่นในอัตรา X ต่อพื้นที่ Y" — X คือส่วนผสมที่ผสมเสร็จแล้ว
+        // เดิมโหมด "ผสมกับ" เติมสารเคมีทบบนปริมาตรอ้างอิง ทำให้เตรียมเกินไปตามสัดส่วน C/S
+        const base = { RA: 75, RA_unit: 'cc' as const, A0: 1000, A_house: 100, N: 20 };
+
+        it('เดลตาไซด์ ULV 1:4 — 20 หลัง ต้องได้ 150 มล. ไม่ใช่ 187.5', () => {
+            // เอกสารทางการของศูนย์ฯ คำนวณไว้ 160 cc (ปัด 7.5 → 8 cc ต่อหลัง) ค่าไม่ปัดคือ 150
+            const result = calculate({ ...base, C: 1, S: 4, mix_type: 2 });
+            expect(result.V_total).toBe(150);
+            expect(result.V_per_house).toBe(7.5);
+        });
+
+        it('ทั้งสองโหมดให้ V_total เท่ากับปริมาตรอ้างอิงเท่ากัน', () => {
+            const mixWith = calculate({ ...base, C: 1, S: 79, mix_type: 2 });
+            const mixTo = calculate({ ...base, C: 1, S: 80, mix_type: 1 });
+            expect(mixWith.V_total).toBe(150);
+            expect(mixTo.V_total).toBe(150);
+        });
+
+        it('V_per_house ตรงกับ sprayVolumePerHouse ทั้งสองโหมด', () => {
+            const expected = sprayVolumePerHouse(base.RA, base.RA_unit, base.A0, base.A_house);
+            expect(calculate({ ...base, C: 1, S: 4, mix_type: 2 }).V_per_house).toBe(expected);
+            expect(calculate({ ...base, C: 1, S: 5, mix_type: 1 }).V_per_house).toBe(expected);
         });
     });
 

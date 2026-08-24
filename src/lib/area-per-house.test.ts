@@ -64,10 +64,12 @@ describe('ซับมาริน ULV worked example from the Songkhla form', (
             A0: 10000, A_house: area.A_house, N: 20, mix_type: 2,
         });
 
-        // 1.25 L over 10,000 m²; 2,000 m² treated → 0.25 L = 250 mL of carrier.
-        expect(result.V_S).toBeCloseTo(250, 6);
-        // Concentrate is added on top at 1:25 → 250 / 25 = 10 mL.
-        expect(result.V_C).toBeCloseTo(10, 6);
-        expect(result.V_total).toBeCloseTo(260, 6);
+        // 1.25 L over 10,000 m²; 2,000 m² treated → 0.25 L = 250 mL of FINISHED spray.
+        // The label's rate applies to the mixture, not to the carrier it started from.
+        expect(result.V_total).toBe(250);
+        // "ผสมกับ" 500 มล. : 12.5 ล. → the mixture is 1 part in 26. Engine rounds to 2 dp.
+        expect(result.V_C).toBe(9.62);   // 250 / 26 = 9.6153…
+        expect(result.V_S).toBe(240.38);
+        expect(result.V_C + result.V_S).toBeCloseTo(result.V_total, 6);
     });
 });

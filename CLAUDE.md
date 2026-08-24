@@ -43,7 +43,7 @@ Three concentric rings of features:
 CalculatorForm → validations.ts (Zod) → calculate() → POST /api/calculations → supabaseAdmin.insert('calculations')
 ```
 
-`calculate()` (`src/lib/calculations.ts:35`) is the deterministic math engine. `mix_type: 1` ("แบบผสมให้ได้", fixed total target volume) and `mix_type: 2` ("แบบผสมกับ", carrier volume is the reference) produce different results. **The server re-runs `calculate()` before insert — never trust client math.**
+`calculate()` (`src/lib/calculations.ts:35`) is the deterministic math engine. `mix_type: 1` ("แบบผสมให้ได้", `S` is the finished total) and `mix_type: 2` ("แบบผสมกับ", `S` is the carrier alone) differ only in the concentration `fC` they derive — not in the volume prepared. **The server re-runs `calculate()` before insert — never trust client math.**
 
 **`S` means different things per `mix_type` — it is always the number printed on the bottle, never a hand-computed one:**
 
@@ -51,6 +51,10 @@ CalculatorForm → validations.ts (Zod) → calculate() → POST /api/calculatio
 - `mix_type: 2` → `S` is the **carrier alone** ("1 ลิตร ผสมกับน้ำมัน 79 ลิตร" → `S = 79`), so `fC = C / (C + S)`.
 
 Until Aug 2026 mode 1 also used `C / (C + S)`, which required officers to enter `14 - 1 = 13` themselves. Nobody did, so every "ผสมให้ได้" profile was diluted by one extra part (7% off at 1:14). Don't reintroduce the subtraction — `20260817_fix_mix_type_1_total_volume.sql` migrated the seeded presets to totals, and user-authored rows already held totals.
+
+**`V_total` is always `RA_cc × (N × A_house) / A0` — `mix_type` only selects `fC`.** The label's spray rate applies to the *finished mixture* ("นำส่วนผสมนี้ไปฉีดพ่นในอัตรา 1.25 ลิตร ต่อ 10,000 ตร.ม."), so the volume to prepare equals the reference volume in both modes; the mode only decides how that volume splits into chemical and carrier. Mode 2 previously set `V_S = V_total_ref` and added chemical on top, over-preparing by `C/S` — 25% at 1:4. Officer-supplied definition and the agency's own worked examples (`.agent/skills/my-skills/เอกสาร/คำนวณสารเคมี.txt`) both pin this; `calculations.test.ts` holds all four as ground truth.
+
+`V_C_1L` / `V_S_1L` keep their mode-specific meaning on purpose: mode 2 pins `V_S_1L = 1000` because "ผสมกับ" is physically measured by starting from 1 L of carrier and pouring chemical in on top, which is what the agency document's "สารเคมี 250 cc และน้ำมันดีเซล 1,000 cc" describes.
 
 `targetVolume` is the **total** volume the officer wants to prepare in both modes, so `V_C_target + V_S_target === targetVolume * 1000` always. Note that `V_C_1L` / `V_S_1L` do *not* follow that rule under `mix_type: 2`: there they are per litre of *carrier* (`V_S_1L` is pinned at 1000), which is what the "ตัวตั้งต้น 1,000" caption in `ResultsDisplay` means.
 
